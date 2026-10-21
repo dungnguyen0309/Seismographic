@@ -12,7 +12,7 @@ core, year, values, scores = ui.load()
 countries = core["countries"]
 options, names = ui.country_options(countries)
 
-st.title("Assessment builder")
+ui.hero("✍️ Assessment builder", kicker="Analyst desk")
 st.markdown(
     "Turn the data into analysis. Fill in the sections below, download the file, and upload it to the "
     "project's `assessments/` folder — it then appears on the country profile. "

@@ -41,6 +41,11 @@ BING_NEWS_RSS = "https://www.bing.com/news/search"
 NEWS_COLUMNS = ["seen", "title", "domain", "url", "image"]
 
 
+# (connect, read) seconds: give up quickly on a host that does not answer, allow a slow but working one to finish
+FEED_TIMEOUT = (5, 12)
+GDELT_TIMEOUT = (5, 20)
+
+
 class SourceError(RuntimeError):
     """Raised when an API is unreachable or answers with an error."""
 
@@ -275,13 +280,45 @@ GLOBAL_NEWS_QUERY = (
     '"armed clashes" OR "snap election" OR "martial law")'
 )
 
+# The feeds match loosely (a "global" search can return a lost-cat story), so headlines must also use the vocabulary
+# of political risk; if that leaves too few, the unfiltered list is kept rather than an empty column
+ON_TOPIC = re.compile(
+    r"\b(?:coups?|junta|ceasefire|cease-fire|truce|peace|sanction\w*|tariff\w*|insurg\w*|emergency|martial|curfew|"
+    r"protest\w*|demonstrat\w*|riot\w*|unrest|strikes?|clash\w*|war|wars|warfare|conflict\w*|fighting|attack\w*|"
+    r"militant\w*|rebel\w*|militia\w*|troops|military|army|soldiers?|missiles?|drones?|airstrikes?|shelling|bomb\w*|"
+    r"terror\w*|hostages?|killed|killings?|violen\w*|massacre|genocide|crisis|crises|default\w*|debt|inflation|"
+    r"currency|imf|bailout|recession|econom\w*|prices|fuel|oil|gas|energy|refugees?|migrants?|displaced|famine|"
+    r"starv\w*|humanitarian|aid|outbreak\w*|epidemic\w*|pandemic|ebola|cholera|mpox|election\w*|vote\w*|ballot|"
+    r"runoff|debate\w*|campaign\w*|politic\w*|part(?:y|ies)|democra\w*|autocra\w*|backslid\w*|opposition|"
+    r"parliament\w*|senat\w*|lawmakers?|president\w*|prime minister|minister\w*|government\w*|regime|cabinet|"
+    r"impeach\w*|resign\w*|assassinat\w*|arrest\w*|crackdown|detain\w*|(?:supreme|constitutional|high) court|"
+    r"court rul\w*|tribunal|ruling|verdict|judges?|fraud\w*|corrupt\w*|scandal\w*|journalists?|censorship|border\w*|"
+    r"nuclear|security|police|diplomat\w*|summit|talks|treaty|deal|annex\w*|occupation|invasion)\b",
+    re.IGNORECASE,
+)
+# Sport and entertainment borrow the same words ("attack", "clash", "transfer deal") but are not political risk
+OFF_TOPIC = re.compile(
+    r"\b(?:football|soccer|basketball|baseball|cricket|rugby|tennis|golf|nba|nfl|mlb|nhl|fifa|uefa|olympic\w*|"
+    r"premier league|champions league|world cup|playoffs?|quarterback|striker|midfielder|transfer portal|"
+    r"box office|album|celebrity|reality show|oscars?|grammys?)\b",
+    re.IGNORECASE,
+)
+MIN_ON_TOPIC = 6
+
+
+def on_topic(df: pd.DataFrame) -> pd.DataFrame:
+    """Headlines that read as political-risk news (all of them if fewer than MIN_ON_TOPIC qualify)."""
+    titles = df["title"].fillna("")
+    keep = df[titles.str.contains(ON_TOPIC) & ~titles.str.contains(OFF_TOPIC)]
+    return keep if len(keep) >= MIN_ON_TOPIC else df
+
 
 def fetch_google_news(name: str | None, days: int = 7, max_records: int = 25) -> pd.DataFrame:
     """Recent risk-related headlines for a country (or global ones when name is None)."""
     query = f"{_gdelt_term(name)} {RISK_TERMS}" if name else GLOBAL_NEWS_QUERY
     params = {"q": f"{query} when:{days}d", "hl": "en-US", "gl": "US", "ceid": "US:en"}
     try:
-        response = requests.get(GOOGLE_NEWS_RSS, params=params, timeout=20, headers=HEADERS)
+        response = requests.get(GOOGLE_NEWS_RSS, params=params, timeout=FEED_TIMEOUT, headers=HEADERS)
         response.raise_for_status()
         channel = ET.fromstring(response.content).find("channel")
     except (requests.RequestException, ET.ParseError) as exc:
@@ -318,7 +355,7 @@ def fetch_bing_news(name: str | None, max_records: int = 15) -> pd.DataFrame:
     query = f"{_gdelt_term(name)} {RISK_TERMS}" if name else GLOBAL_NEWS_QUERY
     params = {"q": query, "format": "rss", "mkt": "en-US", "setlang": "en-US", "cc": "US", "qft": 'sortbydate="1"'}
     try:
-        response = requests.get(BING_NEWS_RSS, params=params, timeout=20, headers=HEADERS)
+        response = requests.get(BING_NEWS_RSS, params=params, timeout=FEED_TIMEOUT, headers=HEADERS)
         response.raise_for_status()
         channel = ET.fromstring(response.content).find("channel")
     except (requests.RequestException, ET.ParseError) as exc:
@@ -342,9 +379,12 @@ def _title_key(title: str) -> str:
 def fetch_news(name: str | None) -> tuple[pd.DataFrame, str]:
     """(headlines, source label). Merges Bing (photos) and Google News; GDELT if both fail."""
     frames, used, errors = [], [], []
-    for label, fetch in (("Bing News", fetch_bing_news), ("Google News", fetch_google_news)):
+    with ThreadPoolExecutor(max_workers=2) as pool:  # both feeds at once: the slower one sets the wait, not the sum
+        futures = {label: pool.submit(fetch, name) for label, fetch in (("Bing News", fetch_bing_news),
+                                                                         ("Google News", fetch_google_news))}
+    for label, future in futures.items():
         try:
-            df = fetch(name)
+            df = future.result()
             if not df.empty:
                 frames.append(df)
                 used.append(label)
@@ -354,7 +394,7 @@ def fetch_news(name: str | None) -> tuple[pd.DataFrame, str]:
         merged = pd.concat(frames, ignore_index=True)
         # The same story often appears in both feeds: keep one copy, preferring the one with a photo
         merged = merged.assign(key=merged["title"].map(_title_key), has_image=merged["image"].notna())
-        merged = merged.sort_values("has_image", ascending=False).drop_duplicates("key")
+        merged = on_topic(merged.sort_values("has_image", ascending=False).drop_duplicates("key"))
         # Newest day first; within a day, stories with a photo first
         merged = merged.assign(day=merged["seen"].dt.floor("D")).sort_values(
             ["day", "has_image", "seen"], ascending=[False, False, False], na_position="last"
@@ -387,7 +427,7 @@ def fetch_gdelt_articles(name: str, timespan: str = "7d", max_records: int = 25)
         "sort": "DateDesc",
     }
     try:
-        response = requests.get(GDELT_API, params=params, timeout=25, headers=HEADERS)
+        response = requests.get(GDELT_API, params=params, timeout=GDELT_TIMEOUT, headers=HEADERS)
         response.raise_for_status()
     except requests.RequestException as exc:
         raise SourceError(f"GDELT unreachable: {exc}") from exc
@@ -415,7 +455,8 @@ def fetch_gdelt_articles(name: str, timespan: str = "7d", max_records: int = 25)
 def fetch_youtube_feed(channel_id: str) -> pd.DataFrame:
     """The ~15 most recent videos of one channel: id, title, published, description, views, thumbnail."""
     try:
-        response = requests.get(YOUTUBE_FEED, params={"channel_id": channel_id}, timeout=20, headers=HEADERS)
+        response = requests.get(YOUTUBE_FEED, params={"channel_id": channel_id}, timeout=FEED_TIMEOUT,
+                                headers=HEADERS)
         response.raise_for_status()
         root = ET.fromstring(response.content)
     except (requests.RequestException, ET.ParseError) as exc:
@@ -462,7 +503,7 @@ def fetch_gdelt_tone(name: str, timespan: str = "3m") -> pd.DataFrame:
         "timespan": timespan,
     }
     try:
-        response = requests.get(GDELT_API, params=params, timeout=25, headers=HEADERS)
+        response = requests.get(GDELT_API, params=params, timeout=GDELT_TIMEOUT, headers=HEADERS)
         response.raise_for_status()
         data = response.json()
     except requests.RequestException as exc:
@@ -491,7 +532,7 @@ def fetch_gdelt_protests(name: str, timespan: str = "3m") -> pd.DataFrame:
         "timelinesmooth": 7,
     }
     try:
-        response = requests.get(GDELT_API, params=params, timeout=25, headers=HEADERS)
+        response = requests.get(GDELT_API, params=params, timeout=GDELT_TIMEOUT, headers=HEADERS)
         response.raise_for_status()
         data = response.json()
     except requests.RequestException as exc:

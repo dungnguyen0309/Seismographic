@@ -75,6 +75,9 @@ def load_events() -> pd.DataFrame:
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df = df.dropna(subset=["date"])
     df["iso3"] = df["iso3"].str.upper().str.strip()
+    # A hand-edited file can have typos: unknown values fall back to safe defaults instead of breaking a chart
+    df["significance"] = df["significance"].str.strip().str.title().where(lambda s: s.isin(SIGNIFICANCE), "Medium")
+    df["category"] = df["category"].str.strip().where(lambda s: s.isin(EVENT_CATEGORIES), "Other")
     return df.sort_values("date").reset_index(drop=True)
 
 

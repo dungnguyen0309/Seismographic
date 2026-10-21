@@ -670,6 +670,15 @@ REGION_NEWS = {
     "Sub-Saharan Africa": '(Africa OR Sahel OR "Horn of Africa")',
 }
 
+# Shorter region names for chart labels (filters and tables keep the World Bank names)
+REGION_SHORT = {"Middle East, North Africa, Afghanistan & Pakistan": "MENA, Afghanistan & Pakistan",
+                "Latin America & Caribbean": "Latin America & Carib."}
+
+
+def region_short(name: str) -> str:
+    return REGION_SHORT.get(name, name)
+
+
 # Rough region centres (lon, lat) for pointing the globe view
 REGION_CENTERS = {
     "East Asia & Pacific": (120, 10),
@@ -723,6 +732,15 @@ FLAG_BASIS: dict[tuple[str, float], tuple[str | None, str]] = {
                                                      "force out of work"),
     ("displaced_share", 5): ("unhcr_def", "Seismographic line: one person in twenty forcibly displaced"),
     ("homicide", 20): ("unodc", "Seismographic line, several times the global rate in UNODC data"),
+}
+# Short names for tables and tooltips, where the full label would be cut off
+FLAG_SHORT: dict[tuple[str, float], str] = {
+    ("battle_deaths_raw", 1000): "War", ("battle_deaths_raw", 25): "Armed conflict",
+    ("inflation", 50): "Inflation ≥ 50%", ("inflation", 20): "Inflation ≥ 20%",
+    ("gdp_growth", 0): "Shrinking economy", ("gov_debt", 90): "Debt ≥ 90% of GDP",
+    ("fiscal_balance", -5): "Deficit ≥ 5% of GDP", ("current_account", -5): "Current-account gap ≥ 5%",
+    ("reserves_months", 3): "Reserves < 3 months", ("youth_unemployment", 25): "Youth jobless ≥ 25%",
+    ("displaced_share", 5): "Displaced ≥ 5%", ("homicide", 20): "Homicides ≥ 20/100k",
 }
 SEVERITY_ORDER = {"critical": 0, "serious": 1, "warning": 2}
 SEVERITY_ICON = {"critical": "🔴", "serious": "🟠", "warning": "🟡"}

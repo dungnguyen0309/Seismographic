@@ -12,7 +12,7 @@ hist = ui.history(core)
 names = dict(zip(core["countries"]["iso3"], core["countries"]["name"]))
 iso2 = dict(zip(core["countries"]["iso3"], core["countries"]["iso2"]))
 
-ui.hero("🔍 Did it see it coming?")
+ui.hero("🔍 Did it see it coming?", kicker="Briefings")
 st.markdown(
     "Eight shocks since 2020 (coups, wars, an invasion, a default and an uprising) and what the index said about each "
     "country **the year before**. The verdict follows a fixed rule, shown under each case, so you can check it."

@@ -5,7 +5,7 @@ import html
 import pandas as pd
 import streamlit as st
 
-from prm import charts, config, ui
+from prm import charts, config, scoring, ui
 from prm.config import INDICATORS, MAX_COMPARE, PILLARS, WGI_DIMENSIONS
 
 core, year, values, scores = ui.load()
@@ -13,25 +13,46 @@ hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist).set_index("iso3")
 options, names = ui.country_options(core["countries"])
 
-st.title("Compare countries")
+ui.hero("⚖️ Compare countries", kicker="Monitor")
 st.caption(
     f"Pick up to {MAX_COMPARE} economies, or use **➕ Add to compare** on any country profile. "
     "Colours follow the order you pick them in."
 )
 
-# The widget's own state is dropped when you leave the page, so seed it from the saved list each visit
+# The widget's own state is dropped when you leave the page, so seed it each visit: a shared link (?c=NGA,KEN) first,
+# then the list built with "Add to compare", then a default
 if "compare_picked" not in st.session_state:
-    saved = [c for c in st.session_state.get(ui.COMPARE_LIST, []) if c in options]
+    shared = list(dict.fromkeys(c.strip() for c in str(st.query_params.get("c", "")).upper().split(",")
+                                if c.strip() in options))[:MAX_COMPARE]  # a hand-edited link may repeat a country
+    saved = list(dict.fromkeys(c for c in st.session_state.get(ui.COMPARE_LIST, []) if c in options))[:MAX_COMPARE]
     fallback = [c for c in [ui.current_country(core["countries"]), "KEN", "ZAF", "ETH"] if c in options]
-    st.session_state["compare_picked"] = saved or list(dict.fromkeys(fallback))[:3]
+    st.session_state["compare_picked"] = shared or saved or list(dict.fromkeys(fallback))[:3]
+
+
+def _add_similar(iso3: str) -> None:
+    if iso3 not in st.session_state["compare_picked"] and len(st.session_state["compare_picked"]) < MAX_COMPARE:
+        st.session_state["compare_picked"] = [*st.session_state["compare_picked"], iso3]
+
+
 picked = st.multiselect(
     "Countries", options, key="compare_picked", format_func=lambda i: names.get(i, i),
     max_selections=MAX_COMPARE, placeholder="Choose countries",
 )
 st.session_state[ui.COMPARE_LIST] = list(picked)
 if not picked:
+    st.query_params.pop("c", None)
     st.info("Choose at least one country.")
     st.stop()
+st.query_params["c"] = ",".join(picked)  # the address bar now holds a link to this exact comparison
+if len(picked) < MAX_COMPARE:
+    like = scoring.similar(scores, picked[0], n=8)
+    like = [i for i in like.index if i not in picked][:4]
+    if like:
+        with st.container(horizontal=True, vertical_alignment="center", key="similar_row"):
+            st.caption(f"Similar to {names[picked[0]]}:")
+            for iso3 in like:
+                st.button(f"➕ {names[iso3]}", key=f"add_like_{iso3}", on_click=_add_similar, args=(iso3,),
+                          type="tertiary", help="A country with a close risk profile across the four pillars")
 
 sel = table.loc[picked]
 
@@ -83,7 +104,8 @@ with right:
 st.subheader("Indicators")
 rows = []
 for ind in INDICATORS:
-    entry = {"Pillar": config.PILLAR_BY_KEY[ind.pillar].short, "Indicator": f"{ind.short} ({ind.unit})"}
+    label = ind.short if "(" in ind.short or "/" in ind.short else f"{ind.short} ({ind.unit})"  # no doubled units
+    entry = {"Pillar": config.PILLAR_BY_KEY[ind.pillar].short, "Indicator": label}
     for iso3 in picked:
         entry[names[iso3]] = ind.fmt(values.loc[iso3].get(ind.key))
     rows.append(entry)
@@ -106,10 +128,10 @@ econ = {
 }
 key = st.selectbox("Indicator", list(econ), format_func=econ.get)
 st.plotly_chart(
-    charts.compare_lines(core["series"], key, picked, names, econ[key], start_year=year - 12, end_year=year + 5),
+    charts.compare_lines(core["series"], key, picked, names, econ[key], start_year=year - 12, end_year=year + 5,
+                         projected_from=year),
     config={"displayModeBar": False},
 )
-st.caption(f"IMF World Economic Outlook. Values after {year - 1} are projections.")
 ui.cite("imf")
 
 ui.footer()

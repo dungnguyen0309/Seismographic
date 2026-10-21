@@ -55,6 +55,26 @@ TERMS: dict[str, list[tuple[str, str]]] = {
                       "life) to download from its profile."),
         ("Hotspots to watch", "Countries scoring 50+ that got 2+ points riskier, "
                               "crossed a new red flag, or face a high-significance event within 120 days."),
+        ("Conflict outlook", "The estimated chance that armed conflict (25+ battle deaths) starts next year in a "
+                             "country at peace, from a small statistical model on the pillars, low-level violence and "
+                             "recent conflict. On the Conflict page and each country's Summary."),
+        ("Out-of-time test", "Checking a model the honest way: each year is predicted by a model fitted only on "
+                             "earlier years, then compared with what happened."),
+        ("Brier skill", "How much better the predicted chances are than always guessing the average rate: 0 = no "
+                        "better, above 0 = better."),
+        ("Calibration", "Whether predicted chances match what happened: of the cases given about 10%, about one in "
+                        "ten should see conflict."),
+        ("× average", "A country's predicted chance divided by the average chance for countries at peace."),
+        ("Stress test", "Apply one economic shock (say, growth −4 points) to many countries at once and see who "
+                        "crosses a tier or a red flag. Countries hit are scored against today's values, so a shock "
+                        "that hits everyone still shows."),
+        ("Similar risk profiles", "The countries whose four pillar scores are closest to a country's, wherever they "
+                                  "are in the world."),
+        ("Follow (★)", "Mark countries to keep them on the Global overview and in Find. The list stays in your "
+                       "browser; no account needed."),
+        ("Share link", "The address of the Compare and Stress test pages holds your selection, so you can send it."),
+        ("Open data", "Every table behind the index, free to download as CSV, Excel or JSON on the Download data "
+                      "page, with a data dictionary."),
     ],
     "Warnings": [
         ("Red flag", "An absolute warning threshold, such as inflation of 20% or more. Unlike the relative score, it "
@@ -208,6 +228,7 @@ CATEGORIES: dict[str, Category] = {
 
 # Term -> the config.SOURCES key that defines or publishes it
 TERM_SOURCES: dict[str, str] = {
+    "Conflict outlook": "ucdp_def", "Out-of-time test": "ucdp_def", "Stress test": "imf_weo",
     "Composite score": "oecd_jrc", "Percentile rank": "oecd_jrc", "Log scale": "oecd_jrc", "Weights": "oecd_jrc",
     "Sensitivity check": "oecd_jrc", "Regional median": "wb_groups", "Peer group": "wb_groups",
     "Political stability deteriorating": "wgi_method", "Track record": "ucdp_def", "Benchmark": "fsi",

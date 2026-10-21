@@ -11,7 +11,7 @@ hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 prev_year = year - 1
 
-st.title("What changed")
+ui.hero("📈 What changed", kicker="Briefings")
 st.markdown(
     f"The index for **{year}** compared with **{prev_year}**: who became riskier or safer, which tiers moved, "
     "what drove each change and which absolute warning thresholds were newly crossed. "
@@ -31,7 +31,7 @@ moved = moved.assign(
 pillar_keys = [p.key for p in PILLARS]
 prev_pillars = hist[hist["year"] == prev_year].set_index("iso3")[pillar_keys]
 for p in PILLARS:
-    moved[f"d_{p.key}"] = moved[p.key] - moved["iso3"].map(prev_pillars[p.key])
+    moved[f"d_{p.key}"] = pd.to_numeric(moved[p.key] - moved["iso3"].map(prev_pillars[p.key]), errors="coerce")
 
 
 def _driver(row) -> str:

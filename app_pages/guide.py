@@ -12,7 +12,7 @@ countries = core["countries"]
 options, names = ui.country_options(countries)
 events = content.load_events()
 
-ui.hero("🧭 How to analyze Seismographic data?")
+ui.hero("🧭 How to analyze Seismographic data?", kicker="Briefings")
 st.markdown(
     "Seismographic turns open data into numbers: a 0–100 score, a tier, four pillars and a set of red flags. This "
     "page translates those numbers into real life — what they usually look like for the people living, working or "
@@ -42,8 +42,7 @@ for tier, upper in zip(config.TIERS, [t.lower for t in config.TIERS[1:]] + [100]
         "Countries now": len(in_tier),
         "For example": ", ".join(in_tier["name"].head(3)),
     })
-st.dataframe(pd.DataFrame(rows), hide_index=True,
-             column_config={"What it usually looks like": st.column_config.TextColumn(width="large")})
+st.table(pd.DataFrame(rows), hide_index=True, border="horizontal")  # static: long text wraps
 ui.cite("index")
 
 # --- 3. Pillars ------------------------------------------------------------------------------------------
@@ -74,10 +73,7 @@ for key, op, threshold, severity, label in config.RED_FLAGS:
         "What people typically do": response,
         "Countries now": crossing,
     })
-st.dataframe(pd.DataFrame(flag_rows), hide_index=True, column_config={
-    "What it means in real life": st.column_config.TextColumn(width="large"),
-    "What people typically do": st.column_config.TextColumn(width="large"),
-})
+st.table(pd.DataFrame(flag_rows), hide_index=True, border="horizontal")
 ui.cite("ucdp_def", "imf_ara", "imf", "wdi", "unhcr")
 
 # --- 5. Workflows ---------------------------------------------------------------------------------------

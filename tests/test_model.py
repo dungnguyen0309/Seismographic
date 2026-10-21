@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from prm import cases, config, data, glossary, report, scoring, validation
+from prm import cases, config, data, forecast, glossary, report, scoring, validation
 
 
 @pytest.fixture(scope="module")
@@ -117,3 +117,96 @@ def test_every_cited_source_exists():
     keys += [s for s, _ in config.FLAG_BASIS.values() if s]
     keys += [k for c in glossary.CATEGORIES.values() for k in c.sources] + list(glossary.TERM_SOURCES.values())
     assert set(keys) <= set(config.SOURCES)
+
+
+def test_outlook_model_is_tested_out_of_time_and_beats_chance(core):
+    outlook = forecast.outlook(core["history_default"], core["series"]["battle_deaths"], data.analysis_year())
+    assert outlook is not None
+    assert outlook.auc > 0.75, "out-of-time accuracy should clearly beat a coin flip"
+    assert outlook.brier_skill > 0, "predictions should beat the average rate"
+    probs = outlook.predictions["probability"].dropna()
+    assert probs.between(0, 1).all() and len(probs) > 100
+    in_conflict = outlook.predictions[outlook.predictions["status"] == "In armed conflict"]
+    assert in_conflict["probability"].isna().all()
+    # each backtest year is predicted by a model that never saw it
+    assert outlook.backtest["year"].min() >= config.HISTORY_START + forecast.MIN_TRAIN_YEARS
+
+
+def test_logistic_fit_recovers_a_clear_signal():
+    rng = np.random.default_rng(0)
+    x = rng.normal(size=(4000, 2))
+    y = (rng.random(4000) < 1 / (1 + np.exp(-(-3 + 1.5 * x[:, 0])))).astype(float)
+    w = forecast._fit(x, y, penalty=0.1)
+    assert abs(w[1] - 1.5) < 0.3 and abs(w[2]) < 0.3
+
+
+def test_similar_countries(values):
+    scores = scoring.compute_scores(values)
+    like = scoring.similar(scores, "NGA", n=5)
+    assert len(like) == 5 and "NGA" not in like.index and like["distance"].is_monotonic_increasing
+
+
+def test_fixed_yardstick_scoring_matches_the_index(values):
+    a = scoring.compute_scores(values)
+    b = scoring.compute_scores(values, reference=values)
+    cols = ["composite", *[p.key for p in config.PILLARS]]
+    assert np.allclose(a[cols].fillna(-1), b[cols].fillna(-1))
+
+
+def test_stress_test(values):
+    from prm import stress
+    result = stress.run(values, scoring.default_weights(), {"gdp_growth": -4.0, "gov_debt": 10.0})
+    s = stress.summary(result)
+    assert s["countries"] > 150 and s["tier_up"] > 0 and s["tier_down"] == 0 and s["mean_delta"] > 0
+    shrinking = result[result["new_flags"].map(lambda f: any("Shrinking" in x for x in f))]
+    assert len(shrinking) and (values.loc[shrinking.index, "gdp_growth"] >= 0).all()
+    # only the countries hit move
+    scoped = stress.run(values, scoring.default_weights(), {"gdp_growth": -4.0}, scope={"KEN"})
+    moved = scoped["delta"].abs() > 1e-9
+    assert set(scoped.index[moved]) == {"KEN"}
+    assert stress.decode(stress.encode({"gdp_growth": -4.0, "inflation": 5.0})) == {"gdp_growth": -4.0, "inflation": 5.0}
+
+
+def test_open_data_tables(core, values):
+    from prm import export
+    hist = core["history_default"]
+    tables = export.build(core, values, scoring.compute_scores(values), hist)
+    assert set(tables) == set(export.TABLES)
+    assert len(tables["index"]) > 150 and tables["index"]["rank"].dropna().is_monotonic_increasing
+    assert {"iso3", "indicator", "value", "year", "risk_score"} <= set(tables["indicators"].columns)
+    described = set(tables["dictionary"]["column"])
+    for name in ("index", "indicators", "red_flags", "history"):
+        assert set(tables[name].columns) <= described, name
+    info = export.meta(core, data.analysis_year(), scoring.default_weights())
+    assert export.to_excel(tables, info)[:2] == b"PK"
+    assert b'"index"' in export.to_json(tables, info)
+
+
+def test_json_api():
+    from starlette.applications import Starlette
+    from starlette.testclient import TestClient
+    from prm import api
+    client = TestClient(Starlette(routes=api.routes()))
+    listing = client.get("/api/v1/countries?tier=severe").json()
+    assert listing["count"] > 0 and all(c["tier"] == "Severe" for c in listing["countries"])
+    one = client.get("/api/v1/countries/ken")
+    assert one.status_code == 200 and one.json()["country"]["iso3"] == "KEN" and one.json()["history"]
+    assert one.headers["access-control-allow-origin"] == "*"
+    assert client.get("/api/v1/countries/XYZ").status_code == 404
+    assert client.get("/api/v1").json()["endpoints"]
+
+
+def test_news_filter_drops_off_topic_headlines():
+    from prm import sources
+    risk = [f"Troops clash with rebels in region {i}" for i in range(sources.MIN_ON_TOPIC)]
+    df = pd.DataFrame({"title": [*risk, "Cat reunites with family after 571 days missing"]})
+    assert "Cat reunites with family after 571 days missing" not in set(sources.on_topic(df)["title"])
+    few = pd.DataFrame({"title": ["Election called", "Bank wins water award"]})
+    assert len(sources.on_topic(few)) == 2  # too few on-topic headlines: keep the column full
+
+
+def test_news_filter_drops_sport():
+    from prm import sources
+    risk = [f"Troops clash with rebels in region {i}" for i in range(sources.MIN_ON_TOPIC)]
+    sport = "Former Purdue basketball player finds home in transfer portal after court battle"
+    assert sport not in set(sources.on_topic(pd.DataFrame({"title": [*risk, sport]}))["title"])

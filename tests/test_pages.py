@@ -8,8 +8,12 @@ from streamlit.testing.v1 import AppTest  # the `app` fixture comes from conftes
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = re.findall(r'st\.Page\("(app_pages/[^"]+)"', (ROOT / "streamlit_app.py").read_text(encoding="utf-8"))
-COUNTRY_TABS = ["Summary", "🧭 In real life", "Peers", "🌍 Map & refugee links", "🎛️ What-if simulator", "Indicators",
-                "Governance trends", "Economy", "News pulse", "Analyst assessment"]
+COUNTRY_TABS = [":material/summarize: Summary", ":material/explore: In real life", ":material/groups: Peers",
+                ":material/map: Map & refugees", ":material/tune: What-if", ":material/list_alt: Indicators",
+                ":material/account_balance: Governance", ":material/monitoring: Economy", ":material/newspaper: News",
+                ":material/edit_note: Assessment"]
+CONFLICT_TABS = [":material/swords: Armed conflict", ":material/luggage: Displacement & refugees",
+                 ":material/insights: Outlook"]
 
 
 def errors(at: AppTest) -> list[str]:
@@ -41,3 +45,57 @@ def test_country_picker_updates_the_dock(app):
     app.selectbox(key="country_pick").select("KEN").run()
     readout = next(m.value for m in app.markdown if 'class="sg-read' in m.value)
     assert "Kenya" in readout
+
+
+@pytest.mark.parametrize("tab", CONFLICT_TABS)
+def test_conflict_tab_runs(app, tab):
+    app.switch_page("app_pages/conflict.py")
+    app.session_state["conflict_tab"] = tab
+    app.run()
+    assert not errors(app), errors(app)
+
+
+def test_shared_comparison_link(app):
+    app.switch_page("app_pages/compare.py")
+    if "compare_picked" in app.session_state:
+        del app.session_state["compare_picked"]
+    app.query_params["c"] = "KEN,BRA"
+    app.run()
+    assert not errors(app), errors(app)
+    assert list(app.multiselect(key="compare_picked").value) == ["KEN", "BRA"]
+
+
+def test_stress_test_link_and_scenarios(app):
+    app.switch_page("app_pages/stress.py")
+    if "stress_scenario" in app.session_state:
+        del app.session_state["stress_scenario"]
+    app.query_params["shock"] = "gdp_growth:-4,inflation:5"
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.slider(key="stress_gdp_growth").value == -4 and app.slider(key="stress_inflation").value == 5
+    assert app.selectbox(key="stress_scenario").value == "Custom"
+    app.selectbox(key="stress_scenario").select("Pandemic shock (like 2020)").run()
+    assert not errors(app), errors(app)
+    assert app.slider(key="stress_gdp_growth").value == -5.5 and app.slider(key="stress_inflation").value == 0
+    app.multiselect(key="stress_regions").select("Sub-Saharan Africa").run()
+    assert not errors(app), errors(app)
+
+
+def test_outlook_link_opens_the_outlook_tab(app):
+    app.switch_page("app_pages/conflict.py")
+    app.query_params["tab"] = "outlook"
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.session_state["conflict_tab"] == CONFLICT_TABS[-1]
+
+
+def test_comparison_link_with_repeats_and_junk(app):
+    app.switch_page("app_pages/intro.py")
+    app.run()
+    if "compare_picked" in app.session_state:
+        del app.session_state["compare_picked"]
+    app.query_params["c"] = ",,zzz, ken,KEN,BRA,USA,CHN,IND,RUS,FRA"
+    app.switch_page("app_pages/compare.py")
+    app.run()
+    assert not errors(app), errors(app)
+    assert list(app.multiselect(key="compare_picked").value) == ["KEN", "BRA", "USA", "CHN", "IND", "RUS"]

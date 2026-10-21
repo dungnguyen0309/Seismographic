@@ -20,7 +20,8 @@ def grid(cards: list[str], min_width: int = 220) -> None:
                 f'gap:10px;margin:6px 0 14px">{"".join(cards)}</div>', unsafe_allow_html=True)
 
 
-ui.hero("👋 Introduction", "What Seismographic is, how it works, and how to get the most out of it.")
+ui.hero("👋 Introduction", "What Seismographic is, how it works, and how to get the most out of it.",
+        kicker="Start here")
 
 # --- What it is ------------------------------------------------------------------------------------------
 st.header("What it is")
@@ -90,8 +91,8 @@ SECTIONS = {
         ("app_pages/overview.py", "Global overview", ":material/public:",
          "The 3D globe, headline numbers, hotspots to watch and the full ranking."),
         ("app_pages/country.py", "Country profile", ":material/flag:",
-         "One country in depth: score, drivers, what-if simulator, news and video."),
-        ("app_pages/compare.py", "Compare countries", ":material/compare_arrows:", "Up to six countries side by side."),
+         "One country in depth: score, drivers, what-if simulator, news and video. ★ Follow it to keep it close."),
+        ("app_pages/compare.py", "Compare countries", ":material/compare_arrows:", "Up to six countries side by side, with a link you can share."),
         ("app_pages/watchlist.py", "Events watchlist", ":material/event:",
          "Elections and other dated events that could move risk."),
         ("app_pages/video.py", "Live TV & video", ":material/live_tv:",
@@ -106,7 +107,7 @@ SECTIONS = {
          "This year against last: risers, fallers and new red flags."),
         ("app_pages/regions.py", "Regional briefings", ":material/travel_explore:", "One region at a time."),
         ("app_pages/conflict.py", "Conflict & displacement", ":material/crisis_alert:",
-         "Wars, battle deaths, refugees and where they go."),
+         "Wars, refugees and where they go, and the chance of new conflict next year."),
         ("app_pages/economy.py", "Economic stress", ":material/monitoring:",
          "Inflation, growth, debt and the countries under pressure."),
         ("app_pages/explorer.py", "Indicator explorer", ":material/explore:", "Any single indicator on the globe."),
@@ -114,20 +115,24 @@ SECTIONS = {
     "Analyst desk & reference": [
         ("app_pages/builder.py", "Assessment builder", ":material/edit_note:",
          "Write a structured risk assessment and download it."),
+        ("app_pages/stress.py", "Stress test", ":material/bolt:",
+         "Hit many countries with one economic shock and see who crosses a line."),
         ("app_pages/methodology.py", "Methodology", ":material/functions:",
          "Every formula and weight, the track record and a benchmark against another index."),
         ("app_pages/glossary.py", "Glossary & legend", ":material/help:", "Every term, colour and symbol explained."),
         ("app_pages/sources.py", "Sources & citations", ":material/verified:",
          "Where every number comes from, with links."),
+        ("app_pages/downloads.py", "Download data", ":material/download:",
+         "Every table behind the index as CSV, Excel or JSON."),
     ],
 }
 for section, pages in SECTIONS.items():
     st.subheader(section)
-    cols = st.columns(3)
-    for i, (path, title, icon, blurb) in enumerate(pages):
-        with cols[i % 3].container(border=True):
-            st.page_link(path, label=title, icon=icon)
-            st.caption(blurb)
+    for start in range(0, len(pages), 3):  # row by row, so the cards in a row line up
+        for col, (path, title, icon, blurb) in zip(st.columns(3), pages[start:start + 3]):
+            with col.container(border=True, height="stretch"):
+                st.page_link(path, label=title, icon=icon)
+                st.caption(blurb)
 
 # --- Quick start -------------------------------------------------------------------------------------------------
 st.header("Quick start")
@@ -135,8 +140,9 @@ st.markdown(
     "1. Open the **Global overview** and click any country on the globe to see its score.\n"
     "2. Open its **Country profile** and read the *In real life* tab: what the numbers mean on the ground.\n"
     "3. Use the bar at the bottom of every page to jump between Home, Compare, Live and Guide; **Find** searches "
-    "any country. The country on the left of the bar is the one you are following.\n"
-    "4. Not sure what a term means? The **Glossary & legend** explains every one."
+    "any country. The country on the left of the bar is the last one you opened.\n"
+    "4. **☆ Follow** the countries you care about: they stay at the top of the Global overview, in this browser.\n"
+    "5. Not sure what a term means? The **Glossary & legend** explains every one."
 )
 st.page_link("app_pages/overview.py", label="Go to the global overview", icon=":material/arrow_forward:")
 

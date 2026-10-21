@@ -38,16 +38,20 @@ pages = {
     ],
     "Analyst desk": [
         st.Page("app_pages/builder.py", title="Assessment builder", icon=":material/edit_note:", url_path="builder"),
+        st.Page("app_pages/stress.py", title="Stress test", icon=":material/bolt:", url_path="stress"),
     ],
     "About": [
         st.Page("app_pages/methodology.py", title="Methodology", icon=":material/functions:", url_path="methodology"),
         st.Page("app_pages/glossary.py", title="Glossary & legend", icon=":material/help:", url_path="glossary"),
         st.Page("app_pages/sources.py", title="Sources & citations", icon=":material/verified:", url_path="sources"),
+        st.Page("app_pages/downloads.py", title="Download data", icon=":material/download:", url_path="data"),
         st.Page("app_pages/resources.py", title="Resources", icon=":material/menu_book:", url_path="resources"),
     ],
 }
 
-page = st.navigation(pages)
-ui.sidebar()
-ui.dock(page.url_path)
-page.run()
+page = st.navigation(pages, expanded=True)
+with ui.guard("The sidebar"):
+    ui.sidebar()
+with ui.guard("The bottom bar"):
+    ui.dock(page.url_path)
+ui.page_error_boundary(page.run)

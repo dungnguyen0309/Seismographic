@@ -28,7 +28,8 @@ def _fill_news(slot, query: str | None, iso2) -> None:
 def globe_with_news(metric: str, map_title: str, in_view: set[str], region: str | None) -> None:
     """The 3D globe plus a news column that follows the country clicked on it (re-checked every 10 minutes)."""
     g_col, n_col = st.columns([2.2, 1], gap="small")
-    with g_col:
+    open_iso3, selected = None, st.session_state.get("globe_selected")
+    with g_col, ui.guard("The 3D globe"):
         open_iso3, selected = globe.risk_globe(
             table, hist, core.get("flows"), metric, map_title, in_view, region=region,
             selected=st.session_state.get("globe_selected"),
@@ -61,18 +62,20 @@ def _pick_region() -> None:
     """Clicking a region's bar in the tier chart filters the page to that region."""
     points = st.session_state["tier_click"]["selection"]["points"]
     if points and points[0].get("y"):
-        st.session_state["ov_region"] = points[0]["y"]
+        full = {config.region_short(r): r for r in table["region"].dropna().unique()}
+        st.session_state["ov_region"] = full.get(points[0]["y"], points[0]["y"])
 
 
 ui.brand_hero()
 st.page_link("app_pages/intro.py", label="New here? Start with the introduction", icon=":material/waving_hand:")
+ui.following_strip(table)
 
 # --- Filters -----------------------------------------------------------------
 regions = sorted(table["region"].dropna().unique())
 incomes = [i for i in ["Low income", "Lower middle income", "Upper middle income", "High income"] if i in set(table["income"])]
 metric_options = {"composite": "Composite risk index", **{p.key: p.label for p in PILLARS}}
 
-f1, f2, f3, f4 = st.columns([2, 2, 2, 1.4])
+f1, f2, f3, f4 = st.columns([1.8, 1.8, 2, 1.7])
 region = f1.selectbox("Region", ["All regions", *regions], key="ov_region")
 income = f2.multiselect("Income group", incomes, placeholder="All income groups")
 metric = f3.selectbox("Map shows", list(metric_options), format_func=metric_options.get)
@@ -88,7 +91,6 @@ scored = view.dropna(subset=["composite"])
 
 # --- Headline numbers (sparkline = since config.HISTORY_START, delta = vs last year) --------------
 yearly = hist[hist["iso3"].isin(view["iso3"])].groupby("year").agg(
-    scored=("composite", "count"),
     high=("tier", lambda s: int(s.isin(["High", "Severe"]).sum())),
     median=("composite", "median"),
     conflict=("battle_deaths_raw", lambda s: int((s >= 25).sum())),
@@ -105,21 +107,22 @@ n_high = int(scored["tier"].isin(["High", "Severe"]).sum())
 n_conflict = int((scored["battle_deaths_raw"] >= 25).sum())
 median_now = scored["composite"].median() if len(scored) else None
 k1, k2, k3, k4, k5 = st.columns(5)
-k1.metric("Economies scored", f"{len(scored)}", border=True, chart_data=_trend("scored"), chart_type="bar")
-k2.metric("High or Severe risk", n_high, border=True, chart_data=_trend("high"),
+k1.metric("Economies scored", f"{len(scored)}", border=True, height="stretch")
+k2.metric("High or Severe risk", n_high, border=True, height="stretch", chart_data=_trend("high"),
           delta=None if last is None else int(n_high - last["high"]), delta_color="inverse", delta_description=vs)
-k3.metric("Median score", "—" if median_now is None else f"{median_now:.0f}", border=True, chart_data=_trend("median"),
+k3.metric("Median score", "—" if median_now is None else f"{median_now:.0f}", border=True, height="stretch",
+          chart_data=_trend("median"),
           delta=None if last is None or median_now is None else round(float(median_now - last["median"]), 1),
           delta_color="inverse", delta_description=vs)
-k4.metric("In armed conflict", n_conflict, border=True, chart_data=_trend("conflict"),
+k4.metric("In armed conflict", n_conflict, border=True, height="stretch", chart_data=_trend("conflict"),
           delta=None if last is None else int(n_conflict - last["conflict"]), delta_color="inverse",
           delta_description=vs, help="Countries with at least 25 battle-related deaths in the latest UCDP year.")
 n_assessed = int((view["assessment"] == "✓").sum())
 if n_assessed:
-    k5.metric("Analyst assessments", n_assessed, border=True,
+    k5.metric("Analyst assessments", n_assessed, border=True, height="stretch",
               help="Countries with a written assessment in the assessments/ folder.")
 else:  # until assessments are written, show something informative instead of a zero
-    k5.metric("With a red flag", int((scored["flags"] > 0).sum()), border=True,
+    k5.metric("With a red flag", int((scored["flags"] > 0).sum()), border=True, height="stretch",
               help="Countries crossing at least one absolute warning threshold, such as inflation of 20% or more.")
 st.caption(f"Small charts: each figure since {config.HISTORY_START}. Arrows compare with {year - 1}; red = more risk.")
 ui.cite("index")
@@ -265,8 +268,8 @@ event = st.dataframe(
     column_config={
         "iso3": None,
         "flag": st.column_config.ImageColumn(" ", width="small", pinned=True),
-        "name": st.column_config.TextColumn("Country", pinned=True),
-        "region": "Region",
+        "name": st.column_config.TextColumn("Country", pinned=True, width="medium"),
+        "region": st.column_config.TextColumn("Region", width="medium"),
         "rank": st.column_config.NumberColumn("Rank", format="%d"),
         "composite": st.column_config.ProgressColumn("Composite", min_value=0, max_value=100, format="%.0f",
                                                      color=COMPOSITE_COLOR),

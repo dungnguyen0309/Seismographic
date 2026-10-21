@@ -123,6 +123,30 @@ def normalise(values: pd.Series, higher_is_riskier: bool, method: str = "percent
     return scored.reindex(s.index)
 
 
+def normalise_against(values: pd.Series, reference: pd.Series, higher_is_riskier: bool,
+                      method: str = "percentile") -> pd.Series:
+    """Like normalise, but every value is scored against a fixed reference distribution (today's values), so a
+    shock that hits all countries alike still shows. With reference = values it gives exactly normalise's result."""
+    s = pd.to_numeric(values, errors="coerce").astype(float)
+    ref = pd.to_numeric(reference, errors="coerce").astype(float).dropna()
+    if len(ref) < 2:
+        return pd.Series(np.nan, index=s.index)
+    if method == "log":
+        x_ref = np.log1p(ref.clip(lower=0))
+        positive = x_ref[x_ref > 0]
+        cap = float(positive.quantile(config.LOG_CAP_QUANTILE)) if len(positive) else 0.0
+        x = np.log1p(s.clip(lower=0))
+        scored = (x / cap * 100).clip(upper=100) if cap > 0 else x * 0
+        return scored if higher_is_riskier else 100 - scored
+    ordered = np.sort(ref.to_numpy())
+    v = s.to_numpy()
+    # "min" ranks: the share of the reference that is strictly less risky
+    less_risky = np.searchsorted(ordered, v, side="left") if higher_is_riskier \
+        else len(ordered) - np.searchsorted(ordered, v, side="right")
+    scored = np.clip(less_risky / (len(ordered) - 1) * 100, 0, 100)
+    return pd.Series(np.where(np.isnan(v), np.nan, scored), index=s.index)
+
+
 def tier_for(score: float) -> str | None:
     if score is None or (isinstance(score, float) and math.isnan(score)):
         return None
@@ -137,16 +161,26 @@ def default_weights() -> dict[str, float]:
     return {p.key: float(p.default_weight) for p in PILLARS}
 
 
-def compute_scores(values: pd.DataFrame, weights: dict[str, float] | None = None) -> pd.DataFrame:
-    """Indicator scores (n_*), pillar scores, composite, tier, rank and coverage."""
+def compute_scores(values: pd.DataFrame, weights: dict[str, float] | None = None,
+                   reference: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Indicator scores (n_*), pillar scores, composite, tier, rank and coverage.
+
+    `reference`: score the values against this table's distribution instead of their own (the stress test).
+    """
     weights = dict(weights or default_weights())
     if sum(max(w, 0) for w in weights.values()) <= 0:
         weights = default_weights()
 
+    def column(frame: pd.DataFrame, key: str) -> pd.Series:
+        return frame[key] if key in frame else pd.Series(np.nan, index=frame.index)
+
     scores = pd.DataFrame(index=values.index)
     for ind in SCORED_INDICATORS:
-        column = values[ind.key] if ind.key in values else pd.Series(np.nan, index=values.index)
-        scores[f"n_{ind.key}"] = normalise(column, ind.higher_is_riskier, ind.norm)
+        if reference is None:
+            scores[f"n_{ind.key}"] = normalise(column(values, ind.key), ind.higher_is_riskier, ind.norm)
+        else:
+            scores[f"n_{ind.key}"] = normalise_against(column(values, ind.key), column(reference, ind.key),
+                                                       ind.higher_is_riskier, ind.norm)
 
     for pillar in PILLARS:
         cols = [f"n_{i.key}" for i in config.indicators_for(pillar.key)]
@@ -214,7 +248,8 @@ def red_flags(row: pd.Series) -> list[dict]:
             continue
         if _OPS[op](float(value), threshold):
             seen.add(key)
-            flags.append({"key": key, "severity": severity, "label": label, "value": float(value)})
+            flags.append({"key": key, "severity": severity, "label": label, "value": float(value),
+                          "short": config.FLAG_SHORT.get((key, threshold), label)})
     flags.sort(key=lambda f: config.SEVERITY_ORDER[f["severity"]])
     return flags
 
@@ -402,3 +437,13 @@ def sensitivity(values: pd.DataFrame, iso3: str, weights: dict[str, float]) -> p
             {"Scenario": f"Without {p.short}", "Score": sc.loc[iso3, "composite"], "Rank": sc.loc[iso3, "rank"]}
         )
     return pd.DataFrame(rows)
+
+
+def similar(scores: pd.DataFrame, iso3: str, n: int = 6) -> pd.DataFrame:
+    """The countries whose four pillar scores are closest to this one's (Euclidean distance, 0 = identical profile)."""
+    keys = [p.key for p in PILLARS]
+    block = scores[keys].dropna()
+    if iso3 not in block.index:
+        return pd.DataFrame(columns=["distance"])
+    gap = ((block - block.loc[iso3]) ** 2).sum(axis=1) ** 0.5
+    return gap.drop(iso3).nsmallest(n).rename("distance").to_frame()

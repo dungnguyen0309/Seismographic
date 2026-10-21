@@ -3,7 +3,7 @@
 import pandas as pd
 import streamlit as st
 
-from prm import charts, config, ui
+from prm import charts, config, data, forecast, ui
 
 core, year, values, scores = ui.load()
 hist = ui.history(core)
@@ -11,7 +11,7 @@ table = ui.master_table(core, values, scores, hist)
 names = dict(zip(table["iso3"], table["name"]))
 known = set(names)
 
-st.title("Conflict & displacement")
+ui.hero("⚔️ Conflict & displacement", kicker="Briefings")
 st.markdown(
     "Where people are being killed in armed conflict and forced from their homes. Battle deaths follow the "
     "Uppsala Conflict Data Program (state-based conflict, via the World Bank); displacement is UNHCR's count of "
@@ -71,8 +71,12 @@ st.caption("Countries coloured by the Political Stability & Violence pillar (bri
            "Click a country to see only its flows.")
 ui.cite("index", "ucdp", "unhcr", "natural_earth")
 
-tab_conflict, tab_displacement = st.tabs(["⚔️ Armed conflict", "🧳 Displacement & refugee flows"],
-                                         key="conflict_tab", on_change="rerun")
+TABS = {"conflict": ":material/swords: Armed conflict", "displacement": ":material/luggage: Displacement & refugees",
+        "outlook": ":material/insights: Outlook"}
+if st.query_params.get("tab") in TABS:  # e.g. ?tab=outlook, from the country profile and the Methodology page
+    st.session_state["conflict_tab"] = TABS[st.query_params["tab"]]
+    del st.query_params["tab"]
+tab_conflict, tab_displacement, tab_outlook = st.tabs(list(TABS.values()), key="conflict_tab", on_change="rerun")
 
 # --- Armed conflict ------------------------------------------------------------------------------------------
 with tab_conflict:
@@ -100,18 +104,20 @@ with tab_conflict:
         conflict["deaths_prev"] = conflict["iso3"].map(prev_bd).fillna(0)
         conflict["deaths_change"] = conflict["deaths"] - conflict["deaths_prev"]
         conflict = conflict.join(values[["battle_deaths_100k", "displaced_share"]], on="iso3")
-        conflict["level"] = conflict["deaths"].map(lambda d: "🔴 War (≥ 1,000)" if d >= 1000 else "🟠 Armed conflict")
+        conflict["level"] = conflict["deaths"].map(lambda d: "🔴 War" if d >= 1000 else "🟠 Armed conflict")
+        conflict["change_text"] = conflict["deaths_change"].map(lambda d: f"{d:+,.0f}")
         conflict = conflict.sort_values("deaths", ascending=False).reset_index(drop=True)
         event = st.dataframe(
-            conflict[["iso3", "flag", "name", "level", "deaths", "deaths_change", "battle_deaths_100k", "displaced_share",
+            conflict[["iso3", "flag", "name", "level", "deaths", "change_text", "battle_deaths_100k", "displaced_share",
                       "stability", "tier"]],
             hide_index=True, height=460, on_select="rerun", selection_mode="single-row", key="cf_table",
             column_config={
-                "iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country", "level": "Level",
+                "iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country",
+                "level": st.column_config.TextColumn("Level", help="War = 1,000 or more battle deaths in the year (UCDP)"),
                 "deaths": st.column_config.NumberColumn(f"Deaths {bd_year}", format="localized"),
-                "deaths_change": st.column_config.NumberColumn(f"vs {bd_year - 1}", format="%+d"),
+                "change_text": st.column_config.TextColumn(f"vs {bd_year - 1}"),
                 "battle_deaths_100k": st.column_config.NumberColumn("Per 100k", format="%.2f"),
-                "displaced_share": st.column_config.NumberColumn("Displaced (% pop.)", format="%.1f%%"),
+                "displaced_share": st.column_config.NumberColumn("Displaced", format="%.1f%%", help="Share of the population"),
                 "stability": st.column_config.ProgressColumn("Stability risk", min_value=0, max_value=100, format="%.0f",
                                                              color=config.PILLAR_COLORS["stability"]),
                 "tier": "Tier",
@@ -163,5 +169,68 @@ with tab_displacement:
                 ui.cite("unhcr")
         else:
             st.info("Refugee flow data is not available right now.")
+
+# --- Outlook: chance of new armed conflict next year ----------------------------------------------------------
+with tab_outlook:
+    if tab_outlook.open:
+        outlook = data.get_outlook(core, core["version"])
+        if outlook is None:
+            st.info("Not enough conflict history to run the outlook model right now.")
+        else:
+            nxt = outlook.index_year + 1
+            preds = outlook.predictions.merge(table[["iso3", "flag", "name", "tier", "composite"]], on="iso3", how="left")
+            peaceful = preds.dropna(subset=["probability"]).sort_values("probability", ascending=False)
+            st.markdown(
+                f"The chance that armed conflict (25+ battle deaths) **breaks out in {nxt}** in each country that is at "
+                f"peace in the latest conflict data ({outlook.data_year}). A statistical model learned the pattern from "
+                f"every year since {config.HISTORY_START}, and was tested on years it had not seen."
+            )
+            o1, o2, o3, o4 = st.columns(4)
+            o1.metric("Average chance", f"{outlook.base_rate:.1%}", border=True,
+                      help="How often armed conflict broke out the next year in a country at peace, since "
+                           f"{config.HISTORY_START}.")
+            top = peaceful.iloc[0] if len(peaceful) else None
+            o2.metric("Highest chance", "—" if top is None else f"{top['probability']:.0%}", border=True,
+                      help=None if top is None else str(top["name"]))
+            o3.metric("Tested accuracy (AUC)", "—" if outlook.auc is None else f"{outlook.auc:.2f}", border=True,
+                      help="On years the model had not seen: the chance a country where conflict broke out had a higher "
+                           "prediction than one where it did not. 0.5 = a coin flip, 1 = perfect.")
+            o4.metric("Already in conflict", int((preds["status"] == "In armed conflict").sum()), border=True,
+                      help=f"25+ battle deaths in {outlook.data_year}: not given a chance of a new outbreak.")
+
+            st.subheader(f"Highest chance of new conflict in {nxt}")
+            shown = peaceful.head(20).assign(chance=lambda d: d["probability"] * 100,
+                                             recent=lambda d: d["recent_conflict"].map({1.0: "yes", 0.0: ""}))
+            event = st.dataframe(
+                shown[["iso3", "flag", "name", "chance", "relative", "recent", "tier"]].reset_index(drop=True),
+                hide_index=True, on_select="rerun", selection_mode="single-row", key="outlook_table",
+                column_config={
+                    "iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country",
+                    "chance": st.column_config.ProgressColumn("Chance", min_value=0, max_value=max(30.0, shown["chance"].max()),
+                                                              format="%.1f%%", color="#fd8078"),
+                    "relative": st.column_config.NumberColumn("× average", format="%.1f×"),
+                    "recent": st.column_config.TextColumn("Conflict in past 5 yrs"), "tier": "Index tier",
+                },
+            )
+            if event and event.selection.rows:
+                ui.go_to_country(shown.iloc[event.selection.rows[0]]["iso3"])
+            g1, g2 = st.columns(2)
+            with g1:
+                st.subheader("What raises the chance")
+                st.plotly_chart(charts.outlook_drivers(outlook.coefficients, forecast.FEATURE_LABELS),
+                                config={"displayModeBar": False})
+            with g2:
+                st.subheader("Tested on unseen years")
+                st.plotly_chart(charts.calibration_bars(outlook.calibration), config={"displayModeBar": False})
+                if outlook.brier_skill is not None:
+                    st.caption(f"{len(outlook.backtest):,} country-years, {int(outlook.backtest['onset'].sum())} new "
+                               f"conflicts. The predictions beat the average rate by {outlook.brier_skill:.0%} "
+                               "(Brier skill score).")
+            st.caption(
+                "A statistical estimate, not a forecast of any one event: few conflicts break out each year, the conflict "
+                f"data end in {outlook.data_year}, and coups or invasions can come without warning in this data. Use it "
+                "to decide where to look closer."
+            )
+            ui.cite("ucdp", "ucdp_def", "index")
 
 ui.footer()

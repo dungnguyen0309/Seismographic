@@ -41,13 +41,17 @@ _HTML = """
   <div class="rg-canvas"></div>
   <div class="rg-status">Loading the 3D globe…</div>
   <div class="rg-controls">
-    <button data-act="in" title="Zoom in">+</button>
-    <button data-act="out" title="Zoom out">−</button>
-    <button data-act="reset" title="Reset the view">Reset</button>
-    <button data-act="spin" title="Turn auto-rotation on or off">Spin</button>
-    <button data-act="extrude" title="Raise each country by its risk score">3D</button>
-    <button data-act="flows" title="Show the largest refugee flows (origin → host)">Flows</button>
-    <button data-act="conflict" title="Pulse where battle deaths are high (≥ 25 a year)">Conflict</button>
+    <div class="rg-group" role="group" aria-label="View">
+      <button data-act="in" title="Zoom in" aria-label="Zoom in">+</button>
+      <button data-act="out" title="Zoom out" aria-label="Zoom out">−</button>
+      <button data-act="reset" title="Reset the view" aria-label="Reset the view">↺</button>
+    </div>
+    <div class="rg-group" role="group" aria-label="Layers">
+      <button data-act="spin" title="Turn auto-rotation on or off">Spin</button>
+      <button data-act="extrude" title="Raise each country by its risk score">3D</button>
+      <button data-act="flows" title="Show the largest refugee flows (origin → host)">Flows</button>
+      <button data-act="conflict" title="Pulse where battle deaths are high (≥ 25 a year)">Conflict</button>
+    </div>
   </div>
   <div class="rg-hint">Drag to rotate · scroll, pinch or +/− to zoom · click a country</div>
   <div class="rg-legend">
@@ -73,13 +77,23 @@ _CSS = """
 .rg-status { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   padding: 24px; text-align: center; color: #898781; font-size: 0.85rem; }
 .rg-status[hidden], .rg-panel[hidden] { display: none; }
-.rg-controls { position: absolute; top: 12px; left: 12px; z-index: 2; display: flex; flex-direction: column; gap: 6px; }
-.rg-controls button, .rg-play { font: inherit; font-size: 0.78rem; min-width: 44px; height: 32px; padding: 0 10px;
-  cursor: pointer; background: rgba(20,20,20,0.85); color: #ececec; border: 1px solid #383835; border-radius: 8px; }
-.rg-controls button:hover, .rg-play:hover { border-color: #3987e5; }
-.rg-controls button.on { background: #3987e5; border-color: #3987e5; color: #000; font-weight: 600; }
-.rg-hint { position: absolute; top: 14px; right: 14px; left: 100px; z-index: 1; color: #898781; font-size: 0.7rem;
-  text-align: right; pointer-events: none; }
+.rg-status { flex-direction: column; gap: 10px; }
+.rg-retry { font: inherit; font-size: 0.8rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; color: #ececec;
+  background: #141414; border: 1px solid #383835; }
+.rg-retry:hover { border-color: #3987e5; }
+.rg-controls { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 2; display: flex; flex-wrap: wrap;
+  gap: 6px; pointer-events: none; }
+.rg-group { display: flex; pointer-events: auto; background: rgba(10,10,10,0.82); border: 1px solid #2c2c2a;
+  border-radius: 8px; overflow: hidden; }
+.rg-group button, .rg-play { font: inherit; font-size: 0.74rem; min-width: 34px; height: 30px; padding: 0 10px;
+  cursor: pointer; background: transparent; color: #c3c2b7; border: 0; }
+.rg-group button + button { border-left: 1px solid #2c2c2a; }
+.rg-group button:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.rg-group button.on { background: rgba(57,135,229,0.22); color: #a9cbff; font-weight: 600; }
+.rg-play { background: rgba(20,20,20,0.85); color: #ececec; border: 1px solid #383835; border-radius: 8px; }
+.rg-play:hover { border-color: #3987e5; }
+.rg-hint { position: absolute; top: 50px; left: 14px; z-index: 1; color: #6f6e69; font-size: 0.68rem;
+  pointer-events: none; }
 .rg-legend { position: absolute; left: 12px; bottom: 12px; z-index: 2; width: 240px; padding: 8px 10px;
   background: rgba(10,10,10,0.82); border: 1px solid #2c2c2a; border-radius: 8px; font-size: 0.7rem; }
 .rg-legend-bar { height: 8px; border-radius: 4px; margin: 6px 0 4px; }
@@ -94,7 +108,7 @@ _CSS = """
 .rg-custom { margin-top: 10px; font-size: 0.85rem; }
 .rg-custom b { font-size: 1.05rem; }
 .rg-year { font-weight: 700; min-width: 3.2em; text-align: right; }
-.rg-panel { position: absolute; top: 12px; right: 12px; z-index: 3; width: 300px; max-height: calc(100% - 84px);
+.rg-panel { position: absolute; top: 50px; right: 12px; z-index: 3; width: 300px; max-height: calc(100% - 122px);
   overflow: auto; padding: 14px 16px; background: rgba(12,12,12,0.95); border: 1px solid #383835;
   border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
 .rg-close { position: absolute; top: 6px; right: 8px; background: none; border: 0; color: #898781;
@@ -128,8 +142,8 @@ _CSS = """
 @media (max-width: 640px) {
   .rg-wrap { height: var(--rg-mobile-h, 520px) !important; }
   .rg-hint { display: none; }
-  .rg-controls { flex-direction: row; flex-wrap: wrap; right: 12px; gap: 4px; }
-  .rg-controls button { min-width: 36px; height: 30px; padding: 0 8px; font-size: 0.72rem; }
+  .rg-controls { gap: 4px; }
+  .rg-group button { min-width: 32px; height: 30px; padding: 0 8px; font-size: 0.7rem; }
   .rg-legend { left: 12px; right: 12px; width: auto; bottom: 62px; padding: 6px 8px; }
   .rg-legend-keys { display: none; }
   .rg-time { left: 12px; right: 12px; }
@@ -724,33 +738,13 @@ export default function (component) {
     setYear(root, ctx, ctx.yearIndex);
     const key = JSON.stringify([data.centre, data.focus]);
     if (key !== ctx.centreKey) { ctx.centreKey = key; ctx.globe.pointOfView(startView(ctx), 1200); }
-  } else if (!ctx.loading) {
+  } else if (!ctx.loading && !webglAvailable()) {
     const status = root.querySelector(".rg-status");
     status.hidden = false;
-    ctx.loading = Promise.all([loadLibrary(), loadCountries(COUNTRIES)])
-      .then(([Globe, features]) => {
-        build(root, ctx, Globe, features);
-        status.hidden = true;
-        if (ctx.selected) {  // re-mounted with a country already picked: fly back to it
-          const at = locate(ctx, ctx.selected);
-          if (at) ctx.globe.pointOfView({ lat: at.lat, lng: at.lng, altitude: 1.7 }, 0);
-        }
-        // Then swap in the detailed outlines (not on phones: 3x the shapes); if they fail, the simple ones stay
-        if (LITE) return;
-        loadCountries(COUNTRIES_DETAILED)
-          .then((detailed) => {
-            if (!ctx.globe) return;
-            useOutlines(ctx, detailed);
-            paint(ctx);
-            drawLayers(ctx);
-            renderPanel(root, ctx);
-          })
-          .catch(() => {});
-      })
-      .catch((err) => {
-        ctx.loading = null;
-        status.textContent = "The 3D globe could not load (" + err.message + "). Switch to the flat map above.";
-      });
+    status.textContent = "This browser can't draw the 3D globe (WebGL is off or not supported). " +
+      "Everything else on the page still works.";
+  } else if (!ctx.loading) {
+    startGlobe(root, ctx);
   }
   return () => {
     // Streamlit may call this on a re-render too: only tear down once the globe has left the page
@@ -767,6 +761,49 @@ export default function (component) {
       }
     }, 0);
   };
+}
+
+function webglAvailable() {
+  try {
+    const canvas = document.createElement("canvas");
+    return !!(canvas.getContext("webgl2") || canvas.getContext("webgl"));
+  } catch (err) {
+    return false;
+  }
+}
+
+function startGlobe(root, ctx) {
+  const status = root.querySelector(".rg-status");
+  status.hidden = false;
+  status.textContent = "Loading the 3D globe…";
+  ctx.loading = Promise.all([loadLibrary(), loadCountries(COUNTRIES)])
+    .then(([Globe, features]) => {
+      build(root, ctx, Globe, features);
+      status.hidden = true;
+      if (ctx.selected) {  // re-mounted with a country already picked: fly back to it
+        const at = locate(ctx, ctx.selected);
+        if (at) ctx.globe.pointOfView({ lat: at.lat, lng: at.lng, altitude: 1.7 }, 0);
+      }
+      // Then swap in the detailed outlines (not on phones: 3x the shapes); if they fail, the simple ones stay
+      if (LITE) return;
+      loadCountries(COUNTRIES_DETAILED)
+        .then((detailed) => {
+          if (!ctx.globe) return;
+          useOutlines(ctx, detailed);
+          paint(ctx);
+          drawLayers(ctx);
+          renderPanel(root, ctx);
+        })
+        .catch(() => {});
+    })
+    .catch((err) => {
+      ctx.loading = null;
+      ctx.globe = null;
+      root.querySelector(".rg-canvas").replaceChildren();  // drop a half-built globe
+      status.innerHTML = "The 3D globe could not load (" + esc(err && err.message ? err.message : err) +
+        "). Everything else on the page still works. <button type='button' class='rg-retry'>Try again</button>";
+      status.querySelector(".rg-retry").onclick = () => startGlobe(root, ctx);
+    });
 }
 """.replace("__GLOBE_JS__", GLOBE_JS_URL).replace("__COUNTRIES_DETAILED__", COUNTRIES_DETAILED_URL) \
     .replace("__COUNTRIES__", COUNTRIES_URL).replace("__EARTH_IMAGE__", EARTH_IMAGE_URL) \

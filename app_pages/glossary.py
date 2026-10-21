@@ -88,7 +88,7 @@ def category_terms(category: str, items: list[glossary.Term], color: str, query:
             cards(pillar_items, color, query)
 
 
-ui.hero("📖 Glossary & legend")
+ui.hero("📖 Glossary & legend", kicker="About")
 terms = glossary.all_terms()
 query = st.text_input("Search the glossary", placeholder="e.g. tier, inflation, WGI, IDP, red flag…",
                       key="glossary_search").strip()
@@ -146,6 +146,7 @@ with left:
         "- ⚑ a red flag crossed · ✅ none crossed\n"
         "- ▲ riskier · ▼ safer · ■ steady — change since last year (1 point or more)\n"
         "- ✓ a written analyst assessment exists\n"
+        "- ☆ follow · ★ following (kept in your browser)\n"
         "- ▶ play (replay the years on the globe, or play a video)"
     )
 with right:

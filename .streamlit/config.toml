@@ -16,6 +16,9 @@ secondaryBackgroundColor = "#1a1a19"
 
 [client]
 toolbarMode = "viewer"
+# Visitors never see a stack trace: pages catch their own errors (ui.page_error_boundary); anything else shows only
+# the error type. The full traceback still goes to the server log.
+showErrorDetails = "type"
 
 [server]
 runOnSave = false

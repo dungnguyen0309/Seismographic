@@ -12,7 +12,7 @@ table = ui.master_table(core, values, scores, hist)
 econ_keys = [k for k, _ in ECON_COLUMNS]
 df = table.join(values[econ_keys], on="iso3")  # table already carries the n_* risk scores
 
-st.title("Economic stress monitor")
+ui.hero("💹 Economic stress monitor", kicker="Briefings")
 edition = core["meta"].get("gdp_growth", {}).get("edition") or "IMF World Economic Outlook"
 st.markdown(
     "Where an economic crisis could trigger political trouble: runaway prices, recession, unsustainable debt and "
@@ -33,6 +33,7 @@ k3.metric("Public debt ≥ 90% of GDP", int((view["gov_debt"] >= 90).sum()), bor
 k4.metric("Deficit ≥ 5% of GDP", int((view["fiscal_balance"] <= -5).sum()), border=True)
 k5.metric("Reserves < 3 months of imports", int((view["reserves_months"] < 3).sum()), border=True)
 ui.cite("imf", "wdi", "imf_ara")
+st.page_link("app_pages/stress.py", label="What if a shock hits them all? Run a stress test", icon=":material/bolt:")
 
 # Economic red flags per country (used by the globe and the warning-lights table)
 econ_flag_keys = {"inflation", "gdp_growth", "gov_debt", "fiscal_balance", "current_account", "reserves_months"}
@@ -96,7 +97,7 @@ for r in view.itertuples(index=False):
     hits = econ_flags.get(r.iso3, [])
     if len(hits) >= 2:
         rows.append({"iso3": r.iso3, "flag": r.flag, "name": r.name, "count": len(hits),
-                     "warnings": " · ".join(f"{config.SEVERITY_ICON[f['severity']]} {f['label']}" for f in hits),
+                     "warnings": " · ".join(f"{config.SEVERITY_ICON[f['severity']]} {f['short']}" for f in hits),
                      "economic": r.economic})
 warnings = pd.DataFrame(rows, columns=["iso3", "flag", "name", "count", "warnings", "economic"])
 if warnings.empty:

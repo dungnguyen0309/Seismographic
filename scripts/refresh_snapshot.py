@@ -21,6 +21,21 @@ from prm import config, data, sources  # noqa: E402
 OUT = ROOT / "data" / "snapshot"
 
 
+def _saved(name: str) -> pd.DataFrame | None:
+    path = OUT / f"{name}.csv"
+    try:
+        return pd.read_csv(path) if path.exists() else None
+    except Exception:
+        return None
+
+
+def _save(frame: pd.DataFrame, name: str) -> None:
+    """Write to a temporary file first, so a crash mid-write never leaves a half-written snapshot."""
+    tmp = OUT / f"{name}.csv.tmp"
+    frame.to_csv(tmp, index=False)
+    tmp.replace(OUT / f"{name}.csv")
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     meta_path = OUT / "meta.json"
@@ -28,14 +43,20 @@ def main() -> int:
     meta = {"created": dt.date.today().isoformat(), "series": dict(old_meta.get("series", {}))}
 
     try:
-        sources.fetch_wb_countries().to_csv(OUT / "countries.csv", index=False)
-        print("countries: ok")
+        countries = sources.fetch_wb_countries()
+        if not data.plausible(countries, _saved("countries")):
+            raise sources.SourceError(f"only {len(countries)} countries")
+        _save(countries, "countries")
+        print(f"countries: {len(countries)}")
     except sources.SourceError as exc:
         print(f"countries: FAILED — {exc} (keeping previous file)")
 
     try:
         flows = sources.fetch_unhcr_flows()
-        flows.to_csv(OUT / "flows.csv", index=False)
+        saved = _saved("flows")
+        if saved is not None and len(flows) < data.MIN_COVERAGE * len(saved):
+            raise sources.SourceError(f"only {len(flows)} origin-host pairs (saved copy: {len(saved)})")
+        _save(flows, "flows")
         print(f"flows: {len(flows)} origin-host pairs ({int(flows['year'].max())})")
     except sources.SourceError as exc:
         print(f"flows: FAILED — {exc} (keeping previous file)")
@@ -47,7 +68,11 @@ def main() -> int:
             failed.append(key)
             print(f"{key}: FAILED — {res.error} (keeping previous file)")
             continue
-        res.data.to_csv(OUT / f"{key}.csv", index=False)
+        if not data.plausible(res.data, _saved(key)):
+            failed.append(key)
+            print(f"{key}: INCOMPLETE — {res.data['iso3'].nunique()} countries (keeping previous file)")
+            continue
+        _save(res.data, key)
         meta["series"][key] = {
             "provider": res.provider,
             "code": res.code,
@@ -66,7 +91,7 @@ def main() -> int:
             if col not in countries.columns:
                 countries[col] = None
         history = data.build_default_history(series, countries)
-        history.to_csv(OUT / "history.csv", index=False)
+        _save(history, "history")
         print(f"history: {len(history)} country-years")
     except Exception as exc:  # the app rebuilds it if this fails
         print(f"history: FAILED — {exc}")

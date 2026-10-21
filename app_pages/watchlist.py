@@ -12,7 +12,7 @@ hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 options, names = ui.country_options(core["countries"])
 
-st.title("Events watchlist")
+ui.hero("🗓️ Events watchlist", kicker="Monitor")
 st.markdown(
     "Dated events that could move a country's risk: elections, referendums, budget and debt deadlines, "
     "summits, court rulings, anniversaries of unrest."

@@ -5,7 +5,7 @@ import math
 import pandas as pd
 import streamlit as st
 
-from prm import charts, config, content, data, interpret, report, scoring, ui
+from prm import charts, config, content, data, follow, interpret, report, scoring, ui
 from prm.config import INDICATORS, PILLARS, SEVERITY_ICON, SEVERITY_LABEL, TIER_ORDER, WGI_DIMENSIONS
 
 core, year, values, scores = ui.load()
@@ -39,42 +39,24 @@ name = names[iso3]
 assessment = ui.assessments().get(iso3)
 
 # --- Header -----------------------------------------------------------------
-ui.country_heading(name, row["iso2"])
 country_hist = hist[hist["iso3"] == iso3].sort_values("year")
 prev = country_hist[country_hist["year"] == year - 1]
 prev = prev.iloc[0] if len(prev) else None
+score_delta = None if prev is None or pd.isna(s["composite"]) or pd.isna(prev["composite"])     else round(float(s["composite"] - prev["composite"]), 1)
 gdppc = v.get("gdppc")
-gdppc_text = "—" if pd.isna(gdppc) else f"${gdppc:,.0f}"
-st.caption(
-    f"{row['region']} · {row['income']} · Population {ui.fmt_population(v.get('population'))} · "
-    f"GDP per capita {gdppc_text} (IMF, {year})"
-)
-ui.cite("wb_countries", "wdi", "imf")
-elsewhere = ([("World Bank", f"https://data.worldbank.org/country/{row['iso2']}")] if isinstance(row["iso2"], str) else []) + [
-    ("IMF", f"https://www.imf.org/en/countries/{iso3.lower()}"),
-    ("ReliefWeb", f"https://reliefweb.int/country/{iso3.lower()}")]
-if row["income"] != "High income":  # FAO's food-security briefs cover developing countries
-    elsewhere.append(("FAO food security", f"https://www.fao.org/giews/countrybrief/country.jsp?code={iso3}"))
-st.caption(f"{name} elsewhere: " + " · ".join(f"[{label} ↗]({url})" for label, url in elsewhere))
+meta = [str(row["region"]), str(row["income"]), f"{ui.fmt_population(v.get('population'))} people"]
+if pd.notna(gdppc):
+    meta.append(f"${gdppc:,.0f} per person (IMF, {year})")
+if s["coverage"] < 75:
+    meta.append(f"data coverage {s['coverage']:.0f}%: read with care")
+ui.country_header(name, row,
+                  country_hist.set_index("year")["composite"], score_delta, year, " · ".join(meta),
+                  analyst_rating=(assessment or {}).get("meta", {}).get("analyst_rating") or None)
+
 
 def _add_to_compare() -> None:
     ui.add_to_compare(iso3)
     st.session_state["_compare_toast"] = f"{name} added to your comparison"
-
-
-if toast := st.session_state.pop("_compare_toast", None):
-    st.toast(toast, icon="✅")
-compare_list = st.session_state.get(ui.COMPARE_LIST, [])
-b1, b2, b3, _ = st.columns([1, 0.8, 1.3, 1.7])
-if iso3 in compare_list:
-    b1.button("✓ In your comparison", disabled=True, key="compare_added")
-elif len(compare_list) >= config.MAX_COMPARE:
-    b1.button("Comparison is full", disabled=True, key="compare_full",
-              help=f"You can compare up to {config.MAX_COMPARE} countries. Remove one on the Compare page.")
-else:
-    b1.button("➕ Add to compare", key="compare_add", on_click=_add_to_compare)
-if compare_list:
-    b3.page_link(ui.COMPARE_PAGE, label=f"Open comparison ({len(compare_list)})", icon=":material/compare_arrows:")
 
 
 def _brief_pdf() -> bytes:
@@ -83,38 +65,41 @@ def _brief_pdf() -> bytes:
     return report.country_pdf(reading, row, country_hist, scoring.red_flags(v), year)
 
 
-b2.download_button("📄 PDF brief", data=_brief_pdf, file_name=f"{iso3}_risk_brief_{year}.pdf", mime="application/pdf",
-                   on_click="ignore", key="brief_pdf", help="A one-page brief: score, pillars, trend, red flags and "
-                                                       "what it means in real life.")
+if toast := st.session_state.pop("_compare_toast", None):
+    st.toast(toast, icon="✅")
+compare_list = st.session_state.get(ui.COMPARE_LIST, [])
+with st.container(horizontal=True, vertical_alignment="center", key="country_actions"):
+    if iso3 in compare_list:
+        st.button("✓ In your comparison", disabled=True, key="compare_added")
+    elif len(compare_list) >= config.MAX_COMPARE:
+        st.button("Comparison is full", disabled=True, key="compare_full",
+                  help=f"You can compare up to {config.MAX_COMPARE} countries. Remove one on the Compare page.")
+    else:
+        st.button("➕ Add to compare", key="compare_add", on_click=_add_to_compare)
+    st.download_button("📄 PDF brief", data=_brief_pdf, file_name=f"{iso3}_risk_brief_{year}.pdf",
+                       mime="application/pdf", on_click="ignore", key="brief_pdf",
+                       help="A one-page brief: score, pillars, trend, red flags and what it means in real life.")
+    follow.follow_button(iso3, name)
+    if compare_list:
+        st.page_link(ui.COMPARE_PAGE, label=f"Open comparison ({len(compare_list)})", icon=":material/compare_arrows:")
 
-h1, h2, h3, h4 = st.columns([1.2, 1, 1, 1])
-with h1:
-    st.markdown("**Model risk tier**")
-    st.markdown(ui.tier_badge(s["tier"]), unsafe_allow_html=True)
-    if assessment and assessment["meta"].get("analyst_rating"):
-        st.markdown("**Analyst rating**")
-        st.markdown(ui.tier_badge(assessment["meta"]["analyst_rating"]), unsafe_allow_html=True)
-score_delta = None if prev is None or pd.isna(s["composite"]) or pd.isna(prev["composite"]) \
-    else round(float(s["composite"] - prev["composite"]), 1)
-rank_delta = None if prev is None or pd.isna(s["rank"]) or pd.isna(prev["rank"]) else int(s["rank"] - prev["rank"])
-h2.metric("Composite score", "—" if pd.isna(s["composite"]) else f"{s['composite']:.0f} / 100", border=True,
-          delta=score_delta, delta_color="inverse", delta_description=f"vs {year - 1}",
-          chart_data=country_hist["composite"].round(1).tolist(),
-          help=f"0 = lowest risk in the sample, 100 = highest. Relative, not a probability. "
-               f"The small chart shows the score since {config.HISTORY_START}.")
-h3.metric("Global rank", "—" if pd.isna(s["rank"]) else f"{int(s['rank'])} of {int(s['n_ranked'])}", border=True,
-          delta=rank_delta, delta_color="normal", delta_description=f"places vs {year - 1}",
-          help="1 = highest risk, so a falling number means the country became riskier relative to others.")
-h4.metric("Data coverage", f"{s['coverage']:.0f}%", border=True,
-          help="Share of the index's indicators available for this country.")
+elsewhere = ([("World Bank", f"https://data.worldbank.org/country/{row['iso2']}")] if isinstance(row["iso2"], str) else []) + [
+    ("IMF", f"https://www.imf.org/en/countries/{iso3.lower()}"),
+    ("ReliefWeb", f"https://reliefweb.int/country/{iso3.lower()}")]
+if row["income"] != "High income":  # FAO's food-security briefs cover developing countries
+    elsewhere.append(("FAO food security", f"https://www.fao.org/giews/countrybrief/country.jsp?code={iso3}"))
+sources = " · ".join(f"[{ui.source_label(k)}]({config.SOURCES[k].url})" for k in ("wb_countries", "wdi", "imf"))
+st.caption(f"Sources: {sources}  \nElsewhere: " + " · ".join(f"[{label} ↗]({url})" for label, url in elsewhere))
 
 flags = scoring.red_flags(v)
 trend = scoring.wgi_trend(core["series"], iso3, "pv")
 
 (t_summary, t_real, t_peers, t_map, t_whatif, t_indicators, t_governance, t_economy, t_news,
  t_analyst) = st.tabs(
-    ["Summary", "🧭 In real life", "Peers", "🌍 Map & refugee links", "🎛️ What-if simulator", "Indicators",
-     "Governance trends", "Economy", "News pulse", "Analyst assessment"],
+    [":material/summarize: Summary", ":material/explore: In real life", ":material/groups: Peers",
+     ":material/map: Map & refugees", ":material/tune: What-if", ":material/list_alt: Indicators",
+     ":material/account_balance: Governance", ":material/monitoring: Economy", ":material/newspaper: News",
+     ":material/edit_note: Assessment"],
     key="country_tab", on_change="rerun",  # only the open tab is built: much lighter on phones
 )
 
@@ -128,6 +113,18 @@ with t_summary:
                 st.markdown(f"- {line}")
             ui.cite("index")
         with c2:
+            outlook = data.get_outlook(core, core["version"])
+            mine = None if outlook is None else outlook.predictions.set_index("iso3").reindex([iso3]).iloc[0]
+            if mine is not None and isinstance(mine["status"], str):
+                st.subheader("Conflict outlook")
+                if mine["status"] == "In armed conflict":
+                    st.markdown(f"🔴 **In armed conflict** in the latest data ({outlook.data_year}).")
+                else:
+                    level = "🟠" if mine["relative"] >= 3 else ("🟡" if mine["relative"] >= 1 else "🟢")
+                    st.markdown(f"{level} **{mine['probability']:.1%}** chance that armed conflict breaks out in "
+                                f"{outlook.index_year + 1} — {mine['relative']:.1f}× the average for a country at peace.")
+                st.page_link("app_pages/conflict.py", label="How this is estimated (Conflict outlook)",
+                             icon=":material/insights:", query_params={"tab": "outlook"})
             st.subheader("Red flags")
             if trend and trend["change"] <= -config.WGI_TREND_THRESHOLD:
                 flags.append({"severity": "warning",
@@ -221,6 +218,23 @@ with t_peers:
             extra={"group_rank": st.column_config.NumberColumn("Rank in group", format="%d")},
         )
         st.caption(f"▶ marks {name}. Click a row to open another country.")
+
+        st.subheader("Most similar risk profiles")
+        like = scoring.similar(scores, iso3, n=8)
+        if like.empty:
+            st.caption("Not enough data to compare profiles.")
+        else:
+            similar_table = table.set_index("iso3").loc[like.index].reset_index().assign(
+                closeness=(100 - like["distance"].to_numpy()).clip(0, 100))
+            ui.country_table(
+                similar_table, key="similar_table", height=min(360, 38 * (len(similar_table) + 1)),
+                sort="closeness", ascending=False,
+                extra={"closeness": st.column_config.ProgressColumn(
+                    "Similarity", min_value=0, max_value=100, format="%.0f",
+                    help="100 = the same four pillar scores; based on the distance between the profiles")},
+            )
+            st.caption(f"Countries anywhere in the world whose stability, governance, economic and social scores are "
+                       f"closest to {name}'s. Click a row to open one.")
 
 # --- Map & refugee links ------------------------------------------------------------
 with t_map:
@@ -508,39 +522,43 @@ with t_news:
         ui.news_list(news_name, limit=20, iso2=row["iso2"])
         ui.cite("news", "gdelt")
 
-        st.subheader(f"📺 Video reports on {name}")
-        all_videos = data.load_videos()
-        about = (ui.videos_about(all_videos, iso3, names, countries.set_index("iso3").get("official_name", pd.Series())
-                                 .get(iso3)) if all_videos is not None else None)
-        if about is None or about.empty:
-            st.caption(f"None of the latest videos from the international broadcasters and think tanks mention {name}.")
-        else:
-            st.caption("From the latest uploads of international broadcasters and think tanks; press ▶ to watch here.")
-            ui.video_gallery(about, key=f"profile_videos_{iso3}", limit=6)
-        st.page_link("app_pages/video.py", label="Live TV and all video reports", icon=":material/live_tv:")
-        ui.cite("youtube")
-        if st.toggle("Show media tone over the last 3 months (GDELT)"):
-            tone, terr = data.load_tone(news_name)
-            if terr:
-                st.info(f"Tone data unavailable right now ({terr[:140]}).")
-            elif tone is None or tone.empty:
-                st.info("No tone data returned.")
+        with ui.guard("Video reports"):
+            st.subheader(f"📺 Video reports on {name}")
+            all_videos = data.load_videos()
+            about = (ui.videos_about(all_videos, iso3, names, countries.set_index("iso3").get("official_name", pd.Series())
+                                     .get(iso3)) if all_videos is not None else None)
+            if about is None or about.empty:
+                st.caption(f"None of the latest videos from the international broadcasters and think tanks mention {name}.")
             else:
-                st.plotly_chart(charts.tone_chart(tone), config={"displayModeBar": False})
-                st.caption("GDELT average tone of English-language coverage. A sustained fall often precedes or accompanies crises.")
-                ui.cite("gdelt")
-        if st.toggle("Show protest coverage over the last 3 months (GDELT)"):
-            protests, perr = data.load_protests(news_name)
-            if perr:
-                st.info(f"Protest data unavailable right now ({perr[:140]}). GDELT allows few requests; try again in a minute.")
-            elif protests is None or protests.empty:
-                st.info("No protest coverage found.")
-            else:
-                st.plotly_chart(charts.protest_chart(protests), config={"displayModeBar": False})
-                st.caption(f"Share of all English-language news GDELT monitors that mentions {name} together with protests, "
-                           "riots, strikes or unrest, smoothed over a week. Spikes show unrest getting attention; compare "
-                           "with the headlines above.")
-                ui.cite("gdelt")
+                st.caption("From the latest uploads of international broadcasters and think tanks; press ▶ to watch here.")
+                ui.video_gallery(about, key=f"profile_videos_{iso3}", limit=6)
+            st.page_link("app_pages/video.py", label="Live TV and all video reports", icon=":material/live_tv:")
+            ui.cite("youtube")
+        with ui.guard("Media tone"):
+            if st.toggle("Show media tone over the last 3 months (GDELT)"):
+                tone, terr = data.load_tone(news_name)
+                if terr:
+                    st.info("GDELT's tone data can't be reached right now. It is tried again in a few minutes.")
+                elif tone is None or tone.empty:
+                    st.info("No tone data returned.")
+                else:
+                    st.plotly_chart(charts.tone_chart(tone), config={"displayModeBar": False})
+                    st.caption("GDELT average tone of English-language coverage. A sustained fall often precedes or accompanies crises.")
+                    ui.cite("gdelt")
+        with ui.guard("Protest coverage"):
+            if st.toggle("Show protest coverage over the last 3 months (GDELT)"):
+                protests, perr = data.load_protests(news_name)
+                if perr:
+                    st.info("GDELT's protest data can't be reached right now (it allows few requests). Try again in a few "
+                            "minutes.")
+                elif protests is None or protests.empty:
+                    st.info("No protest coverage found.")
+                else:
+                    st.plotly_chart(charts.protest_chart(protests), config={"displayModeBar": False})
+                    st.caption(f"Share of all English-language news GDELT monitors that mentions {name} together with protests, "
+                               "riots, strikes or unrest, smoothed over a week. Spikes show unrest getting attention; compare "
+                               "with the headlines above.")
+                    ui.cite("gdelt")
 
 # --- Analyst assessment -------------------------------------------------------------------
 with t_analyst:

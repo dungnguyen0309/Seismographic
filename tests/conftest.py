@@ -4,6 +4,7 @@ The 3D globe registers itself with the Streamlit runtime when prm.globe is first
 before any test imports the UI modules makes sure that happens inside the test app's runtime, whatever the order.
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -12,6 +13,8 @@ from streamlit.testing.v1 import AppTest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+os.environ["PRM_RAISE_ERRORS"] = "1"  # errors fail the tests instead of being shown as a polite note
+os.environ["STREAMLIT_CLIENT_SHOW_ERROR_DETAILS"] = "full"  # visitors see only the error type; tests need everything
 
 
 @pytest.fixture(scope="session", autouse=True)

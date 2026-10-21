@@ -13,7 +13,8 @@ core, year, values, scores = ui.load()
 meta = core["meta"]
 
 ui.hero("🔎 Sources & citations",
-        "Every number, map, headline and video in Seismographic, traced back to the organisation that published it.")
+        "Every number, map, headline and video in Seismographic, traced back to the organisation that published it.",
+        kicker="About")
 st.markdown(
     "Seismographic does not collect data itself. Everything comes from international organisations, academic "
     "research centres and the broadcasters themselves, and every chart in the tool names its source underneath. "

@@ -2,20 +2,71 @@
 
 from __future__ import annotations
 
+import contextlib
 import html
+import logging
+import os
 import re
 
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from . import brand, config, content, data, globe, interpret
+from . import brand, config, content, data, follow, globe, interpret
 from .config import PILLARS, TIERS
 
 WEIGHT_KEYS = {p.key: f"w_{p.key}" for p in PILLARS}
 COUNTRY_PAGE = "app_pages/country.py"
 COMPARE_PAGE = "app_pages/compare.py"
 COMPARE_LIST = "compare_list"  # ISO3 codes picked for the Compare page, kept across pages
+log = logging.getLogger("seismographic")
+
+
+# ---------------------------------------------------------------------------
+# Error boundaries
+# ---------------------------------------------------------------------------
+def _strict() -> bool:
+    """Tests set PRM_RAISE_ERRORS=1 so that a broken section fails the test instead of showing a polite note."""
+    return os.environ.get("PRM_RAISE_ERRORS") == "1"
+
+
+@contextlib.contextmanager
+def guard(what: str):
+    """Keeps one optional part of a page (news, video, a benchmark) from taking the whole page down: on an error it
+    shows a one-line note instead and logs the details for the server logs. st.rerun/st.stop pass straight through
+    (they are not Exceptions)."""
+    try:
+        yield
+    except Exception:
+        if _strict():
+            raise
+        log.exception("section failed: %s", what)
+        st.caption(f"⚠️ {what} can't be shown right now. The rest of the page is unaffected.")
+
+
+def _reload() -> None:
+    for key in [k for k in st.session_state if str(k).startswith(("country_tab", "conflict_tab"))]:
+        del st.session_state[key]
+
+
+def page_error_boundary(run) -> None:
+    """Runs a page; if it fails, a friendly message with a way out instead of a stack trace."""
+    try:
+        run()
+    except Exception as exc:
+        if _strict():
+            raise
+        log.exception("page failed")
+        st.error("Something went wrong while drawing this page. The other pages still work, and trying again "
+                 "usually helps.", icon=":material/error:")
+        c1, c2 = st.columns([1, 1], width=420)
+        c1.button("Try again", on_click=_reload, icon=":material/refresh:", key="sg_retry")
+        try:  # the error screen itself must never fail
+            c2.page_link("app_pages/overview.py", label="Global overview", icon=":material/public:")
+        except Exception:
+            pass
+        with st.expander("Technical details"):
+            st.code(f"{type(exc).__name__}: {str(exc)[:500]}", language=None)
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +83,7 @@ def _reset_weights() -> None:
 
 
 def _refresh_data() -> None:
-    data.refresh()
+    st.toast(data.refresh(), icon=":material/refresh:")
 
 
 def _on_search() -> None:
@@ -223,12 +274,129 @@ DOCK_CSS = f"""
 """
 
 
+GLOBAL_CSS = """
+/* page frame: less dead space above the content, but clear of the 3.75rem top bar */
+[data-testid="stMainBlockContainer"] { padding-top: 4.6rem !important; }
+@media (max-width: 640px) {
+  [data-testid="stMainBlockContainer"] { padding-top: 4.4rem !important; padding-left: 0.9rem !important;
+                                         padding-right: 0.9rem !important; }
+}
+/* video cards: titles read like the news cards (no link underline, at most three lines) */
+[class*="st-key-vidcard_"] [data-testid="stMarkdownContainer"] a { color: #ececec !important; text-decoration: none;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+[class*="st-key-vidcard_"] [data-testid="stMarkdownContainer"] a:hover { color: #fff !important; text-decoration: underline; }
+/* phones: rows of headline numbers (a metric in the first and last column) show two per line, not one */
+@media (max-width: 640px) {
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child [data-testid="stMetric"]):has(> [data-testid="stColumn"]:last-child [data-testid="stMetric"]) { gap: 8px !important; }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child [data-testid="stMetric"]):has(> [data-testid="stColumn"]:last-child [data-testid="stMetric"]) > [data-testid="stColumn"] {
+    min-width: calc(50% - 4px) !important; flex: 1 1 calc(50% - 4px) !important; }
+  [data-testid="stMetric"] { padding: 10px 12px !important; }
+  [data-testid="stMetricValue"] { font-size: 1.55rem !important; }
+}
+/* tabs: a little tighter, so more of them fit on one row */
+[data-testid="stTabs"] [role="tablist"] { gap: 12px; }
+/* type scale: calmer headings */
+[data-testid="stMain"] h1 { font-size: clamp(1.7rem, 4vw, 2.2rem); letter-spacing: -0.01em; }
+[data-testid="stMain"] h2 { font-size: clamp(1.25rem, 2.6vw, 1.5rem); letter-spacing: -0.01em; padding-top: 0.9rem; }
+[data-testid="stMain"] h3 { font-size: clamp(1.05rem, 2vw, 1.18rem); }
+[data-testid="stMain"] h4, [data-testid="stMain"] h5 { font-size: 1rem; }
+/* metrics: labels wrap instead of being cut off */
+[data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * { white-space: normal !important; overflow: visible !important;
+  text-overflow: clip !important; }
+[data-testid="stMetricLabel"] p { font-size: 0.8rem !important; color: #a3a29a; line-height: 1.3; }
+[data-testid="stMetricValue"] p { font-size: clamp(1.4rem, 2.4vw, 2.1rem); }
+/* sidebar: long page names wrap, the glossary link too */
+section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] p,
+section[data-testid="stSidebar"] [data-testid="stPageLink"] p { white-space: normal !important; overflow: visible !important;
+  text-overflow: clip !important; line-height: 1.3; }
+section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] { min-height: 2rem; height: auto !important;
+  align-items: center !important; padding-top: 3px !important; padding-bottom: 3px !important; }
+section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="stMarkdownContainer"] p { margin: 0 !important; }
+/* links and focus */
+[data-testid="stMain"] a { text-underline-offset: 3px; text-decoration-thickness: 1px; }
+:focus-visible { outline: 2px solid #fd8078 !important; outline-offset: 2px; }
+::selection { background: rgba(253,128,120,0.35); }
+* { scrollbar-width: thin; scrollbar-color: #383835 transparent; }
+/* page header */
+.sg-hero { position: relative; overflow: hidden; border: 1px solid #2c2c2a; border-radius: 14px; margin: 0 0 14px;
+  padding: 18px 24px 20px; background: linear-gradient(120deg, #0b1424 0%, #0d0d0d 55%, #1c0f0e 100%); color: #fff; }
+.sg-hero-kicker { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: #fd8078; margin-bottom: 4px; }
+.sg-hero-title { position: relative; z-index: 1; font-size: clamp(1.45rem, 3.6vw, 2rem); font-weight: 700; line-height: 1.2; }
+.sg-hero-sub { position: relative; z-index: 1; margin-top: 6px; font-size: 0.98rem; color: #c3c2b7; max-width: 62ch; }
+.sg-hero-wave { position: absolute; right: 0; bottom: 6px; width: 62%; height: 54px; opacity: 0.55;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%); mask-image: linear-gradient(90deg, transparent, #000 40%); }
+.sg-hero-brand { padding: 22px 26px 78px; }
+.sg-hero-brand .sg-hero-wave { left: 0; width: 100%; height: 58px; bottom: 10px; opacity: 1; -webkit-mask-image: none;
+  mask-image: none; }
+.sg-brand { display: inline-flex; align-items: center; gap: 14px; }
+.sg-brand img { height: 1.35em; }
+.sg-brand span { letter-spacing: 0.08em; font-size: clamp(1.35rem, 6.6vw, 2rem); }
+@media (max-width: 640px) {
+  .sg-hero { padding: 14px 16px 16px; } .sg-hero-wave { width: 80%; height: 40px; opacity: 0.4; }
+  .sg-hero.sg-hero-brand { padding-bottom: 60px; }
+  .sg-hero-brand .sg-hero-wave { width: 100%; height: 42px; bottom: 8px; opacity: 1; }
+}
+/* follow: the sync slot renders nothing */
+.st-key-sg_follow_sync, [data-testid="stElementContainer"]:has(.st-key-sg_follow_sync) { display: none !important; }
+/* following strip */
+.sg-follow-head { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: #fd8078; margin: 4px 0 -4px; }
+[class*="st-key-fol_"]:not([class*="st-key-fol_open"]) { position: relative; background: #0f1012; border: 1px solid #2c2c2a;
+  border-radius: 10px; padding: 8px 10px !important; }
+[class*="st-key-fol_"]:not([class*="st-key-fol_open"]):hover { border-color: #3a3a37; background: #141414; }
+[class*="st-key-fol_"] [data-testid="stMarkdownContainer"] { margin-bottom: 0 !important; }
+.sg-fol { display: flex; align-items: center; gap: 10px; }
+.sg-fol img { width: 30px; height: 22px; object-fit: cover; border-radius: 3px; box-shadow: 0 0 0 1px rgba(255,255,255,0.14); }
+.sg-fol-name { font-weight: 700; font-size: 0.86rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 140px; }
+.sg-fol-meta { font-size: 0.72rem; color: #a3a29a; }
+.sg-fol-meta b { color: var(--c); font-size: 0.84rem; }
+[class*="st-key-fol_open_"] { position: absolute !important; inset: 0; margin: 0 !important; }
+[class*="st-key-fol_open_"] button { position: absolute !important; inset: 0; width: 100%; height: 100%; opacity: 0; }
+[data-testid="stElementContainer"]:has([class*="st-key-fol_open_"]) { position: absolute; inset: 0; }
+/* country header */
+.sg-country { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px;
+  border: 1px solid #2c2c2a; border-radius: 14px; padding: 18px 20px; margin: 6px 0 12px;
+  background: linear-gradient(120deg, #0d0d0d 0%, #0b1424 100%); }
+.sg-country-id { display: flex; align-items: center; gap: 16px; min-width: 0; flex: 1 1 320px; }
+.sg-country-id img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; flex: none;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.14); }
+.sg-country-name { margin: 0 !important; padding: 0 !important; font-size: clamp(1.7rem, 4.4vw, 2.4rem) !important;
+  line-height: 1.1 !important; }
+.sg-country-meta { color: #a3a29a; font-size: 0.84rem; margin-top: 6px; line-height: 1.45; }
+.sg-country-score { display: flex; align-items: center; gap: 16px; flex: 0 1 auto; }
+.sg-cs-num { font-size: 3rem; font-weight: 700; line-height: 1; color: var(--c); }
+.sg-cs-num span { font-size: 0.95rem; color: #898781; font-weight: 400; margin-left: 2px; }
+.sg-cs-side { display: flex; flex-direction: column; gap: 5px; font-size: 0.8rem; color: #c3c2b7; }
+.sg-cs-line:empty { display: none; }
+.sg-cs-spark { width: 150px; height: 46px; flex: none; }
+@media (max-width: 640px) {
+  .sg-country { padding: 14px; }
+  .sg-country-id img { width: 48px; height: 36px; }
+  .sg-cs-num { font-size: 2.4rem; }
+  .sg-cs-spark { width: 110px; }
+}
+/* news cards */
+.sg-news { list-style: none; padding: 0; margin: 0 0 6px; }
+.sg-news li { margin: 0 0 2px; }
+.sg-news li > a, .sg-news li > span { display: flex; gap: 10px; align-items: flex-start; padding: 7px 6px;
+  border-radius: 8px; color: inherit !important; text-decoration: none !important; }
+.sg-news li > a:hover { background: #141414; }
+.sg-news-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.sg-news-title { color: #ececec; font-size: 0.85rem; line-height: 1.38; display: -webkit-box; -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical; overflow: hidden; }
+.sg-news li > a:hover .sg-news-title { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+.sg-news-meta { color: #898781; font-size: 0.72rem; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important; } }
+"""
+
+
 def _on_dock_search() -> None:
     st.session_state["_jump_to"] = st.session_state.get("dock_search")
     st.session_state["dock_search"] = None
 
 
-def _sparkline(values: pd.Series, color: str) -> str:
+def _sparkline(values: pd.Series, color: str, w: int = 92, h: int = 26, css: str = "sg-spark") -> str:
     """The country's risk since 2015 as a small seismogram (SVG)."""
     v = values.dropna()
     if len(v) < 2:
@@ -237,11 +405,11 @@ def _sparkline(values: pd.Series, color: str) -> str:
     if hi - lo < 10:  # small moves stay small
         mid = (hi + lo) / 2
         lo, hi = mid - 5, mid + 5
-    w, h, pad = 92, 26, 3
+    pad = 3
     xs = [pad + i * (w - 2 * pad) / (len(v) - 1) for i in range(len(v))]
     ys = [h - pad - (val - lo) / (hi - lo) * (h - 2 * pad) for val in v]
     points = " ".join(f"{x:.1f},{y:.1f}" for x, y in zip(xs, ys))
-    return (f'<svg class="sg-spark" viewBox="0 0 {w} {h}" aria-hidden="true">'
+    return (f'<svg class="{css}" viewBox="0 0 {w} {h}" aria-hidden="true">'
             f'<polyline points="{points}" fill="none" stroke="{color}" stroke-width="1.6" stroke-linejoin="round" '
             f'stroke-linecap="round" opacity="0.9"/><circle cx="{xs[-1]:.1f}" cy="{ys[-1]:.1f}" r="2.6" '
             f'fill="{color}"/></svg>')
@@ -286,7 +454,8 @@ def _readout(current_url_path: str) -> None:
 
 def dock(current_url_path: str) -> None:
     """A console bar along the bottom of every page: the tracked country, the main pages and Find."""
-    st.html(f"<style>{DOCK_CSS}</style>")
+    st.html(f"<style>{GLOBAL_CSS}{DOCK_CSS}</style>")
+    follow.sync()
     with st.container(key="sg_dock", horizontal=True, wrap=True):
         with st.container(key="sg_tabs", horizontal=True, wrap=False, gap=None, width="content"):
             for page, label, icon, url_path in DOCK_TABS:
@@ -301,6 +470,10 @@ def dock(current_url_path: str) -> None:
                         st.selectbox("Find a country", options, index=None, key="dock_search",
                                      on_change=_on_dock_search, format_func=lambda i: names.get(i, i),
                                      placeholder="Type a country name…")
+                        for iso3 in follow.following():
+                            if iso3 in names:
+                                st.button(f"★ {names[iso3]}", key=f"dock_fol_{iso3}", on_click=_jump, args=(iso3,),
+                                          type="tertiary")
                     except Exception:
                         pass
                     for page, label, icon in DOCK_LINKS:
@@ -317,6 +490,12 @@ def _wait_for_live_data(version: str) -> None:
     status = data.live_status()
     if status["version"] and status["version"] != version:
         st.rerun(scope="app")
+
+
+def _providers(keys: list[str]) -> str:
+    """'World Bank, IMF World Economic Outlook' for a list of series keys."""
+    names = {config.SOURCE_LABELS.get(config.RAW_SERIES.get(k, ("",))[0], "another source") for k in keys}
+    return ", ".join(sorted(names))
 
 
 def load():
@@ -344,19 +523,21 @@ def load():
             )
         elif status["error"]:
             st.warning(
-                f"The live sources can't be reached right now, so this is the saved data from "
-                f"{core.get('snapshot_date') or 'the last snapshot'}. The app tries again every few minutes."
+                f"The latest figures couldn't be downloaded right now, so this is the saved data from "
+                f"{core.get('snapshot_date') or 'the last snapshot'}. The app tries again every 15 minutes."
             )
     else:
         failed = [k for k, m in core["meta"].items() if m["error"] and not m["from_snapshot"]]
         snap = [k for k, m in core["meta"].items() if m["from_snapshot"]]
         if failed:
             st.warning(
-                f"Some sources are temporarily unavailable ({', '.join(sorted(failed))}). "
-                "Scores use the remaining indicators — see *Data status* at the bottom of the page."
+                f"Some data is temporarily unavailable ({_providers(failed)}). Scores use the remaining "
+                "indicators — see *Data status* at the bottom of the page."
             )
         elif snap:
-            st.info(f"Some sources are being served from the saved snapshot ({', '.join(sorted(snap))}).")
+            saved_on = core["meta"][snap[0]].get("snapshot_date") or "the last snapshot"
+            st.info(f"Some figures come from the saved copy of {saved_on} because a source didn't answer "
+                    f"({_providers(snap)}). The app tries again within the hour.", icon=":material/history:")
     if status["running"] or (status["version"] and status["version"] != core["version"]):
         _wait_for_live_data(core["version"])
     return core, year, values, scores
@@ -423,6 +604,66 @@ def flag_img(iso2, height: str = "1em") -> str:
             f'vertical-align:-0.12em;margin-right:0.35em;box-shadow:0 0 0 1px #2c2c2a">')
 
 
+def country_header(name: str, row: pd.Series, years: pd.Series, delta, year: int, meta: str,
+                   analyst_rating: str | None = None) -> None:
+    """The top of a country profile: identity on the left, the score with tier, rank, change and trend on the right."""
+    tier = row.get("tier")
+    color = config.TIER_COLORS.get(tier, "#898781")
+    score = row.get("composite")
+    flag = config.flag_url(row.get("iso2"))
+    rank = "" if pd.isna(row.get("rank")) else f"#{int(row['rank'])} of {int(row['n_ranked'])}"
+    if delta is None or pd.isna(delta):
+        change = ""
+    else:
+        arrow, tone = ("▲", "#fd8078") if delta >= TREND_THRESHOLD else (("▼", "#5ac698") if delta <= -TREND_THRESHOLD
+                                                                          else ("■", "#898781"))
+        change = f'<span style="color:{tone}">{arrow} {delta:+.1f}</span> vs {year - 1}'
+    analyst = (f'<div class="sg-cs-line">Analyst: {tier_badge(analyst_rating)}</div>' if analyst_rating else "")
+    st.markdown(
+        '<div class="sg-country">'
+        '<div class="sg-country-id">'
+        + (f'<img src="{flag}" alt="">' if flag else "")
+        + f'<div><h1 class="sg-country-name">{html.escape(str(name))}</h1>'
+        f'<div class="sg-country-meta">{meta}</div></div></div>'
+        f'<div class="sg-country-score" style="--c:{color}">'
+        f'<div class="sg-cs-num">{"—" if pd.isna(score) else f"{score:.0f}"}<span>/100</span></div>'
+        f'<div class="sg-cs-side">{tier_badge(tier)}<div class="sg-cs-line">{rank}</div>'
+        f'<div class="sg-cs-line">{change}</div>{analyst}</div>'
+        f'{_sparkline(years, color, w=150, h=46, css="sg-cs-spark")}</div></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _jump(iso3: str) -> None:
+    st.session_state["_jump_to"] = iso3  # the sidebar search handles the jump at the start of the next run
+
+
+def following_strip(table: pd.DataFrame) -> None:
+    """Cards for the countries this browser follows (★ on a profile). Nothing when there are none."""
+    followed = [i for i in follow.following() if i in set(table["iso3"])]
+    if not followed:
+        return
+    rows = table.set_index("iso3")
+    st.markdown('<div class="sg-follow-head">★ Following</div>', unsafe_allow_html=True)
+    with st.container(horizontal=True, wrap=True, gap="small", key="following_strip"):
+        for iso3 in followed:
+            r = rows.loc[iso3]
+            color = config.TIER_COLORS.get(r["tier"], "#898781")
+            delta = r.get("delta_1y")
+            change = "" if pd.isna(delta) else trend_label(delta)
+            flag = config.flag_url(r["iso2"])
+            score = "—" if pd.isna(r["composite"]) else f"{r['composite']:.0f}"
+            tier = html.escape(r["tier"]) if isinstance(r["tier"], str) else "—"
+            with st.container(key=f"fol_{iso3}", width=210):
+                st.markdown(
+                    f'<div class="sg-fol" style="--c:{color}">' + (f'<img src="{flag}" alt="">' if flag else "")
+                    + f'<div><div class="sg-fol-name">{html.escape(str(r["name"]))}</div>'
+                    f'<div class="sg-fol-meta"><b>{score}</b> · {tier} {change}</div></div></div>',
+                    unsafe_allow_html=True,
+                )
+                st.button(f"Open {r['name']}", key=f"fol_open_{iso3}", on_click=_jump, args=(iso3,))
+
+
 def country_heading(name: str, iso2, level: int = 1) -> None:
     """A page heading with the country's flag in front."""
     st.markdown(f"<h{level}>{flag_img(iso2, '0.85em')}{html.escape(str(name))}</h{level}>", unsafe_allow_html=True)
@@ -439,7 +680,7 @@ def _time_ago(ts) -> str:
     return f"{minutes // (60 * 24)} d ago"
 
 
-THUMB = "width:84px;height:56px;flex:none;border-radius:6px;object-fit:cover;background:#1a1a19"
+THUMB = "width:78px;height:52px;flex:none;border-radius:6px;object-fit:cover;background:#1a1a19"
 
 
 def news_list(query_name: str | None, limit: int = 10, iso2=None) -> None:
@@ -447,6 +688,11 @@ def news_list(query_name: str | None, limit: int = 10, iso2=None) -> None:
 
     Bing News + Google News, GDELT as backup; cached for 10 minutes.
     """
+    with guard("The news"):
+        _news_list(query_name, limit, iso2)
+
+
+def _news_list(query_name: str | None, limit: int, iso2) -> None:
     news = data.load_news(query_name)
     articles = news["articles"]
     if news["error"]:
@@ -460,7 +706,6 @@ def news_list(query_name: str | None, limit: int = 10, iso2=None) -> None:
     for row in articles.head(limit).itertuples(index=False):
         url = str(row.url or "")
         title = html.escape(str(row.title or ""))
-        link = f'<a href="{html.escape(url)}" target="_blank" rel="noopener">{title}</a>' if url.startswith("http") else title
         meta = " · ".join(x for x in (html.escape(str(row.domain or "")), _time_ago(row.seen)) if x)
         image = row.image if isinstance(row.image, str) and row.image.startswith("https://") else None
         if image:
@@ -470,10 +715,11 @@ def news_list(query_name: str | None, limit: int = 10, iso2=None) -> None:
                      f'<img src="{fallback}" alt="" style="width:40px;border-radius:3px;opacity:0.85"></span>')
         else:
             thumb = f'<span style="{THUMB};display:flex;align-items:center;justify-content:center;color:#5a5955">📰</span>'
-        items.append(f'<li style="display:flex;gap:10px;align-items:flex-start;margin:0 0 0.85em 0;line-height:1.35">'
-                     f'{thumb}<div>{link}<br><span style="color:#898781;font-size:0.8em">{meta}</span></div></li>')
-    st.markdown(f'<ul style="list-style:none;padding:0;margin:0;font-size:0.88rem">{"".join(items)}</ul>',
-                unsafe_allow_html=True)
+        body = (f'{thumb}<span class="sg-news-text"><span class="sg-news-title">{title}</span>'
+                f'<span class="sg-news-meta">{meta}</span></span>')
+        items.append(f'<li><a href="{html.escape(url)}" target="_blank" rel="noopener">{body}</a></li>'
+                     if url.startswith("http") else f"<li><span>{body}</span></li>")
+    st.markdown(f'<ul class="sg-news">{"".join(items)}</ul>', unsafe_allow_html=True)
     st.caption(f"{news['source']} · fetched {news['fetched']} · refreshes every 10 minutes. "
                "Automated and unfiltered — verify before citing.")
 
@@ -531,27 +777,27 @@ def add_to_compare(iso3: str) -> None:
     st.session_state.pop("compare_picked", None)
 
 
-def hero(title: str, subtitle: str = "") -> None:
-    """A page banner in the Seismographic style: a dark panel with the seismogram trace along the bottom."""
+def hero(title: str, subtitle: str = "", kicker: str = "") -> None:
+    """A page header in the Seismographic style: a dark panel with the seismogram trace fading in on the right."""
     st.markdown(
-        '<div style="position:relative;overflow:hidden;background:linear-gradient(120deg,#0b1424 0%,#0d0d0d 55%,'
-        '#1c0f0e 100%);border:1px solid #2c2c2a;border-radius:14px;padding:20px 26px 74px;margin:0 0 12px 0;'
-        'color:#ffffff">'
-        f'<div style="font-size:2rem;font-weight:700;line-height:1.2">{title}</div>'
-        + (f'<div style="margin-top:6px;font-size:1.02rem;color:#c3c2b7">{subtitle}</div>' if subtitle else "")
-        + f'<img src="{brand.data_uri("wave")}" alt="" style="position:absolute;left:0;right:0;bottom:10px;'
-        'width:100%;height:58px"></div>',
+        '<div class="sg-hero">'
+        + (f'<div class="sg-hero-kicker">{html.escape(kicker)}</div>' if kicker else "")
+        + f'<div class="sg-hero-title">{title}</div>'
+        + (f'<div class="sg-hero-sub">{subtitle}</div>' if subtitle else "")
+        + f'<img class="sg-hero-wave" src="{brand.data_uri("wave")}" alt=""></div>',
         unsafe_allow_html=True,
     )
 
 
 def brand_hero() -> None:
     """The Seismographic banner for the home page: mark, wordmark, tagline and the trace."""
-    hero(
-        f'<span style="display:inline-flex;align-items:center;gap:14px">'
-        f'<img src="{brand.data_uri("icon")}" alt="" style="height:1.35em">'
-        f'<span style="letter-spacing:0.08em;font-size:clamp(1.35rem, 6.6vw, 2rem)">{config.APP_TITLE.upper()}</span></span>',
-        config.APP_TAGLINE,
+    st.markdown(
+        '<div class="sg-hero sg-hero-brand">'
+        f'<div class="sg-hero-title"><span class="sg-brand"><img src="{brand.data_uri("icon")}" alt="">'
+        f'<span>{config.APP_TITLE.upper()}</span></span></div>'
+        f'<div class="sg-hero-sub">{html.escape(config.APP_TAGLINE)}</div>'
+        f'<img class="sg-hero-wave" src="{brand.data_uri("wave")}" alt=""></div>',
+        unsafe_allow_html=True,
     )
 
 
@@ -605,7 +851,9 @@ def globe_panel(**kwargs) -> None:
 
     Takes the arguments of globe.risk_globe; "Open full profile" goes to the country.
     """
-    open_iso3, _ = globe.risk_globe(**kwargs)
+    open_iso3 = None
+    with guard("The 3D globe"):
+        open_iso3, _ = globe.risk_globe(**kwargs)
     if open_iso3:
         go_to_country(open_iso3)
 
@@ -628,26 +876,31 @@ def movers_lists(df: pd.DataFrame, n: int = 5, key: str = "movers") -> None:
             if frame.empty:
                 st.caption("No country moved by a point or more.")
                 continue
+            frame = frame.assign(tier_text=[f"{a} → {b}" if isinstance(a, str) and a != b else b
+                                            for a, b in zip(frame["prev_tier"], frame["tier"])])
             event = st.dataframe(
-                frame[["iso3", "flag", "name", "composite", "trend", "prev_tier", "tier"]], hide_index=True,
+                frame[["iso3", "flag", "name", "composite", "trend", "tier_text"]], hide_index=True,
                 on_select="rerun", selection_mode="single-row", key=f"{key}_{part}",
                 column_config={
                     "iso3": None, "flag": FLAG_COLUMN, "name": "Country",
                     "composite": st.column_config.NumberColumn("Score", format="%.0f"),
-                    "trend": "Change", "prev_tier": "Was", "tier": "Now",
+                    "trend": "Change", "tier_text": "Tier",
                 },
             )
             _open_selected(event, frame)
 
 
-def country_table(df: pd.DataFrame, key: str, height: int | None = None, extra: dict | None = None) -> None:
+def country_table(df: pd.DataFrame, key: str, height: int | None = None, extra: dict | None = None,
+                  sort: str = "rank", ascending: bool = True) -> None:
     """A clickable ranking table (flag, score, change, tier, pillars); a click opens the profile."""
     cols = ["iso3", "flag", "name", "rank", "composite", "trend", "tier", *[p.key for p in PILLARS], *(extra or {})]
-    frame = df.sort_values("rank", na_position="last")[[c for c in cols if c in df.columns]].reset_index(drop=True)
+    frame = df.sort_values(sort, ascending=ascending, na_position="last")[[c for c in cols if c in df.columns]]
+    frame = frame.reset_index(drop=True)
     event = st.dataframe(
         frame, hide_index=True, on_select="rerun", selection_mode="single-row", key=key, height=height,
         column_config={
-            "iso3": None, "flag": FLAG_COLUMN, "name": st.column_config.TextColumn("Country", pinned=True),
+            "iso3": None, "flag": st.column_config.ImageColumn(" ", width="small", pinned=True),
+            "name": st.column_config.TextColumn("Country", pinned=True, width="medium"),
             "rank": st.column_config.NumberColumn("Global rank", format="%d"),
             "composite": st.column_config.ProgressColumn("Composite", min_value=0, max_value=100, format="%.0f",
                                                          color=config.TIER_COLORS["Elevated"]),
@@ -721,6 +974,11 @@ def videos_about(videos: pd.DataFrame, iso3: str, names: dict[str, str], officia
 @st.fragment
 def video_gallery(videos: pd.DataFrame, key: str, limit: int = 9, columns: int = 3) -> None:
     """Thumbnails of videos; "▶ Play" shows the video in a player above the grid (only this section re-runs)."""
+    with guard("The videos"):
+        _video_gallery(videos, key, limit, columns)
+
+
+def _video_gallery(videos: pd.DataFrame, key: str, limit: int, columns: int) -> None:
     shown = videos.head(limit).reset_index(drop=True)
     playing = st.session_state.get(f"{key}_playing")
     if playing in set(shown["video_id"]):
@@ -729,7 +987,7 @@ def video_gallery(videos: pd.DataFrame, key: str, limit: int = 9, columns: int =
         st.caption(f"**{current['title']}** · {current['channel']} · {_time_ago(current['published'])}")
     cols = st.columns(columns)
     for i, v in shown.iterrows():
-        with cols[i % columns], st.container(border=True):
+        with cols[i % columns], st.container(border=True, key=f"vidcard_{key}_{i}"):
             st.image(v["thumbnail"], width="stretch")
             url = f"https://www.youtube.com/watch?v={v['video_id']}"
             st.markdown(f"**[{v['title'].replace('[', '(').replace(']', ')')}]({url})**")

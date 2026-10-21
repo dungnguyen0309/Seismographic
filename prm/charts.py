@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import plotly.colors as pcolors
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -167,17 +168,18 @@ def tier_distribution(df: pd.DataFrame) -> go.Figure:
     counts = d.groupby(["region", "tier"]).size().unstack(fill_value=0).reindex(columns=TIER_ORDER, fill_value=0)
     order = (counts[["High", "Severe"]].sum(axis=1) / counts.sum(axis=1)).sort_values().index
     counts = counts.loc[order]
+    labels = [config.region_short(r) for r in counts.index]
     fig = go.Figure()
     for tier in TIER_ORDER:
         fig.add_trace(
             go.Bar(
-                y=counts.index, x=counts[tier], name=tier, orientation="h",
+                y=labels, x=counts[tier], name=tier, orientation="h",
                 marker=dict(color=TIER_COLORS[tier], line=dict(color=SURFACE, width=2)),
                 hovertemplate="%{y}<br>" + tier + ": %{x} countries<extra></extra>",
             )
         )
     fig.update_layout(barmode="stack", bargap=0.35)
-    fig.update_xaxes(title="Number of countries")
+    fig.update_xaxes(title="Countries")
     fig.update_yaxes(title=None, automargin=True)
     return _base(fig, height=470, legend=True)
 
@@ -392,12 +394,19 @@ def radar(scores: pd.DataFrame, names: dict[str, str]) -> go.Figure:
         ))
     fig.update_layout(polar=dict(radialaxis=dict(range=[0, 100], tickvals=[20, 40, 60, 80], gridcolor=GRID),
                                  angularaxis=dict(gridcolor=GRID), bgcolor="rgba(0,0,0,0)"))
-    return _base(fig, height=440, legend=True)
+    fig = _base(fig, height=440, legend=True)
+    fig.update_layout(margin=dict(l=84, r=84, t=48, b=24))  # the pillar names sit outside the circle
+    return fig
 
 
 def compare_lines(series: dict[str, pd.DataFrame], key: str, iso3s: list[str], names: dict[str, str], title: str,
-                  start_year: int | None = None, end_year: int | None = None) -> go.Figure:
+                  start_year: int | None = None, end_year: int | None = None,
+                  projected_from: int | None = None) -> go.Figure:
     fig = go.Figure()
+    if projected_from is not None:  # shade the years that are estimates or projections
+        fig.add_vrect(x0=projected_from - 0.5, x1=(end_year or projected_from + 5) + 0.5, fillcolor=FORECAST_GREY,
+                      opacity=0.12, line_width=0, annotation_text="IMF estimates & projections",
+                      annotation_position="top left", annotation_font=dict(color=MUTED, **FONT))
     for i, iso3 in enumerate(iso3s):
         s = _country(series.get(key), iso3)
         if start_year:
@@ -468,7 +477,7 @@ def tier_mix(hist: pd.DataFrame) -> go.Figure:
                              marker=dict(color=TIER_COLORS[tier], line=dict(color=SURFACE, width=1)),
                              hovertemplate="%{x} · " + tier + ": %{y} countries<extra></extra>"))
     fig.update_layout(barmode="stack", bargap=0.25)
-    fig.update_xaxes(dtick=1, tickformat="d")
+    fig.update_xaxes(dtick=2, tickformat="d", tickangle=0)  # every other year: fits a half-width column
     fig.update_yaxes(title="Countries")
     return _base(fig, height=380, legend=True)
 
@@ -502,6 +511,52 @@ def onset_fifths(by_fifth: pd.DataFrame, base_rate: float, color: str) -> go.Fig
     return _base(fig, height=360)
 
 
+def outlook_drivers(coefficients: pd.Series, labels: dict[str, str]) -> go.Figure:
+    """How much each factor multiplies the odds of new conflict, per typical (one standard deviation) difference."""
+    odds = np.exp(coefficients).sort_values()
+    fig = go.Figure(go.Bar(
+        x=odds.to_numpy(), y=[labels.get(k, k) for k in odds.index], orientation="h",
+        marker=dict(color=[WORSE if v > 1 else BETTER for v in odds], line=dict(color=SURFACE, width=1)),
+        text=[f"×{v:.2f}" for v in odds], textposition="outside", textfont=dict(color="#c3c2b7", **FONT),
+        hovertemplate="%{y}: odds ×%{x:.2f} per typical difference<extra></extra>",
+    ))
+    fig.add_vline(x=1, line=dict(color=MUTED, dash="dash", width=1))
+    fig.update_xaxes(title="Change in the odds of new conflict (1 = no effect)", rangemode="tozero")
+    return _base(fig, height=300)
+
+
+def calibration_bars(cal: pd.DataFrame) -> go.Figure:
+    """Out-of-time test: predicted chance against what happened, in fifths of the prediction."""
+    labels = [FIFTHS[int(f) - 1].replace("Safest", "Lowest").replace("Riskiest", "Highest") for f in cal["fifth"]]
+    fig = go.Figure([
+        go.Bar(name="Predicted", x=labels, y=cal["predicted"] * 100, marker=dict(color="#3987e5"),
+               hovertemplate="%{x}: predicted %{y:.1f}%<extra></extra>"),
+        go.Bar(name="What happened", x=labels, y=cal["observed"] * 100, marker=dict(color="#fd8078"),
+               hovertemplate="%{x}: conflict began in %{y:.1f}% of cases<extra></extra>"),
+    ])
+    fig.update_layout(barmode="group")
+    fig.update_yaxes(title="New armed conflict next year (%)", rangemode="tozero")
+    return _base(fig, height=320, legend=True)
+
+
+def tier_shift(before: pd.Series, after: pd.Series) -> go.Figure:
+    """Stress test: number of countries in each tier today and under stress."""
+    today = before.value_counts().reindex(TIER_ORDER, fill_value=0)
+    stressed = after.value_counts().reindex(TIER_ORDER, fill_value=0)
+    fig = go.Figure([
+        go.Bar(name="Today", x=TIER_ORDER, y=today, marker=dict(color="#4a4a47", line=dict(color=SURFACE, width=1)),
+               text=today, textposition="outside", textfont=dict(color=MUTED, **FONT),
+               hovertemplate="%{x} today: %{y} countries<extra></extra>"),
+        go.Bar(name="Under stress", x=TIER_ORDER, y=stressed,
+               marker=dict(color=[TIER_COLORS[t] for t in TIER_ORDER], line=dict(color=SURFACE, width=1)),
+               text=stressed, textposition="outside", textfont=dict(color="#c3c2b7", **FONT),
+               hovertemplate="%{x} under stress: %{y} countries<extra></extra>"),
+    ])
+    fig.update_layout(barmode="group", bargap=0.3, bargroupgap=0.08)
+    fig.update_yaxes(title="Countries", rangemode="tozero")
+    return _base(fig, height=320, legend=True)
+
+
 def benchmark_scatter(df: pd.DataFrame, year: int) -> go.Figure:
     """Seismographic's composite against the Fragile States Index, one dot per country, in tier colours."""
     fig = go.Figure(go.Scatter(
@@ -526,7 +581,8 @@ def ranked_bars(df: pd.DataFrame, value: str, label: str, color: str, hover: str
         hovertemplate="<b>%{y}</b><br>%{x:" + fmt + "} " + hover + "<extra></extra>",
     ))
     fig.update_yaxes(title=None, automargin=True)
-    fig.update_xaxes(showticklabels=False)
+    top = float(d[value].max()) if len(d) else 1.0
+    fig.update_xaxes(showticklabels=False, range=[0, top * 1.18 if top > 0 else 1])  # room for the value labels
     return _base(fig, height=max(300, 28 * len(d) + 60))
 
 
@@ -557,22 +613,41 @@ ECON_COLUMNS = [  # (indicator key, short label) for the economic heatmap
 ]
 
 
+def _text_on(rgb: str) -> str:
+    """Black or white text, whichever reads better on this background colour ('rgb(r, g, b)' or '#rrggbb')."""
+    if rgb.startswith("#"):
+        r, g, b = (int(rgb[i:i + 2], 16) for i in (1, 3, 5))
+    else:
+        r, g, b = (float(v) for v in rgb[rgb.index("(") + 1:rgb.index(")")].split(",")[:3])
+    lum = 0.2126 * (r / 255) ** 2.2 + 0.7152 * (g / 255) ** 2.2 + 0.0722 * (b / 255) ** 2.2
+    return "#0b0b0b" if lum > 0.22 else "#f4f4f4"
+
+
 def econ_heatmap(df: pd.DataFrame) -> go.Figure:
     """Rows = countries, columns = economic indicators; colour = risk score, text = the actual value."""
     keys = [k for k, _ in ECON_COLUMNS]
     z = df[[f"n_{k}" for k in keys]].to_numpy(dtype=float)
     text = [[config.INDICATOR_BY_KEY[k].fmt(row[k]) for k in keys] for _, row in df.iterrows()]
     units = [config.INDICATOR_BY_KEY[k].unit for k in keys]
+    labels = [label for _, label in ECON_COLUMNS]
+    scale = config.map_colorscale("economic")
     fig = go.Figure(go.Heatmap(
-        z=z, x=[label for _, label in ECON_COLUMNS], y=df["name"], zmin=0, zmax=100,
-        colorscale=config.map_colorscale("economic"), xgap=2, ygap=2,
-        text=text, texttemplate="%{text}", textfont=dict(size=11),
+        z=z, x=labels, y=df["name"], zmin=0, zmax=100, colorscale=scale, xgap=2, ygap=2, text=text,
         customdata=np.array([[units[j] for j in range(len(keys))] for _ in range(len(df))]),
         colorbar=dict(title=dict(text="Risk", side="right"), thickness=10, len=0.6, tickvals=[0, 50, 100]),
         hovertemplate="<b>%{y}</b> · %{x}<br>Value: %{text} %{customdata}<br>Risk score: %{z:.0f}/100<extra></extra>",
     ))
-    fig.update_yaxes(autorange="reversed", automargin=True)
-    fig.update_xaxes(side="top")
+    # The values, each in dark or light text depending on how bright its cell is
+    xs, ys, ts, cs = [], [], [], []
+    for i, name in enumerate(df["name"]):
+        for j, label in enumerate(labels):
+            xs.append(label); ys.append(name); ts.append(text[i][j])
+            cs.append(MUTED if np.isnan(z[i, j]) else _text_on(pcolors.sample_colorscale(scale, [z[i, j] / 100])[0]))
+    fig.add_trace(go.Scatter(x=xs, y=ys, mode="text", text=ts, textfont=dict(size=11, color=cs), hoverinfo="skip",
+                             showlegend=False))
+    # fixed ranges: the text layer would otherwise pad the axes and open a gap above the first row
+    fig.update_yaxes(range=[len(df) - 0.5, -0.5], automargin=True)
+    fig.update_xaxes(side="top", range=[-0.5, len(labels) - 0.5])
     return _base(fig, height=max(320, 24 * len(df) + 90))
 
 
