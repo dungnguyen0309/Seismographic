@@ -6,7 +6,7 @@ Two free ways to put the app online. Both update by themselves every time the Gi
 
 1. Go to [share.streamlit.io](https://share.streamlit.io) and sign in with GitHub.
 2. Click **Create app** → **Deploy a public app from GitHub**.
-3. Repository `ClockworkAngels666/Seismographic`, branch `main`, main file path `streamlit_app.py`.
+3. Repository `dungnguyen0309/Seismographic`, branch `main`, main file path `streamlit_app.py`.
 4. Under **Advanced settings**, choose Python 3.12 or newer. Optionally set a custom **App URL** such as
    `seismographic`.
 5. Click **Deploy**. The first build takes a few minutes. Pages open instantly from the saved snapshot and switch to
@@ -22,11 +22,11 @@ Streamlit Community Cloud shows a small "Hosted with Streamlit" badge in the bot
 3. Give GitHub the token (it asks you to paste it, then stores it encrypted) and the Space's name:
 
    ```bash
-   gh secret set HF_TOKEN -R ClockworkAngels666/Seismographic
+   gh secret set HF_TOKEN -R dungnguyen0309/Seismographic
    ```
 
    ```bash
-   gh variable set HF_SPACE -R ClockworkAngels666/Seismographic --body "YOUR-HF-USERNAME/Seismographic"
+   gh variable set HF_SPACE -R dungnguyen0309/Seismographic --body "YOUR-HF-USERNAME/Seismographic"
    ```
 
    Or on github.com: **Settings → Secrets and variables → Actions**.
@@ -41,7 +41,7 @@ The repository is ready for Vercel: `asgi.py` runs the app as a standard Python 
 `vercel.json` gives it the longest time Vercel's free plan allows.
 
 1. Sign in at [vercel.com](https://vercel.com) with GitHub (**Continue with GitHub**).
-2. **Add New… → Project**, then **Import** `ClockworkAngels666/Seismographic`. If it isn't listed, click
+2. **Add New… → Project**, then **Import** `dungnguyen0309/Seismographic`. If it isn't listed, click
    **Adjust GitHub App Permissions** and allow Vercel to see the repository.
 3. Leave the settings as they are (Framework Preset: *Other*) and click **Deploy**. Every push to `main` then
    deploys again by itself.
