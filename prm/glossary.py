@@ -206,23 +206,23 @@ class Category:
 
 
 CATEGORIES: dict[str, Category] = {
-    "Scores & ratings": Category("📊", "#a68cf2", "How the index turns data into scores, ranks and tiers.",
+    "Scores & ratings": Category("", "#a68cf2", "How the index turns data into scores, ranks and tiers.",
                                  ("oecd_jrc", "wb_groups")),
-    INDICATORS_CATEGORY: Category("🧮", "#c3c2b7", "Every data series in the score, grouped by pillar, with a link to "
+    INDICATORS_CATEGORY: Category("", "#c3c2b7", "Every data series in the score, grouped by pillar, with a link to "
                                                    "the data itself.", tuple(config.INDEX_SOURCES)),
-    "Warnings": Category("🚩", "#f0575c", "Absolute red lines that matter wherever a country ranks.",
+    "Warnings": Category("", "#f0575c", "Absolute red lines that matter wherever a country ranks.",
                          ("ucdp_def", "rr_inflation", "rr_debt", "freund", "imf_ara")),
-    "Analyst assessments": Category("✍️", "#2fb7a5", "The vocabulary of professional risk and intelligence writing.",
+    "Analyst assessments": Category("", "#2fb7a5", "The vocabulary of professional risk and intelligence writing.",
                                     ("icd203", "cia_tradecraft", "heuer")),
-    "Conflict & displacement": Category("🕊️", config.PILLAR_COLORS["stability"], "Armed conflict, violence and people "
+    "Conflict & displacement": Category("", config.PILLAR_COLORS["stability"], "Armed conflict, violence and people "
                                         "forced from their homes.", ("ucdp_def", "unhcr_def", "unodc")),
-    "Economy": Category("💹", config.PILLAR_COLORS["economic"], "Growth, prices, debt and the external buffers.",
+    "Economy": Category("", config.PILLAR_COLORS["economic"], "Growth, prices, debt and the external buffers.",
                         ("imf", "imf_weo", "imf_ara")),
-    "Governance (WGI)": Category("🏛️", config.PILLAR_COLORS["governance"], "The six World Bank governance dimensions "
+    "Governance (WGI)": Category("", config.PILLAR_COLORS["governance"], "The six World Bank governance dimensions "
                                  "and how to read them.", ("wgi", "wgi_docs", "wgi_method")),
-    "Sources & abbreviations": Category("🔗", "#d55181", "Who publishes the data, and the short names used for them.",
+    "Sources & abbreviations": Category("", "#d55181", "Who publishes the data, and the short names used for them.",
                                         ()),
-    "Maps, globe & charts": Category("🌍", "#5ec8e0", "How to read the colours, heights, arcs and rings.",
+    "Maps, globe & charts": Category("", "#5ec8e0", "How to read the colours, heights, arcs and rings.",
                                      ("natural_earth", "globe_gl", "unhcr")),
 }
 

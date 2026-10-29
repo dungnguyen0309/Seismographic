@@ -9,7 +9,7 @@ core, year, values, scores = ui.load()
 hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 
-ui.hero("🧪 Stress test", kicker="Analyst desk")
+ui.hero("Stress test")
 st.markdown("Apply one economic shock to many countries at once and see who crosses a risk tier or a red-flag line.")
 
 CUSTOM = "Custom"
@@ -157,6 +157,6 @@ def _csv() -> bytes:
     return out.round(2).to_csv(index=False).encode("utf-8")
 
 
-st.download_button("⬇ Results (CSV)", data=_csv, file_name="seismographic-stress-test.csv", mime="text/csv",
+st.download_button("Results (CSV)", data=_csv, file_name="seismographic-stress-test.csv", mime="text/csv",
                    type="tertiary")
 ui.cite("imf", "wdi", "index")

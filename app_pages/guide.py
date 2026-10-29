@@ -12,7 +12,7 @@ countries = core["countries"]
 options, names = ui.country_options(countries)
 events = content.load_events()
 
-ui.hero("🧭 How to analyze Seismographic data?", kicker="Briefings")
+ui.hero("How to analyze Seismographic data?")
 st.markdown(
     "Seismographic turns open data into numbers: a 0–100 score, a tier, four pillars and a set of red flags. This "
     "page translates those numbers into real life — what they usually look like for the people living, working or "
@@ -79,7 +79,7 @@ ui.cite("ucdp_def", "imf_ara", "imf", "wdi", "unhcr")
 # --- 5. Workflows ---------------------------------------------------------------------------------------
 st.header("5 · Putting it to work, step by step")
 workflows = {
-    "🏢 Screening a market (business & investors)": [
+    "Screening a market (business & investors)": [
         ("Shortlist", "Rank candidate countries on the Global overview; set the pillar weights in the sidebar to "
                       "match your exposure (e.g. more weight on Economy for trade, Governance for long-term assets).",
          "app_pages/overview.py"),
@@ -91,7 +91,7 @@ workflows = {
          ui.COUNTRY_PAGE),
         ("Time it", "Check the Events watchlist for elections or deadlines before committing.", "app_pages/watchlist.py"),
     ],
-    "🤝 Planning a programme (NGOs & humanitarian)": [
+    "Planning a programme (NGOs & humanitarian)": [
         ("Find the need", "Conflict & displacement shows where people are being killed and displaced, and where "
                           "refugees are hosted.", "app_pages/conflict.py"),
         ("Read the context", "The *In real life* tab spells out access, safety and price pressures.", ui.COUNTRY_PAGE),
@@ -100,14 +100,14 @@ workflows = {
         ("Track events", "Add elections and deadlines to the watchlist; plan field movements around them.",
          "app_pages/watchlist.py"),
     ],
-    "🧳 Preparing a trip, posting or study abroad": [
+    "Preparing a trip, posting or study abroad": [
         ("Get the picture", "Read the country's *In real life* tab and its latest news.", ui.COUNTRY_PAGE),
         ("Check official advice", "Always confirm with your government's current travel advice — it moves faster "
                                   "than this data.", None),
         ("Mind the calendar", "Avoid travelling around high-significance events in the watchlist.",
          "app_pages/watchlist.py"),
     ],
-    "🔎 Writing an analysis (policy, journalism, research)": [
+    "Writing an analysis (policy, journalism, research)": [
         ("Start from the drivers", "The profile's Summary and Indicators tabs show exactly what pushes the score.",
          ui.COUNTRY_PAGE),
         ("Separate signal from noise", "Governance trends show whether a change is outside the margin of error.",

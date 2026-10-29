@@ -12,7 +12,7 @@ table = ui.master_table(core, values, scores, hist)
 econ_keys = [k for k, _ in ECON_COLUMNS]
 df = table.join(values[econ_keys], on="iso3")  # table already carries the n_* risk scores
 
-ui.hero("💹 Economic stress monitor", kicker="Briefings")
+ui.hero("Economic stress monitor")
 edition = core["meta"].get("gdp_growth", {}).get("edition") or "IMF World Economic Outlook"
 st.markdown(
     "Where an economic crisis could trigger political trouble: runaway prices, recession, unsustainable debt and "

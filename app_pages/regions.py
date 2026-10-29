@@ -22,7 +22,7 @@ yearly = rh.groupby("year").agg(median=("composite", "median"),
                                 high=("tier", lambda s: int(s.isin(["High", "Severe"]).sum())))
 last = yearly.loc[year - 1] if year - 1 in yearly.index else None
 
-ui.hero(f"🗺️ {region}", f"{len(scored)} economies scored · {year}", kicker="Regional briefing")
+ui.hero(f"{region}", f"{len(scored)} economies scored · {year}")
 
 # --- Headline numbers -------------------------------------------------------------------------
 median_now = scored["composite"].median() if len(scored) else None

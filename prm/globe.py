@@ -71,7 +71,7 @@ _HTML = """
 
 _CSS = """
 .rg-wrap { position: relative; width: 100%; height: 640px; border-radius: 14px; overflow: hidden;
-  background: radial-gradient(ellipse at 50% 45%, #0c1f3f 0%, #050b16 45%, #000 75%);
+  background: #000;
   border: 1px solid #1f1f1e; font-family: inherit; color: #ececec; }
 .rg-canvas { position: absolute; inset: 0; cursor: grab; }
 .rg-status { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;

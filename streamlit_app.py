@@ -11,7 +11,7 @@ st.set_page_config(
     page_title=config.APP_TITLE,
     page_icon=brand.svg("icon"),
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",  # open on wide screens, folded away on phones (the dock is the phone menu)
 )
 st.logo(brand.svg("logo"), icon_image=brand.svg("icon"), size="large")
 

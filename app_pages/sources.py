@@ -12,9 +12,8 @@ from prm.config import INDICATORS, RAW_SERIES, SOURCES
 core, year, values, scores = ui.load()
 meta = core["meta"]
 
-ui.hero("🔎 Sources & citations",
-        "Every number, map, headline and video in Seismographic, traced back to the organisation that published it.",
-        kicker="About")
+ui.hero("Sources & citations",
+        "Every number, map, headline and video in Seismographic, traced back to the organisation that published it.")
 st.markdown(
     "Seismographic does not collect data itself. Everything comes from international organisations, academic "
     "research centres and the broadcasters themselves, and every chart in the tool names its source underneath. "
@@ -96,11 +95,11 @@ for ind in INDICATORS:
     m = meta.get(series, {})
     years = values[f"{ind.key}__year"].dropna() if f"{ind.key}__year" in values else pd.Series(dtype=float)
     if m.get("error") and not m.get("from_snapshot"):
-        state = "❌ Unavailable"
+        state = "Unavailable"
     elif m.get("from_snapshot"):
-        state = "🗂️ Snapshot"
+        state = "Snapshot"
     else:
-        state = "✅ Live"
+        state = "Live"
     rows.append({
         "Pillar": config.PILLAR_BY_KEY[ind.pillar].short,
         "Indicator": ind.label,

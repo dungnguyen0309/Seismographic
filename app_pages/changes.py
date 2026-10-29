@@ -11,7 +11,7 @@ hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 prev_year = year - 1
 
-ui.hero("📈 What changed", kicker="Briefings")
+ui.hero("What changed")
 st.markdown(
     f"The index for **{year}** compared with **{prev_year}**: who became riskier or safer, which tiers moved, "
     "what drove each change and which absolute warning thresholds were newly crossed. "
@@ -148,7 +148,7 @@ if flags.empty:
     st.caption("No red flags changed.")
 else:
     flags = flags.assign(severity=flags["severity"].map(lambda s: f"{config.SEVERITY_ICON[s]} {config.SEVERITY_LABEL[s]}"
-                                                        if s else "✅"))
+                                                        if s else "Cleared"))
     flags = flags.sort_values(["change", "name"], ascending=[False, True]).reset_index(drop=True)
     event = st.dataframe(
         flags[["iso3", "flag", "name", "change", "severity", "flag_label"]], hide_index=True, height=380,

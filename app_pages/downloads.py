@@ -11,7 +11,7 @@ weights = ui.weights_tuple()
 tables = data.get_export(core, year, weights, core["version"])
 info = export.meta(core, year, dict(weights))
 
-ui.hero("⬇️ Download data", kicker="About")
+ui.hero("Download data")
 st.markdown("Everything behind the index as open tables. When you reuse them, credit the original publishers.")
 st.page_link(ui.SOURCES_PAGE, label="Sources & citations", icon=":material/verified:")
 if dict(weights) != scoring.default_weights():

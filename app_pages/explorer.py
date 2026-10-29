@@ -9,7 +9,7 @@ core, year, values, scores = ui.load()
 hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 
-ui.hero("🔬 Indicator explorer", kicker="Briefings")
+ui.hero("Indicator explorer")
 st.markdown("Pick any of the indicators behind the index and see it around the world: where it is worst, how "
             "countries are spread, and the riskiest and safest economies.")
 

@@ -6,7 +6,7 @@ import streamlit as st
 from prm import charts, config, data, ui
 from prm.config import INDICATORS, PILLARS, RED_FLAGS, SEVERITY_LABEL, TIERS
 
-ui.hero("📐 Methodology", kicker="About")
+ui.hero("Methodology")
 st.markdown(
     """
 Seismographic follows the standard recipe for composite indicators set out in the

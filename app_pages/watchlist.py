@@ -12,7 +12,7 @@ hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 options, names = ui.country_options(core["countries"])
 
-ui.hero("🗓️ Events watchlist", kicker="Monitor")
+ui.hero("Events watchlist")
 st.markdown(
     "Dated events that could move a country's risk: elections, referendums, budget and debt deadlines, "
     "summits, court rulings, anniversaries of unrest."
@@ -86,7 +86,7 @@ else:
     )
 
 # --- Helper to write a new CSV line -----------------------------------------------------
-with st.expander("➕ Add an event (creates a line to paste into data/events.csv)", expanded=events.empty):
+with st.expander("Add an event (creates a line to paste into data/events.csv)", expanded=events.empty):
     with st.form("event_form"):
         c1, c2 = st.columns(2)
         when = c1.date_input("Date", value=dt.date.today() + dt.timedelta(days=30))

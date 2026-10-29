@@ -12,7 +12,7 @@ core, year, values, scores = ui.load()
 countries = core["countries"]
 options, names = ui.country_options(countries)
 
-ui.hero("✍️ Assessment builder", kicker="Analyst desk")
+ui.hero("Assessment builder")
 st.markdown(
     "Turn the data into analysis. Fill in the sections below, download the file, and upload it to the "
     "project's `assessments/` folder — it then appears on the country profile. "
@@ -37,7 +37,7 @@ with st.container(border=True):
             st.markdown(f"- {line}")
     ui.cite("index")
 
-with st.expander("📏 Estimative language (ICD 203) — use these words consistently"):
+with st.expander("Estimative language (ICD 203) — use these words consistently"):
     st.dataframe(
         pd.DataFrame(
             [{"Term": t, "Alternative": alt, "Probability": f"{lo}–{hi}%"} for t, alt, lo, hi in ESTIMATIVE_LANGUAGE]
@@ -110,7 +110,7 @@ def _prefill() -> None:
 
 
 st.header("4 · Drivers")
-st.button("✨ Pre-fill with the data", on_click=_prefill,
+st.button("Pre-fill with the data", on_click=_prefill,
           help="Writes the latest figures for each driver into the boxes below, as a starting point. "
                "Replace them with your own analysis — the data says *what*, you explain *why* and *what next*.")
 d1, d2 = st.columns(2)
@@ -161,7 +161,7 @@ markdown = content.build_assessment_markdown(fields)
 st.header("7 · Preview and download")
 p1, p2 = st.columns([1, 1])
 with p1:
-    st.download_button("⬇️ Download " + f"{iso3}.md", markdown.encode("utf-8"), file_name=f"{iso3}.md",
+    st.download_button("Download " + f"{iso3}.md", markdown.encode("utf-8"), file_name=f"{iso3}.md",
                        mime="text/markdown", type="primary")
     st.caption(
         f"Add **{iso3}.md** to the project's `assessments/` folder; the app picks it up within about 10 minutes."

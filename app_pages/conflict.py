@@ -11,7 +11,7 @@ table = ui.master_table(core, values, scores, hist)
 names = dict(zip(table["iso3"], table["name"]))
 known = set(names)
 
-ui.hero("⚔️ Conflict & displacement", kicker="Briefings")
+ui.hero("Conflict & displacement")
 st.markdown(
     "Where people are being killed in armed conflict and forced from their homes. Battle deaths follow the "
     "Uppsala Conflict Data Program (state-based conflict, via the World Bank); displacement is UNHCR's count of "
@@ -104,7 +104,7 @@ with tab_conflict:
         conflict["deaths_prev"] = conflict["iso3"].map(prev_bd).fillna(0)
         conflict["deaths_change"] = conflict["deaths"] - conflict["deaths_prev"]
         conflict = conflict.join(values[["battle_deaths_100k", "displaced_share"]], on="iso3")
-        conflict["level"] = conflict["deaths"].map(lambda d: "🔴 War" if d >= 1000 else "🟠 Armed conflict")
+        conflict["level"] = conflict["deaths"].map(lambda d: "War" if d >= 1000 else "Armed conflict")
         conflict["change_text"] = conflict["deaths_change"].map(lambda d: f"{d:+,.0f}")
         conflict = conflict.sort_values("deaths", ascending=False).reset_index(drop=True)
         event = st.dataframe(

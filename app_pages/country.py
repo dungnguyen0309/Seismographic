@@ -66,7 +66,7 @@ def _brief_pdf() -> bytes:
 
 
 if toast := st.session_state.pop("_compare_toast", None):
-    st.toast(toast, icon="✅")
+    st.toast(toast, icon=":material/check:")
 compare_list = st.session_state.get(ui.COMPARE_LIST, [])
 with st.container(horizontal=True, vertical_alignment="center", key="country_actions"):
     if iso3 in compare_list:
@@ -75,8 +75,8 @@ with st.container(horizontal=True, vertical_alignment="center", key="country_act
         st.button("Comparison is full", disabled=True, key="compare_full",
                   help=f"You can compare up to {config.MAX_COMPARE} countries. Remove one on the Compare page.")
     else:
-        st.button("➕ Add to compare", key="compare_add", on_click=_add_to_compare)
-    st.download_button("📄 PDF brief", data=_brief_pdf, file_name=f"{iso3}_risk_brief_{year}.pdf",
+        st.button("Add to compare", key="compare_add", on_click=_add_to_compare)
+    st.download_button("PDF brief", data=_brief_pdf, file_name=f"{iso3}_risk_brief_{year}.pdf",
                        mime="application/pdf", on_click="ignore", key="brief_pdf",
                        help="A one-page brief: score, pillars, trend, red flags and what it means in real life.")
     follow.follow_button(iso3, name)
@@ -118,7 +118,7 @@ with t_summary:
             if mine is not None and isinstance(mine["status"], str):
                 st.subheader("Conflict outlook")
                 if mine["status"] == "In armed conflict":
-                    st.markdown(f"🔴 **In armed conflict** in the latest data ({outlook.data_year}).")
+                    st.markdown(f"**In armed conflict** in the latest data ({outlook.data_year}).")
                 else:
                     level = "🟠" if mine["relative"] >= 3 else ("🟡" if mine["relative"] >= 1 else "🟢")
                     st.markdown(f"{level} **{mine['probability']:.1%}** chance that armed conflict breaks out in "
@@ -133,7 +133,7 @@ with t_summary:
                 for f in sorted(flags, key=lambda f: config.SEVERITY_ORDER[f["severity"]]):
                     st.markdown(f"{SEVERITY_ICON[f['severity']]} **{SEVERITY_LABEL[f['severity']]}** — {f['label']}")
             else:
-                st.markdown("✅ No absolute warning thresholds crossed.")
+                st.markdown("No absolute warning thresholds crossed.")
             st.caption("Red flags use fixed thresholds (e.g. inflation ≥ 20%), independent of how other countries score.")
             ui.cite("index", "ucdp_def", "imf_ara")
 
@@ -273,12 +273,12 @@ with t_map:
 
 # --- What-if simulator ------------------------------------------------------------
 WHATIF_PRESETS = {
-    "💸 Currency crisis": {"inflation": ("max", 40), "reserves_months": ("min", 2), "gdp_growth": ("min", -3),
+    "Currency crisis": {"inflation": ("max", 40), "reserves_months": ("min", 2), "gdp_growth": ("min", -3),
                           "current_account": ("min", -6)},
-    "⚔️ Armed conflict": {"battle_deaths_raw": ("max", 2500), "wgi_pv": ("add", -15), "displaced_share": ("max", 5)},
-    "🏛️ Democratic backsliding": {"wgi_va": ("add", -15), "wgi_rl": ("add", -10), "wgi_cc": ("add", -10),
+    "Armed conflict": {"battle_deaths_raw": ("max", 2500), "wgi_pv": ("add", -15), "displaced_share": ("max", 5)},
+    "Democratic backsliding": {"wgi_va": ("add", -15), "wgi_rl": ("add", -10), "wgi_cc": ("add", -10),
                                   "wgi_ge": ("add", -5)},
-    "🌱 Reform & recovery": {"inflation": ("min", 5), "gdp_growth": ("max", 4), "wgi_ge": ("add", 10),
+    "Reform & recovery": {"inflation": ("min", 5), "gdp_growth": ("max", 4), "wgi_ge": ("add", 10),
                             "wgi_rl": ("add", 10), "wgi_cc": ("add", 10)},
 }
 PILLAR_SQUARES = {"stability": "🟦", "governance": "🟧", "economic": "🟩", "social": "🟨"}
@@ -410,7 +410,7 @@ def what_if_simulator() -> None:
             for f in new_flags:
                 st.markdown(f"{SEVERITY_ICON[f['severity']]} **New:** {f['label']}")
             for label in sorted(cleared):
-                st.markdown(f"✅ **Cleared:** {label}")
+                st.markdown(f"**Cleared:** {label}")
         if moved:
             st.caption("Changed: " + ", ".join(moved) + ".")
         else:
@@ -453,7 +453,7 @@ with t_indicators:
             "scale so that countries without conflict score 0. See the Methodology page."
         )
         ui.cite("index")
-        with st.expander(f"🔍 Cross-check {name} with independent sources"):
+        with st.expander(f"Cross-check {name} with independent sources"):
             st.caption("Respected indices that measure similar things but are not used in the score. Look the country up "
                        "in them: if they disagree with Seismographic, find out why.")
             for pillar_key, keys in config.CROSS_CHECKS.items():
@@ -523,7 +523,7 @@ with t_news:
         ui.cite("news", "gdelt")
 
         with ui.guard("Video reports"):
-            st.subheader(f"📺 Video reports on {name}")
+            st.subheader(f"Video reports on {name}")
             all_videos = data.load_videos()
             about = (ui.videos_about(all_videos, iso3, names, countries.set_index("iso3").get("official_name", pd.Series())
                                      .get(iso3)) if all_videos is not None else None)

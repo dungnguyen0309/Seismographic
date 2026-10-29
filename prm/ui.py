@@ -12,7 +12,7 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from . import brand, config, content, data, follow, globe, interpret
+from . import config, content, data, follow, globe, interpret
 from .config import PILLARS, TIERS
 
 WEIGHT_KEYS = {p.key: f"w_{p.key}" for p in PILLARS}
@@ -41,7 +41,7 @@ def guard(what: str):
         if _strict():
             raise
         log.exception("section failed: %s", what)
-        st.caption(f"⚠️ {what} can't be shown right now. The rest of the page is unaffected.")
+        st.caption(f"{what} can't be shown right now. The rest of the page is unaffected.")
 
 
 def _reload() -> None:
@@ -99,7 +99,7 @@ def _country_search() -> None:
         return
     options, names = country_options(countries)
     st.selectbox(
-        "🔎 Find a country", options, index=None, key="country_search", on_change=_on_search,
+        "Find a country", options, index=None, key="country_search", on_change=_on_search,
         format_func=lambda i: names.get(i, i), placeholder="Type a country name…",
     )
     if jump := st.session_state.pop("_jump_to", None):
@@ -115,7 +115,7 @@ def sidebar() -> None:
         picked = st.session_state.get(COMPARE_LIST, [])
         if picked:
             st.page_link(COMPARE_PAGE, label=f"Your comparison ({len(picked)})", icon=":material/compare_arrows:")
-        with st.expander("⚖️ Index weights", expanded=False):
+        with st.expander("Index weights", expanded=False):
             st.caption(
                 "How much each pillar counts in the composite score. "
                 "Weights are rescaled to 100%, so only their proportions matter."
@@ -182,14 +182,10 @@ DOCK_CSS = f"""
 .st-key-sg_dock {{
   position: fixed !important; z-index: 1000; left: 0; right: 0; bottom: 0; width: auto !important;
   container-type: inline-size; container-name: sgdock;
-  background: #0a0a0a; border-top: 1px solid #2c2c2a; box-shadow: 0 -12px 28px rgba(0,0,0,0.7);
+  background: #0a0a0a; border-top: 1px solid #2c2c2a;
   padding: 7px max(12px, calc((100% - 980px) / 2)) calc(7px + env(safe-area-inset-bottom)) !important;
   gap: 8px 14px !important; align-items: center !important; justify-content: space-between !important;
   transition: left .25s ease;
-}}
-.st-key-sg_dock::before {{  /* the seismographic trace along the top edge */
-  content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 1px;
-  background: linear-gradient(90deg, transparent, #3987e5 20%, {ACCENT} 80%, transparent);
 }}
 @media (min-width: 768px) {{
   body:has(section[data-testid="stSidebar"][aria-expanded="true"]) .st-key-sg_dock {{ left: 300px; }}
@@ -218,7 +214,7 @@ DOCK_CSS = f"""
 .sg-read-text {{ min-width: 0; flex: 1; line-height: 1.25; }}
 .sg-read-name {{ font-weight: 700; font-size: 0.86rem; color: #fff; white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; }}
-.sg-read-meta {{ font-size: 0.68rem; color: #a3a29a; white-space: nowrap; letter-spacing: 0.04em; text-transform: uppercase; }}
+.sg-read-meta {{ font-size: 0.75rem; color: #a3a29a; white-space: nowrap; }}
 .sg-read-meta b {{ color: var(--sg-c); font-size: 0.8rem; }}
 .sg-spark {{ flex: none; width: 92px; height: 26px; }}
 
@@ -236,7 +232,7 @@ DOCK_CSS = f"""
 }}
 .st-key-sg_tabs [data-testid="stElementContainer"], .st-key-sg_tabs a {{ margin: 0 !important; }}
 .st-key-sg_tabs a:hover, .st-key-sg_tabs button:hover {{ background: #161616 !important; }}
-.st-key-sg_tabs a p, .st-key-sg_tabs button p {{ font-size: 0.6rem !important; letter-spacing: 0.08em; text-transform: uppercase;
+.st-key-sg_tabs a p, .st-key-sg_tabs button p {{ font-size: 0.72rem !important;
   margin: 0 !important; white-space: nowrap; line-height: 1.2 !important; }}
 .st-key-sg_tabs a span, .st-key-sg_tabs a p, .st-key-sg_tabs button p, .st-key-sg_tabs button span {{ color: #8f8e87 !important; }}
 .st-key-sg_tabs [data-testid="stIconMaterial"] {{ font-size: 1.3rem !important; }}
@@ -317,29 +313,18 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
 :focus-visible { outline: 2px solid #fd8078 !important; outline-offset: 2px; }
 ::selection { background: rgba(253,128,120,0.35); }
 * { scrollbar-width: thin; scrollbar-color: #383835 transparent; }
-/* page header */
-.sg-hero { position: relative; overflow: hidden; border: 1px solid #2c2c2a; border-radius: 14px; margin: 0 0 14px;
-  padding: 18px 24px 20px; background: linear-gradient(120deg, #0b1424 0%, #0d0d0d 55%, #1c0f0e 100%); color: #fff; }
-.sg-hero-kicker { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: #fd8078; margin-bottom: 4px; }
-.sg-hero-title { position: relative; z-index: 1; font-size: clamp(1.45rem, 3.6vw, 2rem); font-weight: 700; line-height: 1.2; }
-.sg-hero-sub { position: relative; z-index: 1; margin-top: 6px; font-size: 0.98rem; color: #c3c2b7; max-width: 62ch; }
-.sg-hero-wave { position: absolute; right: 0; bottom: 6px; width: 62%; height: 54px; opacity: 0.55;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%); mask-image: linear-gradient(90deg, transparent, #000 40%); }
-.sg-hero-brand { padding: 22px 26px 78px; }
-.sg-hero-brand .sg-hero-wave { left: 0; width: 100%; height: 58px; bottom: 10px; opacity: 1; -webkit-mask-image: none;
-  mask-image: none; }
-.sg-brand { display: inline-flex; align-items: center; gap: 14px; }
-.sg-brand img { height: 1.35em; }
-.sg-brand span { letter-spacing: 0.08em; font-size: clamp(1.35rem, 6.6vw, 2rem); }
-@media (max-width: 640px) {
-  .sg-hero { padding: 14px 16px 16px; } .sg-hero-wave { width: 80%; height: 40px; opacity: 0.4; }
-  .sg-hero.sg-hero-brand { padding-bottom: 60px; }
-  .sg-hero-brand .sg-hero-wave { width: 100%; height: 42px; bottom: 8px; opacity: 1; }
-}
+/* page title: the h1 and one line about the data, on the page itself */
+.sg-head { margin: 0 0 18px; }
+[data-testid="stMain"] h1.sg-head-title { font-size: clamp(1.5rem, 3vw, 1.85rem); font-weight: 700; line-height: 1.2;
+  padding: 0; margin: 0; color: #fff; }
+.sg-head-sub { margin: 6px 0 0; font-size: 0.98rem; color: #c3c2b7; max-width: 70ch; }
+/* figures keep the mono face: digits line up and read as data */
+[data-testid="stMetricValue"], .sg-cs-num, .sg-read-meta b, .sg-fol-meta b {
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
 /* follow: the sync slot renders nothing */
 .st-key-sg_follow_sync, [data-testid="stElementContainer"]:has(.st-key-sg_follow_sync) { display: none !important; }
 /* following strip */
-.sg-follow-head { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: #fd8078; margin: 4px 0 -4px; }
+.sg-follow-head { font-size: 0.95rem; font-weight: 600; color: #fff; margin: 4px 0 -4px; }
 [class*="st-key-fol_"]:not([class*="st-key-fol_open"]) { position: relative; background: #0f1012; border: 1px solid #2c2c2a;
   border-radius: 10px; padding: 8px 10px !important; }
 [class*="st-key-fol_"]:not([class*="st-key-fol_open"]):hover { border-color: #3a3a37; background: #141414; }
@@ -355,8 +340,7 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
 [data-testid="stElementContainer"]:has([class*="st-key-fol_open_"]) { position: absolute; inset: 0; }
 /* country header */
 .sg-country { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px;
-  border: 1px solid #2c2c2a; border-radius: 14px; padding: 18px 20px; margin: 6px 0 12px;
-  background: linear-gradient(120deg, #0d0d0d 0%, #0b1424 100%); }
+  border: 1px solid #2c2c2a; border-radius: 14px; padding: 18px 20px; margin: 6px 0 12px; background: #0d0d0d; }
 .sg-country-id { display: flex; align-items: center; gap: 16px; min-width: 0; flex: 1 1 320px; }
 .sg-country-id img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; flex: none;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.14); }
@@ -518,7 +502,7 @@ def load():
     if core["source"] == "snapshot":
         if status["running"]:
             st.info(
-                f"⚡ Showing the saved data from {core.get('snapshot_date') or 'the last snapshot'} so the page opens "
+                f"Showing the saved data from {core.get('snapshot_date') or 'the last snapshot'} so the page opens "
                 "instantly. The latest figures are downloading and will appear by themselves in about a minute.",
             )
         elif status["error"]:
@@ -714,7 +698,7 @@ def _news_list(query_name: str | None, limit: int, iso2) -> None:
             thumb = (f'<span style="{THUMB};display:flex;align-items:center;justify-content:center">'
                      f'<img src="{fallback}" alt="" style="width:40px;border-radius:3px;opacity:0.85"></span>')
         else:
-            thumb = f'<span style="{THUMB};display:flex;align-items:center;justify-content:center;color:#5a5955">📰</span>'
+            thumb = f'<span style="{THUMB}"></span>'
         body = (f'{thumb}<span class="sg-news-text"><span class="sg-news-title">{title}</span>'
                 f'<span class="sg-news-meta">{meta}</span></span>')
         items.append(f'<li><a href="{html.escape(url)}" target="_blank" rel="noopener">{body}</a></li>'
@@ -777,26 +761,11 @@ def add_to_compare(iso3: str) -> None:
     st.session_state.pop("compare_picked", None)
 
 
-def hero(title: str, subtitle: str = "", kicker: str = "") -> None:
-    """A page header in the Seismographic style: a dark panel with the seismogram trace fading in on the right."""
+def hero(title: str, subtitle: str = "") -> None:
+    """The page title (the screen's one h1) and an optional line about the data under it."""
     st.markdown(
-        '<div class="sg-hero">'
-        + (f'<div class="sg-hero-kicker">{html.escape(kicker)}</div>' if kicker else "")
-        + f'<div class="sg-hero-title">{title}</div>'
-        + (f'<div class="sg-hero-sub">{subtitle}</div>' if subtitle else "")
-        + f'<img class="sg-hero-wave" src="{brand.data_uri("wave")}" alt=""></div>',
-        unsafe_allow_html=True,
-    )
-
-
-def brand_hero() -> None:
-    """The Seismographic banner for the home page: mark, wordmark, tagline and the trace."""
-    st.markdown(
-        '<div class="sg-hero sg-hero-brand">'
-        f'<div class="sg-hero-title"><span class="sg-brand"><img src="{brand.data_uri("icon")}" alt="">'
-        f'<span>{config.APP_TITLE.upper()}</span></span></div>'
-        f'<div class="sg-hero-sub">{html.escape(config.APP_TAGLINE)}</div>'
-        f'<img class="sg-hero-wave" src="{brand.data_uri("wave")}" alt=""></div>',
+        f'<div class="sg-head"><h1 class="sg-head-title">{title}</h1>'
+        + (f'<p class="sg-head-sub">{subtitle}</p>' if subtitle else "") + "</div>",
         unsafe_allow_html=True,
     )
 
@@ -1022,7 +991,7 @@ def render_reading(r: interpret.Reading, key: str) -> None:
                 st.markdown(f"{config.SEVERITY_ICON[w['severity']]} **{w['label']}**  \n{w['meaning']}")
                 st.caption(f"Typical response: {w['response']}")
         else:
-            st.markdown("✅ No absolute warning thresholds crossed.")
+            st.markdown("No absolute warning thresholds crossed.")
         if r.near:
             st.markdown("#### Close to a red line")
             st.markdown("\n".join(f"- {n}" for n in r.near))
@@ -1040,7 +1009,7 @@ def render_reading(r: interpret.Reading, key: str) -> None:
     for tab, audience in zip(tabs, interpret.AUDIENCES):
         with tab:
             st.markdown("\n".join(f"- {a}" for a in r.actions.get(audience, [])))
-    st.download_button("⬇️ Download this reading (Markdown)", interpret.reading_markdown(r).encode("utf-8"),
+    st.download_button("Download this reading (Markdown)", interpret.reading_markdown(r).encode("utf-8"),
                        file_name=f"{r.iso3}_real_life_reading.md", mime="text/markdown", key=f"{key}_download")
     st.caption(" ".join(r.caveats))
 
@@ -1050,11 +1019,11 @@ def data_status(core: dict) -> None:
         rows = []
         for key, m in core["meta"].items():
             if m["error"] and not m["from_snapshot"]:
-                status = "❌ Unavailable"
+                status = "Unavailable"
             elif m["from_snapshot"]:
-                status = f"🗂️ Snapshot ({m.get('snapshot_date') or 'saved copy'})"
+                status = f"Snapshot ({m.get('snapshot_date') or 'saved copy'})"
             else:
-                status = "✅ Live"
+                status = "Live"
             rows.append({
                 "Series": key,
                 "Provider": config.SOURCE_LABELS.get(m["provider"], m["provider"]),

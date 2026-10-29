@@ -4,7 +4,7 @@ import streamlit as st
 
 from prm import ui
 
-ui.hero("📚 Resources", kicker="About")
+ui.hero("Resources")
 st.markdown(
     "A curated reading and data list for political risk analysis — the sources behind Seismographic, the free "
     "outlooks professionals publish, and the methods that make analysis rigorous."

@@ -45,7 +45,7 @@ def globe_with_news(metric: str, map_title: str, in_view: set[str], region: str 
             st.caption("Latest risk news · click another country to switch")
             news = (config.NEWS_NAMES.get(selected, names[selected]), row["iso2"])
         else:
-            st.markdown("##### 🌍 Global risk news")
+            st.markdown("##### Global risk news")
             st.caption("Click a country on the globe for its news")
             news = (None, None)
         slot = st.empty()
@@ -66,8 +66,7 @@ def _pick_region() -> None:
         st.session_state["ov_region"] = full.get(points[0]["y"], points[0]["y"])
 
 
-ui.brand_hero()
-st.page_link("app_pages/intro.py", label="New here? Start with the introduction", icon=":material/waving_hand:")
+ui.hero("Global overview", config.APP_TAGLINE)
 ui.following_strip(table)
 
 # --- Filters -----------------------------------------------------------------
@@ -89,7 +88,7 @@ if income:
     view = view[view["income"].isin(income)]
 scored = view.dropna(subset=["composite"])
 
-# --- Headline numbers (sparkline = since config.HISTORY_START, delta = vs last year) --------------
+# --- Headline numbers (delta = vs last year) --------------------------------------------------------------
 yearly = hist[hist["iso3"].isin(view["iso3"])].groupby("year").agg(
     high=("tier", lambda s: int(s.isin(["High", "Severe"]).sum())),
     median=("composite", "median"),
@@ -99,22 +98,17 @@ last = yearly.loc[year - 1] if year - 1 in yearly.index else None
 vs = f"vs {year - 1}"
 
 
-def _trend(column: str) -> list:
-    return yearly[column].round(1).tolist()
-
-
 n_high = int(scored["tier"].isin(["High", "Severe"]).sum())
 n_conflict = int((scored["battle_deaths_raw"] >= 25).sum())
 median_now = scored["composite"].median() if len(scored) else None
 k1, k2, k3, k4, k5 = st.columns(5)
 k1.metric("Economies scored", f"{len(scored)}", border=True, height="stretch")
-k2.metric("High or Severe risk", n_high, border=True, height="stretch", chart_data=_trend("high"),
+k2.metric("High or Severe risk", n_high, border=True, height="stretch",
           delta=None if last is None else int(n_high - last["high"]), delta_color="inverse", delta_description=vs)
 k3.metric("Median score", "—" if median_now is None else f"{median_now:.0f}", border=True, height="stretch",
-          chart_data=_trend("median"),
           delta=None if last is None or median_now is None else round(float(median_now - last["median"]), 1),
           delta_color="inverse", delta_description=vs)
-k4.metric("In armed conflict", n_conflict, border=True, height="stretch", chart_data=_trend("conflict"),
+k4.metric("In armed conflict", n_conflict, border=True, height="stretch",
           delta=None if last is None else int(n_conflict - last["conflict"]), delta_color="inverse",
           delta_description=vs, help="Countries with at least 25 battle-related deaths in the latest UCDP year.")
 n_assessed = int((view["assessment"] == "✓").sum())
@@ -124,7 +118,6 @@ if n_assessed:
 else:  # until assessments are written, show something informative instead of a zero
     k5.metric("With a red flag", int((scored["flags"] > 0).sum()), border=True, height="stretch",
               help="Countries crossing at least one absolute warning threshold, such as inflation of 20% or more.")
-st.caption(f"Small charts: each figure since {config.HISTORY_START}. Arrows compare with {year - 1}; red = more risk.")
 ui.cite("index")
 
 # --- Map ---------------------------------------------------------------------
@@ -132,12 +125,8 @@ map_title = "Composite" if metric == "composite" else config.PILLAR_BY_KEY[metri
 if map_style == "3D globe":
     globe_with_news(metric, map_title, set(view["iso3"]), None if region == "All regions" else region)
     picked_iso3 = None
-    caption = (
-        "Drag to rotate, scroll or pinch to zoom, and **click any country (or dot, for small states) to see its index "
-        "and its latest news**. ▶ replays the index since " + str(config.HISTORY_START) + ". *3D* raises countries by "
-        "score, *Flows* shows the largest refugee movements, *Conflict* pulses where battle deaths are high. "
-        "Dim = outside your filters; grey = not enough data."
-    )
+    caption = (f"Click a country for its index and news. ▶ replays the index since {config.HISTORY_START}. "
+               "Dim = outside your filters; grey = not enough data.")
 else:
     map_event = st.plotly_chart(
         charts.choropleth(view, metric, map_title, zoom_to_data=region != "All regions"),
@@ -184,7 +173,7 @@ for r in view[view["composite"] >= 50].itertuples(index=False):
             reasons.append("⚑ New: " + new[0] + (f" (+{len(new) - 1} more)" if len(new) > 1 else ""))
     if r.iso3 in soon.index:
         e = soon.loc[r.iso3]
-        reasons.append(f"🗳️ {e['event']} in {(e['date'] - today).days} days")
+        reasons.append(f"{e['event']} in {(e['date'] - today).days} days")
     if reasons:
         hotspots.append({"iso3": r.iso3, "flag": r.flag, "name": r.name, "composite": r.composite, "tier": r.tier,
                          "signals": len(reasons), "why": " · ".join(reasons)})

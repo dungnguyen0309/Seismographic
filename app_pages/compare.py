@@ -13,9 +13,9 @@ hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist).set_index("iso3")
 options, names = ui.country_options(core["countries"])
 
-ui.hero("⚖️ Compare countries", kicker="Monitor")
+ui.hero("Compare countries")
 st.caption(
-    f"Pick up to {MAX_COMPARE} economies, or use **➕ Add to compare** on any country profile. "
+    f"Pick up to {MAX_COMPARE} economies, or use **Add to compare** on any country profile. "
     "Colours follow the order you pick them in."
 )
 
@@ -51,7 +51,7 @@ if len(picked) < MAX_COMPARE:
         with st.container(horizontal=True, vertical_alignment="center", key="similar_row"):
             st.caption(f"Similar to {names[picked[0]]}:")
             for iso3 in like:
-                st.button(f"➕ {names[iso3]}", key=f"add_like_{iso3}", on_click=_add_similar, args=(iso3,),
+                st.button(f"+ {names[iso3]}", key=f"add_like_{iso3}", on_click=_add_similar, args=(iso3,),
                           type="tertiary", help="A country with a close risk profile across the four pillars")
 
 sel = table.loc[picked]

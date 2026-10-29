@@ -15,10 +15,10 @@ import pandas as pd
 from . import config, scoring
 
 AUDIENCES = {
-    "business": "🏢 Business & investors",
-    "ngo": "🤝 NGOs & humanitarian work",
-    "travel": "🧳 Travel, study & staff safety",
-    "research": "🔎 Policy, journalism & research",
+    "business": "Business & investors",
+    "ngo": "NGOs & humanitarian work",
+    "travel": "Travel, study & staff safety",
+    "research": "Policy, journalism & research",
 }
 
 # Tier -> (one-line summary, what it usually looks like on the ground)

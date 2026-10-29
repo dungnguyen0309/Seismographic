@@ -9,7 +9,7 @@ countries = core["countries"]
 options, names = ui.country_options(countries)
 official = dict(zip(countries["iso3"], countries.get("official_name", countries["name"])))
 
-ui.hero("📺 Live TV & video", kicker="Monitor")
+ui.hero("Live TV & video")
 
 # --- Live now ---------------------------------------------------------------------------------------
 st.header("Live now")

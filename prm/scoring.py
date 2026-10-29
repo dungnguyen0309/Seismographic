@@ -396,7 +396,7 @@ def country_brief(
 
     cov = s.get("coverage")
     if pd.notna(cov) and cov < 75:
-        lines.append(f"⚠️ Only {cov:.0f}% of indicators are available — treat the score with caution.")
+        lines.append(f"Only {cov:.0f}% of indicators are available — treat the score with caution.")
     return lines
 
 

@@ -7,7 +7,7 @@ import streamlit as st
 
 from prm import config, glossary, ui
 
-LEGEND = ("🎨", "#e8e6dc", "Legend", "Tiers, pillar colours, colour scales and symbols.")
+LEGEND = ("", "#e8e6dc", "Legend", "Tiers, pillar colours, colour scales and symbols.")
 
 
 def slug(name: str) -> str:
@@ -41,10 +41,9 @@ def band(name: str, icon: str, color: str, blurb: str, count: int | None = None,
               f'{" · ".join(ui.source_link(k) for k in sources)}</div>' if sources else "")
     st.markdown(
         f'<div id="{slug(name)}" style="scroll-margin-top:72px;display:flex;gap:14px;align-items:flex-start;'
-        f'background:linear-gradient(90deg,{color}2e,{color}0a 65%,transparent);border:1px solid {color}55;'
-        f'border-left:6px solid {color};border-radius:12px;padding:{"10px 14px" if compact else "14px 18px"};'
+        f'border-top:1px solid #2c2c2a;padding:{"10px 0 0" if compact else "16px 0 0"};'
         f'margin:{"14px" if compact else "28px"} 0 10px">'
-        f'<div style="font-size:{"1.4rem" if compact else "1.9rem"};line-height:1.1">{icon}</div>'
+        f'<span style="width:10px;height:10px;border-radius:2px;background:{color};flex:none;margin-top:0.55em"></span>'
         '<div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">'
         f'<span style="font-size:{"1.05rem" if compact else "1.3rem"};font-weight:700;color:#ffffff">'
         f'{html.escape(name)}</span>{count_html}</div>'
@@ -88,7 +87,7 @@ def category_terms(category: str, items: list[glossary.Term], color: str, query:
             cards(pillar_items, color, query)
 
 
-ui.hero("📖 Glossary & legend", kicker="About")
+ui.hero("Glossary & legend")
 terms = glossary.all_terms()
 query = st.text_input("Search the glossary", placeholder="e.g. tier, inflation, WGI, IDP, red flag…",
                       key="glossary_search").strip()
@@ -120,10 +119,10 @@ st.markdown(
     + "".join(
         f'<a href="#{slug(name)}" style="text-decoration:none;color:inherit">'
         f'<div style="height:100%;box-sizing:border-box;background:#0f1012;border:1px solid #2c2c2a;'
-        f'border-top:4px solid {color};border-radius:10px;padding:10px 12px">'
-        f'<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:1.35rem">'
-        f'{icon}</span><span style="font-size:0.72rem;color:{color}">{"" if n is None else f"{n} terms"}</span></div>'
-        f'<div style="font-weight:700;color:{color};margin-top:4px;line-height:1.3">{html.escape(name)}</div>'
+        f'border-radius:10px;padding:10px 12px">'
+        f'<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">'
+        f'<span style="font-weight:700;color:#fff;line-height:1.3">{html.escape(name)}</span>'
+        f'<span style="font-size:0.75rem;color:#a3a29a;white-space:nowrap">{"" if n is None else f"{n} terms"}</span></div>'
         f'<div style="font-size:0.76rem;color:#a3a29a;margin-top:3px;line-height:1.4">{html.escape(blurb)}</div>'
         "</div></a>"
         for name, icon, color, blurb, n in tiles
@@ -143,7 +142,7 @@ with left:
     st.markdown("**Symbols**")
     st.markdown(
         "- 🔴 Critical · 🟠 Serious · 🟡 Watch — red-flag severity\n"
-        "- ⚑ a red flag crossed · ✅ none crossed\n"
+        "- ⚑ a red flag crossed\n"
         "- ▲ riskier · ▼ safer · ■ steady — change since last year (1 point or more)\n"
         "- ✓ a written analyst assessment exists\n"
         "- ☆ follow · ★ following (kept in your browser)\n"

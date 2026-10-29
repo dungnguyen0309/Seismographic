@@ -20,8 +20,7 @@ def grid(cards: list[str], min_width: int = 220) -> None:
                 f'gap:10px;margin:6px 0 14px">{"".join(cards)}</div>', unsafe_allow_html=True)
 
 
-ui.hero("👋 Introduction", "What Seismographic is, how it works, and how to get the most out of it.",
-        kicker="Start here")
+ui.hero("Introduction", "What Seismographic is, how it works, and how to get the most out of it.")
 
 # --- What it is ------------------------------------------------------------------------------------------
 st.header("What it is")
