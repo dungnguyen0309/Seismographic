@@ -2,7 +2,8 @@
 
 - a "Skip to content" link as the first tab stop (the sidebar and dock put about 40 links before the page title)
 - "/" or Ctrl/Cmd + K to open Find
-- focus put back on a control that Streamlit redraws after it is used (see keep_focus)
+- focus put back on a control that Streamlit redraws after it is used, or on the new page's title after a jump
+  from Find (see keep_focus)
 - Material icons, which Streamlit draws as ligature text ("public", "compare_arrows"), hidden from screen readers
   so links read "Global overview" rather than "public Global overview"
 """
@@ -19,7 +20,24 @@ export default function (component) {
   // back, so a keyboard user is not sent to the top of the page. The page draws after this runs, so wait for it.
   // The old element can still be on screen while the page redraws, so for a few seconds the focus is put back
   // whenever it falls to the page itself.
-  if (data && data.focus) {
+  if (data && data.focus === "__title__") {
+    // After a jump from Find: focus the new page's title once it is drawn (the old page's title is marked stale)
+    // The old page's title can still be on screen for a moment: focus the first title found, then for a few seconds
+    // move the focus again whenever it falls to the page itself (the title it was on has been replaced)
+    const started = Date.now();
+    let done = false;
+    const toTitle = () => {
+      const h1 = document.querySelector('[data-testid="stMain"] h1');
+      const lost = !document.activeElement || document.activeElement === document.body;
+      if (h1 && !h1.closest('[data-stale="true"]') && (!done || lost)) {
+        h1.setAttribute("tabindex", "-1");
+        h1.focus();
+        done = true;
+      }
+      if (Date.now() - started < 6000) setTimeout(toTitle, 100);
+    };
+    toTitle();
+  } else if (data && data.focus) {
     const started = Date.now();
     const refocus = () => {
       const lost = !document.activeElement || document.activeElement === document.body;
@@ -84,6 +102,7 @@ _component = st.components.v2.component("sg_a11y", html=_HTML, js=_JS, isolate_s
 
 
 FOCUS = "_sg_focus"  # session key: the widget key to give the focus back to on the next run
+TITLE = "__title__"  # ... or this, for the page title
 
 
 def keep_focus(widget_key: str) -> None:

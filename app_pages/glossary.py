@@ -107,7 +107,7 @@ if query:
         band(cat, meta.icon, meta.color, meta.blurb, len(items), compact=True)
         category_terms(cat, items, meta.color, query)
     ui.footer()
-    st.stop()
+    ui.end_page()
 
 # --- Contents -------------------------------------------------------------------------------------------------
 tiles = [(LEGEND[2], LEGEND[0], LEGEND[1], LEGEND[3], None)] + [

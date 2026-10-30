@@ -7,6 +7,7 @@ import html
 import logging
 import os
 import re
+import threading
 
 import pandas as pd
 import streamlit as st
@@ -50,10 +51,28 @@ def _reload() -> None:
         del st.session_state[key]
 
 
+class PageEnd(BaseException):
+    """Raised by end_page(): the page has nothing more to draw. A BaseException, so section guards let it through."""
+
+
+_boundary = threading.local()  # one script run per thread: is a page running inside page_error_boundary?
+
+
+def end_page():
+    """Stop drawing this page, like st.stop(), but let the bottom bar (drawn after the page) still appear.
+    st.stop() can't be used for that: once requested, every later Streamlit call stops too."""
+    if getattr(_boundary, "active", False):
+        raise PageEnd
+    st.stop()
+
+
 def page_error_boundary(run) -> None:
     """Runs a page; if it fails, a friendly message with a way out instead of a stack trace."""
+    _boundary.active = True
     try:
         run()
+    except PageEnd:
+        pass
     except Exception as exc:
         if _strict():
             raise
@@ -68,6 +87,8 @@ def page_error_boundary(run) -> None:
             pass
         with st.expander("Technical details"):
             st.code(f"{type(exc).__name__}: {str(exc)[:500]}", language=None)
+    finally:
+        _boundary.active = False
 
 
 # ---------------------------------------------------------------------------
@@ -340,6 +361,8 @@ GLOBAL_CSS = """
   [data-testid="stMetric"] { padding: 10px 12px !important; }
   [data-testid="stMetricValue"] { font-size: 1.55rem !important; }
 }
+/* headings carry no "link to heading" icon: it was an extra tab stop on every heading */
+[data-testid="stHeaderActionElements"] { display: none !important; }
 /* tabs: a little tighter, and they wrap onto a second line instead of hiding behind a sideways scroll */
 [data-testid="stTabs"] [role="tablist"] { gap: 2px 12px; flex-wrap: wrap; overflow-x: visible !important; }
 /* the accent is bright ink, like body text: unselected tabs, segments and pills step down to muted ink */
@@ -526,6 +549,7 @@ def _follow_jump(pages: dict) -> None:
     jump = st.session_state.pop("_jump_to", None)
     if not jump:
         return
+    a11y.keep_focus(a11y.TITLE)  # the keyboard lands on the new page's title, not on whatever control is there
     if jump.startswith(PAGE_KEY):
         by_path = {p.url_path: p for section in pages.values() for p in section}
         if jump[len(PAGE_KEY):] in by_path:
@@ -549,14 +573,19 @@ def _find(pages: dict) -> None:
             st.button(f"★ {names[iso3]}", key=f"dock_fol_{iso3}", on_click=_jump, args=(iso3,), type="tertiary")
 
 
-def dock(current_url_path: str, pages: dict) -> None:
-    """A console bar along the bottom of every page: the tracked country, the main pages and Find."""
+def page_setup(current_url_path: str, pages: dict) -> None:
+    """Before the page draws: a pending jump from Find, the styles, the followed list and the accessibility helper."""
     _follow_jump(pages)
     if current_url_path:  # any page but the overview: the overview stops pointing first-timers to the introduction
         st.session_state["_explored"] = True
     st.html(f"<style>{TOKENS_CSS}{GLOBAL_CSS}{DOCK_CSS}</style>")
     follow.sync()
     a11y.page_helper()
+
+
+def dock(current_url_path: str, pages: dict) -> None:
+    """A console bar along the bottom of every page: the tracked country, the main pages and Find. Drawn after the
+    page, so keyboard users reach it after the content, as they see it."""
     with st.container(key="sg_dock", horizontal=True, wrap=True):
         with st.container(key="sg_tabs", horizontal=True, wrap=False, gap=None, width="content"):
             for page, label, icon, url_path in DOCK_TABS:
@@ -602,7 +631,7 @@ def load():
         )
         with st.expander("Technical details"):
             st.code(f"{type(exc).__name__}: {exc}")
-        st.stop()
+        end_page()
     status = data.live_status()
     if core["source"] == "snapshot":
         if status["running"]:

@@ -46,7 +46,7 @@ st.session_state[ui.COMPARE_LIST] = list(picked)
 if not picked:
     st.query_params.pop("c", None)
     st.info("Choose at least one country.")
-    st.stop()
+    ui.end_page()
 st.query_params["c"] = ",".join(picked)  # the address bar now holds a link to this exact comparison
 if len(picked) < MAX_COMPARE:
     like = scoring.similar(scores, picked[0], n=8)

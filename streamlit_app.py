@@ -51,6 +51,8 @@ page = st.navigation(pages, expanded=True)
 st.set_page_config(page_title=f"{page.title} · {config.APP_TITLE}")  # each page names itself
 with ui.guard("The sidebar"):
     ui.sidebar()
+with ui.guard("Page setup"):
+    ui.page_setup(page.url_path, pages)
+ui.page_error_boundary(page.run)  # a page that ends early (ui.end_page) still returns here
 with ui.guard("The bottom bar"):
-    ui.dock(page.url_path, pages)
-ui.page_error_boundary(page.run)
+    ui.dock(page.url_path, pages)  # after the page: fixed to the bottom of the screen and last in the tab order

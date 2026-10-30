@@ -101,6 +101,20 @@ def test_weights_travel_in_the_link(app):
     assert not any("Scores use your pillar weights" in c.value for c in app.caption)
 
 
+def test_bottom_bar_on_a_page_that_stops_early(app):
+    # Compare with nothing picked calls st.stop(); the bar is drawn after the page and must still appear
+    app.switch_page("app_pages/stress.py")
+    app.run()
+    app.switch_page("app_pages/compare.py")
+    app.session_state["compare_picked"] = []
+    app.run()
+    assert not errors(app), errors(app)
+    assert any("Choose at least one country" in i.value for i in app.info)
+    assert any('class="sg-read' in m.value for m in app.markdown)
+    app.switch_page("app_pages/intro.py")  # leave a page without the compare widget, for the next tests
+    app.run()
+
+
 def test_shared_comparison_link(app):
     app.switch_page("app_pages/compare.py")
     if "compare_picked" in app.session_state:

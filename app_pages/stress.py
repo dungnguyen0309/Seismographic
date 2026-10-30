@@ -69,7 +69,7 @@ st.session_state["_stress_last"] = shocks
 if not shocks:
     st.query_params.pop("shock", None)
     st.info("Pick a scenario or move a slider.")
-    st.stop()
+    ui.end_page()
 st.query_params["shock"] = stress.encode(shocks)  # the address bar now holds a link to this exact test
 
 in_scope = table

@@ -37,7 +37,7 @@ st.header("Video reports & analysis")
 videos = data.load_videos()
 if videos is None or videos.empty:
     st.info("The video feeds can't be reached right now. The app retries every few minutes.")
-    st.stop()
+    ui.end_page()
 
 KINDS = {"News reports": "news", "Analysis & explainers": "analysis", "Institutions & NGOs": "institutions"}
 f1, f2 = st.columns([1.4, 2])
