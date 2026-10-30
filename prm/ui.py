@@ -58,8 +58,8 @@ def page_error_boundary(run) -> None:
         if _strict():
             raise
         log.exception("page failed")
-        st.error("Something went wrong while drawing this page. The other pages still work, and trying again "
-                 "usually helps.", icon=":material/error:")
+        st.error("This page couldn't be drawn. Try again, or open another page: the rest of the app still works.",
+                 icon=":material/error:")
         c1, c2 = st.columns([1, 1], width=420)
         c1.button("Try again", on_click=_reload, icon=":material/refresh:", key="sg_retry")
         try:  # the error screen itself must never fail
@@ -87,10 +87,44 @@ def _refresh_data() -> None:
     st.toast(data.refresh(), icon=":material/refresh:")
 
 
+def decode_weights(text) -> dict[str, int] | None:
+    """'50,20,20,10' (Stability, Governance, Economy, Social) from a shared link; None unless it is valid."""
+    try:
+        parts = [int(x) for x in str(text).split(",")]
+    except ValueError:
+        return None
+    if len(parts) != len(PILLARS) or any(not 0 <= x <= 100 or x % 5 for x in parts) or not sum(parts):
+        return None
+    return {p.key: x for p, x in zip(PILLARS, parts)}
+
+
+def custom_weights_label() -> str:
+    """'Stability 50% · Governance 20% · …' when the weights differ from the defaults, otherwise ''."""
+    w = weights()
+    if all(w[p.key] == p.default_weight for p in PILLARS) or sum(w.values()) <= 0:
+        return ""
+    total = sum(w.values())
+    return " · ".join(f"{p.short} {w[p.key] / total:.0%}" for p in PILLARS)
+
+
+def _sync_weights_link() -> None:
+    """Custom weights travel in the address (?w=50,20,20,10), so a shared link shows the same scores; a link's
+    weights are taken once, when it is opened."""
+    if not st.session_state.get("_weights_from_link"):
+        st.session_state["_weights_from_link"] = True
+        if shared := decode_weights(st.query_params.get("w")):
+            for key, value in shared.items():
+                st.session_state[WEIGHT_KEYS[key]] = value
+    if custom_weights_label():
+        st.query_params["w"] = ",".join(str(int(weights()[p.key])) for p in PILLARS)
+    else:
+        st.query_params.pop("w", None)
+
+
 def sidebar() -> None:
     _init_weights()
+    _sync_weights_link()
     with st.sidebar:
-        st.caption(config.APP_TAGLINE)
         with st.expander("Index weights", expanded=False):
             st.caption(
                 "How much each pillar counts in the composite score. "
@@ -101,15 +135,15 @@ def sidebar() -> None:
             w = weights()
             total = sum(w.values()) or 1
             st.caption(" · ".join(f"{p.short} {w[p.key] / total:.0%}" for p in PILLARS))
-            st.button("Reset to defaults", on_click=_reset_weights)
+            st.button("Reset weights", on_click=_reset_weights)
         st.button(
-            "↻ Refresh data", on_click=_refresh_data,
-            help="Data is kept for 12 hours. This downloads the latest figures from every source in the "
-                 "background; the page updates by itself when they arrive.",
+            "Refresh data", on_click=_refresh_data, icon=":material/refresh:",
+            help="Figures are cached for 12 hours. This downloads the latest from every source; the page updates "
+                 "when they arrive.",
         )
         st.caption(
             f"**{config.APP_TITLE}** · built by {config.AUTHOR}  \n"
-            "Educational project — not investment or security advice."
+            "Educational project. Not investment or security advice."
         )
 
 
@@ -306,8 +340,8 @@ GLOBAL_CSS = """
   [data-testid="stMetric"] { padding: 10px 12px !important; }
   [data-testid="stMetricValue"] { font-size: 1.55rem !important; }
 }
-/* tabs: a little tighter, so more of them fit on one row */
-[data-testid="stTabs"] [role="tablist"] { gap: 12px; }
+/* tabs: a little tighter, and they wrap onto a second line instead of hiding behind a sideways scroll */
+[data-testid="stTabs"] [role="tablist"] { gap: 2px 12px; flex-wrap: wrap; overflow-x: visible !important; }
 /* the accent is bright ink, like body text: unselected tabs, segments and pills step down to muted ink */
 [data-testid="stTabs"] [role="tab"][aria-selected="false"] :is(p, span),
 [data-testid="stButtonGroup"] button:is([aria-checked="false"], [aria-pressed="false"]) { color: var(--sg-muted) !important; }
@@ -366,6 +400,14 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
 /* a country's colour on Compare: a short line, like the lines in its charts */
 .sg-swatch { display: inline-block; width: 16px; height: 4px; border-radius: 2px; margin-right: 8px;
   vertical-align: middle; background: var(--c); }
+.sg-cmp-score { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 6px 0 4px; }
+.sg-cmp-score .sg-cs-num { font-size: 2.3rem; }
+.sg-cmp-meta { font-size: 0.8rem; color: var(--sg-muted); line-height: 1.45; }
+/* red-flag severity: a small drawn dot before the text */
+.sg-sev { display: inline-block; width: 0.62em; height: 0.62em; border-radius: 50%; background: var(--c);
+  margin-right: 0.5em; vertical-align: 0.02em; }
+/* bold in the mono face barely differs from regular at body size: full weight and the brightest ink */
+[data-testid="stMarkdownContainer"] :is(strong, b) { font-weight: 700; color: var(--sg-strong); }
 /* following strip */
 .sg-follow-head { font-size: 0.95rem; font-weight: 600; color: var(--sg-strong); margin: 4px 0 -4px; }
 [class*="st-key-fol_"]:not([class*="st-key-fol_open"]) { position: relative; background: var(--sg-raised); border: 1px solid var(--sg-line);
@@ -510,6 +552,8 @@ def _find(pages: dict) -> None:
 def dock(current_url_path: str, pages: dict) -> None:
     """A console bar along the bottom of every page: the tracked country, the main pages and Find."""
     _follow_jump(pages)
+    if current_url_path:  # any page but the overview: the overview stops pointing first-timers to the introduction
+        st.session_state["_explored"] = True
     st.html(f"<style>{TOKENS_CSS}{GLOBAL_CSS}{DOCK_CSS}</style>")
     follow.sync()
     a11y.page_helper()
@@ -521,7 +565,7 @@ def dock(current_url_path: str, pages: dict) -> None:
                     st.page_link(page, label=label, icon=icon, width="stretch")
             with st.container(key="sg_tab_off_find"):
                 with st.popover("Find", icon=":material/search:", type="tertiary", width="stretch",
-                                help="Search countries and pages"):
+                                help="Search countries and pages (press / or Ctrl+K)"):
                     _find(pages)
         _readout(current_url_path)  # last, so the tabs never wait for it (CSS shows it first)
 
@@ -553,8 +597,8 @@ def load():
             scores = data.get_scores(core, year, weights_tuple(), core["version"])
     except Exception as exc:  # show a friendly message instead of a stack trace
         st.error(
-            "The data sources could not be reached and no snapshot is available yet. "
-            "Please try again in a few minutes."
+            "The data couldn't be loaded: the sources didn't answer and there is no saved copy yet. "
+            "Try again in a few minutes."
         )
         with st.expander("Technical details"):
             st.code(f"{type(exc).__name__}: {exc}")
@@ -563,28 +607,32 @@ def load():
     if core["source"] == "snapshot":
         if status["running"]:
             st.info(
-                f"Showing the saved data from {core.get('snapshot_date') or 'the last snapshot'} so the page opens "
-                "instantly. The latest figures are downloading and will appear by themselves in about a minute.",
+                f"Showing saved data from {core.get('snapshot_date') or 'the last snapshot'} while the latest "
+                "figures download. The page updates by itself in about a minute.",
             )
         elif status["error"]:
             st.warning(
-                f"The latest figures couldn't be downloaded right now, so this is the saved data from "
-                f"{core.get('snapshot_date') or 'the last snapshot'}. The app tries again every 15 minutes."
+                f"The latest figures couldn't be downloaded, so this is saved data from "
+                f"{core.get('snapshot_date') or 'the last snapshot'}. The app retries every 15 minutes."
             )
     else:
         failed = [k for k, m in core["meta"].items() if m["error"] and not m["from_snapshot"]]
         snap = [k for k, m in core["meta"].items() if m["from_snapshot"]]
         if failed:
             st.warning(
-                f"Some data is temporarily unavailable ({_providers(failed)}). Scores use the remaining "
-                "indicators — see *Data status* at the bottom of the page."
+                f"{_providers(failed)} didn't respond, so scores use the remaining indicators. Details are under "
+                "*Data status and provenance* at the bottom of the page."
             )
         elif snap:
             saved_on = core["meta"][snap[0]].get("snapshot_date") or "the last snapshot"
-            st.info(f"Some figures come from the saved copy of {saved_on} because a source didn't answer "
-                    f"({_providers(snap)}). The app tries again within the hour.", icon=":material/history:")
+            st.info(f"{_providers(snap)} didn't respond, so some figures come from the saved copy of {saved_on}. "
+                    "The app retries within the hour.", icon=":material/history:")
     if status["running"] or (status["version"] and status["version"] != core["version"]):
         _wait_for_live_data(core["version"])
+    if label := custom_weights_label():  # every score on the page depends on them, so say so
+        with st.container(horizontal=True, vertical_alignment="center", key="sg_weights_note", gap="small"):
+            st.caption(f"Scores use your pillar weights: {label}.")
+            st.button("Reset weights", on_click=_reset_weights, type="tertiary", key="sg_weights_reset")
     return core, year, values, scores
 
 
@@ -713,7 +761,7 @@ def sev_mark(severity: str, spoken: bool = True) -> str:
     """The coloured severity dot as HTML, silent for screen readers; with spoken=True they hear the word instead
     ("Serious:"). Use spoken=False where the severity word is already in the sentence."""
     word = f'<span class="sg-sr">{config.SEVERITY_LABEL[severity]}: </span>' if spoken else ""
-    return f'<span aria-hidden="true">{config.SEVERITY_ICON[severity]}</span> {word}'
+    return f'<span class="sg-sev" style="--c:{config.SEVERITY_COLOR[severity]}" aria-hidden="true"></span>{word}'
 
 
 def country_heading(name: str, iso2, level: int = 1, css: str = "") -> None:
@@ -749,7 +797,7 @@ def _news_list(query_name: str | None, limit: int, iso2) -> None:
     news = data.load_news(query_name)
     articles = news["articles"]
     if news["error"]:
-        st.info("News is unavailable right now — every source refused the request. It retries automatically.")
+        st.info("Headlines are unavailable: every news source refused the request. The app retries automatically.")
         return
     if articles is None or articles.empty:
         st.info("No matching headlines in the last 7 days.")
@@ -766,15 +814,15 @@ def _news_list(query_name: str | None, limit: int, iso2) -> None:
         elif fallback:
             thumb = (f'<span style="{THUMB};display:flex;align-items:center;justify-content:center">'
                      f'<img src="{fallback}" alt="" style="width:40px;border-radius:3px;opacity:0.85"></span>')
-        else:
-            thumb = f'<span style="{THUMB}"></span>'
+        else:  # no picture: no empty placeholder either, the headline takes the room
+            thumb = ""
         body = (f'{thumb}<span class="sg-news-text"><span class="sg-news-title">{title}</span>'
                 f'<span class="sg-news-meta">{meta}</span></span>')
         items.append(f'<li><a href="{html.escape(url)}" target="_blank" rel="noopener">{body}</a></li>'
                      if url.startswith("http") else f"<li><span>{body}</span></li>")
     st.markdown(f'<ul class="sg-news">{"".join(items)}</ul>', unsafe_allow_html=True)
     st.caption(f"{news['source']} · fetched {news['fetched']} · refreshes every 10 minutes. "
-               "Automated and unfiltered — verify before citing.")
+               "Collected automatically and unchecked: verify before citing.")
 
 
 def tier_badge(tier: str | None, prefix: str = "") -> str:
@@ -800,8 +848,11 @@ def country_options(countries: pd.DataFrame) -> tuple[list[str], dict[str, str]]
 
 
 def current_country(countries: pd.DataFrame, fallback: str = "NGA") -> str:
+    """The country opened last in this visit; on a fresh visit, the first one this browser follows."""
     valid = set(countries["iso3"])
-    for candidate in (st.session_state.get("country"), st.query_params.get("country"), fallback):
+    followed = follow.following()
+    for candidate in (st.session_state.get("country"), st.query_params.get("country"),
+                      followed[0] if followed else None, fallback):
         if candidate and str(candidate).upper() in valid:
             return str(candidate).upper()
     return countries["iso3"].iloc[0]
@@ -896,13 +947,18 @@ def globe_panel(**kwargs) -> None:
         go_to_country(open_iso3)
 
 
-def _open_selected(event, frame: pd.DataFrame) -> None:
-    if event and event.selection.rows:
-        go_to_country(frame.iloc[event.selection.rows[0]]["iso3"])
+def open_selected(event, frame: pd.DataFrame, key: str) -> None:
+    """A ticked row offers its country instead of leaving the page at once: the tick selects, the button opens."""
+    if not (event and event.selection.rows):
+        return
+    row = frame.iloc[event.selection.rows[0]]
+    name = str(row.get("name") or row["iso3"]).removeprefix("▶ ")
+    if st.button(f"Open {name}", key=f"{key}_open", icon=":material/arrow_forward:"):
+        go_to_country(row["iso3"])
 
 
 def movers_lists(df: pd.DataFrame, n: int = 5, key: str = "movers") -> None:
-    """Two clickable lists: the biggest rises and falls in the composite since last year."""
+    """Two lists: the biggest rises and falls in the composite since last year (tick a row to open it)."""
     valid = df.dropna(subset=["delta_1y"])
     risers = valid[valid["delta_1y"] >= TREND_THRESHOLD].nlargest(n, "delta_1y").reset_index(drop=True)
     fallers = valid[valid["delta_1y"] <= -TREND_THRESHOLD].nsmallest(n, "delta_1y").reset_index(drop=True)
@@ -925,12 +981,12 @@ def movers_lists(df: pd.DataFrame, n: int = 5, key: str = "movers") -> None:
                     "trend": "Change", "tier_text": "Tier",
                 },
             )
-            _open_selected(event, frame)
+            open_selected(event, frame, f"{key}_{part}")
 
 
 def country_table(df: pd.DataFrame, key: str, height: int | None = None, extra: dict | None = None,
                   sort: str = "rank", ascending: bool = True) -> None:
-    """A clickable ranking table (flag, score, change, tier, pillars); a click opens the profile."""
+    """A ranking table (flag, score, change, tier, pillars); a ticked row offers its profile."""
     # Score and change right after the name, so they stay on screen when the table is narrower than its columns
     cols = ["iso3", "flag", "name", "composite", "trend", "tier", "rank", *[p.key for p in PILLARS], *(extra or {})]
     frame = df.sort_values(sort, ascending=ascending, na_position="last")[[c for c in cols if c in df.columns]]
@@ -949,7 +1005,7 @@ def country_table(df: pd.DataFrame, key: str, height: int | None = None, extra: 
             **(extra or {}),
         },
     )
-    _open_selected(event, frame)
+    open_selected(event, frame, key)
 
 
 def upcoming_events(events: pd.DataFrame, limit: int = 8) -> None:
@@ -1032,7 +1088,7 @@ def _video_gallery(videos: pd.DataFrame, key: str, limit: int, columns: int) -> 
             st.markdown(f"**[{v['title'].replace('[', '(').replace(']', ')')}]({url})**")
             views = f" · {v['views'] / 1000:,.0f}k views" if pd.notna(v.get("views")) and v["views"] >= 1000 else ""
             st.caption(f"{v['channel']} · {_time_ago(v['published'])}{views}")
-            if st.button("▶ Play here", key=f"{key}_{v['video_id']}", width="stretch"):
+            if st.button("Play here", key=f"{key}_{v['video_id']}", width="stretch", icon=":material/play_arrow:"):
                 st.session_state[f"{key}_playing"] = v["video_id"]
                 st.rerun(scope="fragment")
 
@@ -1080,7 +1136,7 @@ def render_reading(r: interpret.Reading, key: str) -> None:
     for tab, audience in zip(tabs, interpret.AUDIENCES):
         with tab:
             st.markdown("\n".join(f"- {a}" for a in r.actions.get(audience, [])))
-    st.download_button("Download this reading (Markdown)", interpret.reading_markdown(r).encode("utf-8"),
+    st.download_button("Download reading (Markdown)", interpret.reading_markdown(r).encode("utf-8"),
                        file_name=f"{r.iso3}_real_life_reading.md", mime="text/markdown", key=f"{key}_download")
     st.caption(" ".join(r.caveats))
 
@@ -1115,7 +1171,7 @@ def footer() -> None:
     st.caption(
         f"**{config.APP_TITLE}** — {config.APP_DESCRIPTION} Data: World Bank Worldwide Governance Indicators & World "
         "Development Indicators · IMF World Economic Outlook · UNHCR · UCDP (via World Bank) · Bing News, Google News "
-        "and GDELT. Scores are relative and model-based; they are a starting point for analysis, not a forecast. "
+        "and GDELT. Scores are relative and model-based, and they do not forecast specific events. "
         f"Built by {config.AUTHOR}."
     )
-    st.page_link(SOURCES_PAGE, label="Every source, with links and update dates", icon=":material/verified:")
+    st.page_link(SOURCES_PAGE, label="All sources, with links and update dates", icon=":material/verified:")

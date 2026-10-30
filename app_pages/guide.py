@@ -12,12 +12,8 @@ countries = core["countries"]
 options, names = ui.country_options(countries)
 events = content.load_events()
 
-ui.hero("Guide")
-st.markdown(
-    "Seismographic turns open data into numbers: a 0–100 score, a tier, four pillars and a set of red flags. This "
-    "page translates those numbers into real life — what they usually look like for the people living, working or "
-    "travelling there — and into practical steps for businesses, NGOs, travellers and researchers."
-)
+ui.hero("Guide", "What the scores, tiers, pillars and red flags look like in real life, and practical steps for "
+                 "businesses, NGOs, travellers and researchers.")
 
 # --- 1. Any country, in plain language ------------------------------------------------------------
 st.header("1 · Read any country in plain language")
@@ -67,7 +63,7 @@ for key, op, threshold, severity, label in config.RED_FLAGS:
     crossing = int(ops[op](pd.to_numeric(values[key], errors="coerce"), threshold).sum())
     meaning, response = interpret.FLAG_MEANING[key]
     flag_rows.append({
-        "Severity": f"{config.SEVERITY_ICON[severity]} {config.SEVERITY_LABEL[severity]}",
+        "Severity": config.SEVERITY_LABEL[severity],
         "Threshold": label,
         "What it means in real life": meaning,
         "What people typically do": response,
@@ -130,13 +126,14 @@ st.markdown(
     """
 * **Fast-moving events.** Annual data cannot see last week's coup or last night's protest — read the news pulse,
   official advice and local sources.
-* **Relative, not absolute.** A *Low* score means "safer than most", not "safe"; a global shock can leave rankings
-  unchanged while every country gets worse. The red flags cover the absolute side.
+* **Scores are relative.** A *Low* score means safer than most countries, and such a country can still be
+  dangerous; a global shock can leave rankings unchanged while every country gets worse. The red flags cover the
+  absolute side.
 * **National averages.** A country score hides regions: a conflict in one province may not touch the capital, and
   the reverse.
 * **Missing data.** Countries with little data are often the riskiest — check the coverage figure on each profile.
-* **Not advice.** This guide describes what such conditions usually mean and how people commonly respond. It is
-  general and educational, not investment, legal or security advice.
+* **General information.** This guide describes what such conditions usually mean and how people commonly
+  respond. It is educational and is not investment, legal or security advice.
 """
 )
 ui.footer()

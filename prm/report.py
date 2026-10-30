@@ -80,8 +80,10 @@ def _history_chart(pdf: FPDF, x: float, y: float, w: float, h: float, rows: pd.D
         pdf.set_text_color(*INK)
 
 
-def country_pdf(reading: interpret.Reading, row: pd.Series, rows: pd.DataFrame, flags: list[dict], year: int) -> bytes:
-    """The brief for one country. `row` is its line of ui.master_table, `rows` its history (one row per year)."""
+def country_pdf(reading: interpret.Reading, row: pd.Series, rows: pd.DataFrame, flags: list[dict], year: int,
+                weights_label: str = "") -> bytes:
+    """The brief for one country. `row` is its line of ui.master_table, `rows` its history (one row per year);
+    `weights_label` names the pillar weights when they are not the defaults."""
     pdf = _Brief(format="A4")
     pdf.set_margins(16, 14, 16)
     pdf.set_auto_page_break(True, margin=16)
@@ -108,6 +110,8 @@ def country_pdf(reading: interpret.Reading, row: pd.Series, rows: pd.DataFrame, 
     pdf.set_text_color(*MUTED)
     pdf.cell(0, 5, _t(f"{row.get('region', '')} - {row.get('income', '')} - index for {year}"),
              new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    if weights_label:
+        pdf.cell(0, 5, _t(f"Scored with custom pillar weights: {weights_label}"), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.ln(3)
 
     # Score block (left) and risk since HISTORY_START (right)

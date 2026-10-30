@@ -105,7 +105,7 @@ st.table(
 st.caption(
     "Averaging many indicator scores pulls composites toward the middle of the scale, so the outer tiers are "
     "reserved for countries that sit at the extremes on most dimensions at once. ‘Low’ means low *relative to "
-    "other countries*, not risk-free."
+    "other countries*; it does not mean risk-free."
 )
 
 st.header("6 · Red flags")
@@ -121,7 +121,7 @@ st.dataframe(
           "Reference": config.SOURCES[src].url if (src := config.FLAG_BASIS.get((key, thr), (None, ""))[0]) else None}
          for key, op, thr, sev, label in RED_FLAGS]
         + [{"Severity": "Watch", "Flag": "Political stability deteriorating", "Indicator": "wgi_pv",
-            "Rule": f"falls ≥ {config.WGI_TREND_THRESHOLD:g} pts in {config.WGI_TREND_YEARS} years",
+            "Rule": f"falls ≥ {config.WGI_TREND_THRESHOLD:g} points in {config.WGI_TREND_YEARS} years",
             "Basis": "Seismographic line, larger than most year-to-year noise in the WGI",
             "Reference": config.SOURCES["wgi_method"].url}]
     ),
@@ -178,10 +178,10 @@ else:
     st.caption(
         "Read with care: the scores are rebuilt with data as published today, which includes later revisions; "
         "governance scores for a year are only published the following year; and a few dozen cases is a small sample. "
-        "The test shows the index ranks countries sensibly, not that it predicts any single event."
+        "The test shows that the index ranks countries sensibly; it does not show that it can predict a single event."
     )
     ui.cite("ucdp", "ucdp_def", "wgi")
-    st.page_link("app_pages/conflict.py", label="Turned into a forecast: the Conflict outlook, tested out of time",
+    st.page_link("app_pages/conflict.py", label="Conflict outlook: the forecast model, tested on unseen years",
                  icon=":material/insights:", query_params={"tab": "outlook"})
 
 st.header("9 · Benchmark: the Fragile States Index")
@@ -195,7 +195,7 @@ with ui.guard("The benchmark"):
     fsi, _ = data.load_fsi()
     if fsi is None or fsi.empty:
         st.info("The Fragile States Index can't be downloaded from its publisher right now, so the benchmark is "
-                "hidden. It is tried again in a few minutes.")
+                "hidden. The app retries in a few minutes.")
     else:
         fsi_year = int(fsi["year"].mode().iloc[0])
         tr_hist = ui.history(tr_core)

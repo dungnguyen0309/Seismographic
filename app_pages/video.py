@@ -36,7 +36,7 @@ ui.cite("youtube")
 st.header("Video reports & analysis")
 videos = data.load_videos()
 if videos is None or videos.empty:
-    st.info("The video feeds can't be reached right now. They are tried again every few minutes.")
+    st.info("The video feeds can't be reached right now. The app retries every few minutes.")
     st.stop()
 
 KINDS = {"News reports": "news", "Analysis & explainers": "analysis", "Institutions & NGOs": "institutions"}
@@ -56,7 +56,7 @@ else:
     else:
         st.caption(f"{len(shown)} recent {kind.lower()} mention {names[about]}.")
 if shown.empty:
-    st.info(f"No {kind.lower()} could be loaded right now. They are tried again every few minutes.")
+    st.info(f"No {kind.lower()} could be loaded right now. The app retries every few minutes.")
 else:
     ui.video_gallery(shown, key=f"gallery_{kind}_{about}", limit=12)
 ui.cite("youtube")

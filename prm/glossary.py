@@ -79,8 +79,8 @@ TERMS: dict[str, list[tuple[str, str]]] = {
     "Warnings": [
         ("Red flag", "An absolute warning threshold, such as inflation of 20% or more. Unlike the relative score, it "
                      "matters wherever the country ranks."),
-        ("Critical / Serious / Watch", "Red-flag severities: 🔴 Critical (e.g. war, inflation ≥ 50%), 🟠 Serious "
-                                       "(e.g. active conflict, inflation ≥ 20%), 🟡 Watch (e.g. debt ≥ 90% of GDP)."),
+        ("Critical / Serious / Watch", "Red-flag severities, from most to least severe: Critical (e.g. war, inflation ≥ 50%), Serious "
+                                       "(e.g. active conflict, inflation ≥ 20%), Watch (e.g. debt ≥ 90% of GDP)."),
         ("Close to a red line", "An indicator within reach of a threshold — for example inflation between 15% and "
                                 "20% — shown on the In real life tab."),
         ("Political stability deteriorating", "A Watch flag raised when the WGI political-stability score falls by "

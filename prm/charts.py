@@ -198,7 +198,7 @@ def movers(df: pd.DataFrame, n: int = 8) -> go.Figure:
             customdata=np.column_stack([d["start"].round(1), d["end"].round(1), d["iso3"]]),
             text=[f"{c:+.1f}" for c in d["change"]], textposition="outside", cliponaxis=False,
             hovertemplate=(
-                "<b>%{y}</b><br>Change: %{x:+.1f} pts<br>%{customdata[0]} → %{customdata[1]}"
+                "<b>%{y}</b><br>Change: %{x:+.1f} points<br>%{customdata[0]} → %{customdata[1]}"
                 "<br><i>Click to open the profile</i><extra></extra>"
             ),
         )
@@ -238,8 +238,32 @@ def pillar_bars(row: pd.Series, regional_median: pd.Series) -> go.Figure:
     return _base(fig, height=300, legend=True)
 
 
-def risk_history(hist: pd.DataFrame) -> go.Figure:
-    """One country's composite (bold, dots in tier colours) and pillar scores per year, over the tier bands."""
+def history_marks(hist: pd.DataFrame) -> dict[int, list[str]]:
+    """The years something changed for one country: a new tier, or armed conflict (UCDP's 25 battle deaths) or war
+    (1,000) entering or leaving the data that year's index used."""
+    marks: dict[int, list[str]] = {}
+    prev = None
+    for r in hist.sort_values("year").itertuples(index=False):
+        if prev is not None:
+            if isinstance(r.tier, str) and isinstance(prev.tier, str) and r.tier != prev.tier:
+                up = TIER_ORDER.index(r.tier) > TIER_ORDER.index(prev.tier)
+                marks.setdefault(int(r.year), []).append(f"{'▲' if up else '▼'} {r.tier}")
+            now, before = getattr(r, "battle_deaths_raw", np.nan), getattr(prev, "battle_deaths_raw", np.nan)
+            if pd.notna(now) and pd.notna(before):
+                if now >= 1000 > before:
+                    marks.setdefault(int(r.year), []).append("war")
+                elif now >= 25 > before:
+                    marks.setdefault(int(r.year), []).append("armed conflict")
+                elif before >= 25 > now:
+                    marks.setdefault(int(r.year), []).append("conflict ends")
+        prev = r
+    return marks
+
+
+def risk_history(hist: pd.DataFrame, marks: bool = False) -> go.Figure:
+    """One country's composite (bold, dots in tier colours) and pillar scores per year, over the tier bands. With
+    marks=True it reads as a seismogram: the trace leads (pillars start hidden in the legend) and the years where
+    something changed are marked on it."""
     fig = go.Figure()
     for tier, upper in zip(config.TIERS, [t.lower for t in config.TIERS[1:]] + [100]):
         fig.add_hrect(y0=tier.lower, y1=upper, fillcolor=tier.color, opacity=0.06, line_width=0, layer="below")
@@ -249,8 +273,16 @@ def risk_history(hist: pd.DataFrame) -> go.Figure:
         fig.add_trace(go.Scatter(
             x=hist["year"], y=hist[p.key], name=p.short, mode="lines",
             line=dict(color=PILLAR_COLORS[p.key], width=1.5), opacity=0.85,
-            hovertemplate=p.short + " %{x}: %{y:.0f}<extra></extra>",
+            hovertemplate=p.short + " %{x}: %{y:.0f}<extra></extra>", visible="legendonly" if marks else True,
         ))
+    if marks:
+        at = hist.set_index("year")["composite"]
+        for i, (year, labels) in enumerate(sorted(history_marks(hist).items())):
+            if pd.isna(at.get(year)):
+                continue
+            fig.add_annotation(x=year, y=at[year], text=" · ".join(labels), showarrow=True, arrowhead=0,
+                               arrowcolor=INK["faint"], arrowwidth=1, ax=0, ay=-30 if i % 2 == 0 else -66,
+                               font=dict(color=INK["soft"], size=11), bgcolor="rgba(0,0,0,0.7)")
     tiers = hist["tier"].fillna("—")
     fig.add_trace(go.Scatter(
         x=hist["year"], y=hist["composite"], name="Composite", mode="lines+markers",

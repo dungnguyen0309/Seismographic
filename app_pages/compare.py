@@ -55,7 +55,7 @@ if len(picked) < MAX_COMPARE:
         with st.container(horizontal=True, vertical_alignment="center", key="similar_row"):
             st.caption(f"Similar to {names[picked[0]]}:")
             for iso3 in like:
-                st.button(f"+ {names[iso3]}", key=f"add_like_{iso3}", on_click=_add_similar, args=(iso3,),
+                st.button(f"Add {names[iso3]}", key=f"add_like_{iso3}", on_click=_add_similar, args=(iso3,),
                           type="tertiary", help="A country with a close risk profile across the four pillars")
 
 sel = table.loc[picked]
@@ -65,14 +65,17 @@ cols = st.columns(len(picked))
 for col, iso3, colour in zip(cols, picked, COUNTRY_COLORS):
     r = sel.loc[iso3]
     with col:
-        with st.container(border=True):
+        with st.container(border=True, height="stretch"):
             st.markdown(f'<span class="sg-swatch" style="--c:{colour}"></span>{ui.flag_img(r["iso2"])}'
                         f"<b>{html.escape(names[iso3])}</b>", unsafe_allow_html=True)
-            st.markdown(ui.tier_badge(r["tier"]), unsafe_allow_html=True)
             score = "—" if pd.isna(r["composite"]) else f"{r['composite']:.0f}"
             rank = "—" if pd.isna(r["rank"]) else f"#{int(r['rank'])}"
-            st.markdown(f"Score **{score}** · Rank **{rank}** · Flags **{int(r['flags'])}**  \n"
-                        f"1-yr change **{r.get('trend', '—')}**")
+            tier_colour = config.TIER_COLORS.get(r["tier"], config.INK["faint"])
+            st.markdown(f'<div class="sg-cmp-score"><span class="sg-cs-num" style="--c:{tier_colour}">{score}</span>'
+                        f'{ui.tier_badge(r["tier"])}</div>'
+                        f'<div class="sg-cmp-meta">Rank {rank} · {int(r["flags"])} red flag'
+                        f'{"" if int(r["flags"]) == 1 else "s"} · {r.get("trend", "—")} in a year</div>',
+                        unsafe_allow_html=True)
 
 st.header("On the globe")
 ui.globe_panel(table=table.reset_index(), hist=hist, flows=core.get("flows"), metric="composite",

@@ -70,7 +70,7 @@ _HTML = """
     <input class="rg-year-input" type="range" min="0" max="0" value="0" step="1" aria-label="Year">
     <span class="rg-year"></span>
   </div>
-  <div class="rg-panel" hidden></div>
+  <div class="rg-panel" hidden aria-live="polite"></div>
 </div>
 """
 
@@ -327,6 +327,21 @@ function locate(ctx, iso3) {
   if (f) return f.centre;
   const c = ctx.byIso.get(iso3);
   return c && c.lat != null && c.lng != null ? { lat: c.lat, lng: c.lng } : null;
+}
+
+function nearestCountry(ctx, view) {
+  // The country whose centre is closest to the middle of the view (for picking by keyboard)
+  const rad = Math.PI / 180;
+  let best = null;
+  let bestD = Infinity;
+  for (const c of ctx.data.countries) {
+    const at = locate(ctx, c.iso3);
+    if (!at) continue;
+    const d = Math.acos(Math.min(1, Math.sin(view.lat * rad) * Math.sin(at.lat * rad)
+      + Math.cos(view.lat * rad) * Math.cos(at.lat * rad) * Math.cos((view.lng - at.lng) * rad)));
+    if (d < bestD) { bestD = d; best = c.iso3; }
+  }
+  return best;
 }
 
 function startView(ctx) {
@@ -602,7 +617,7 @@ function renderPanel(root, ctx) {
       (c.flags ? '<div class="rg-flags">⚑ ' + c.flags + " red flag" + (c.flags > 1 ? "s" : "") + " today</div>"
                : '<div class="rg-flags ok">✓ No red flags today</div>');
   }
-  if (c && iso !== ctx.data.focus) html += '<button class="rg-open">Open full profile →</button>';
+  if (c && iso !== ctx.data.focus) html += '<button class="rg-open">Open country profile</button>';
   panel.innerHTML = html;
   panel.hidden = false;
   panel.querySelector(".rg-close").onclick = () => select(root, ctx, null, false);
@@ -766,6 +781,28 @@ function build(root, ctx, Globe, features) {
     e.stopPropagation();
     toast(root, "Hold " + ZOOM_KEY + " and scroll to zoom the globe");
   }, { capture: true });
+  // Keyboard: the globe is one tab stop; arrows turn it, + and - zoom, Enter picks the country in the middle
+  el.tabIndex = 0;
+  el.setAttribute("role", "application");
+  el.setAttribute("aria-label", "3D globe. Arrow keys turn it, plus and minus zoom, Enter opens the country in the "
+    + "middle, Escape closes it.");
+  el.addEventListener("keydown", (e) => {
+    const view = g.pointOfView();
+    const step = Math.max(2, Math.min(20, view.altitude * 8));  // finer steps when zoomed in
+    const turn = { ArrowLeft: [0, -step], ArrowRight: [0, step], ArrowUp: [step, 0], ArrowDown: [-step, 0] }[e.key];
+    if (turn) {
+      stopSpin(root, ctx);
+      g.pointOfView({ lat: Math.max(-80, Math.min(80, view.lat + turn[0])), lng: view.lng + turn[1],
+                      altitude: view.altitude }, flyMs(250));
+    } else if (e.key === "+" || e.key === "=") control(root, ctx, "in");
+    else if (e.key === "-" || e.key === "_") control(root, ctx, "out");
+    else if (e.key === "Enter" || e.key === " ") {
+      const iso = nearestCountry(ctx, view);
+      if (iso) select(root, ctx, iso, true);
+    } else if (e.key === "Escape" && ctx.selected) select(root, ctx, null, false);
+    else return;
+    e.preventDefault();
+  });
   if (TOUCH) lockGlobe(root, ctx, true);
   root.querySelector(".rg-lock").onclick = () => lockGlobe(root, ctx, false);
   // The motion setting can change while the page is open

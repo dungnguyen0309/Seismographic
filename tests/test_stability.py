@@ -38,7 +38,7 @@ def test_page_error_boundary_shows_a_way_out(monkeypatch):
 
     at = AppTest.from_function(script).run()
     assert not at.exception
-    assert at.error and "Something went wrong" in at.error[0].value
+    assert at.error and "couldn't be drawn" in at.error[0].value
     assert at.button(key="sg_retry")
 
 

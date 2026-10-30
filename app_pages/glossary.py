@@ -141,12 +141,14 @@ with left:
     st.markdown(" ".join(ui.pillar_chip(p.key, p.short) for p in config.PILLARS), unsafe_allow_html=True)
     st.markdown("**Symbols**")
     st.markdown(
-        "- 🔴 Critical · 🟠 Serious · 🟡 Watch — red-flag severity\n"
+        f"- {ui.sev_mark('critical', False)}Critical · {ui.sev_mark('serious', False)}Serious · "
+        f"{ui.sev_mark('warning', False)}Watch — red-flag severity\n"
         "- ⚑ a red flag crossed\n"
         "- ▲ riskier · ▼ safer · ■ steady — change since last year (1 point or more)\n"
         "- ✓ a written analyst assessment exists\n"
         "- ☆ follow · ★ following (kept in your browser)\n"
-        "- ▶ play (replay the years on the globe, or play a video)"
+        "- ▶ play (replay the years on the globe, or play a video)",
+        unsafe_allow_html=True,
     )
 with right:
     st.markdown("**Colour scales**")
@@ -166,6 +168,6 @@ for category, items in terms.items():
     band(category, meta.icon, meta.color, meta.blurb, len(items), meta.sources)
     category_terms(category, items, meta.color)
     if not meta.sources:
-        st.page_link(ui.SOURCES_PAGE, label="Every source in full, with links and update dates",
+        st.page_link(ui.SOURCES_PAGE, label="All sources, with links and update dates",
                      icon=":material/verified:")
 ui.footer()

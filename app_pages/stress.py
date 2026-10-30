@@ -53,11 +53,16 @@ with st.container(border=True):
                              placeholder="All regions")
     incomes = c3.multiselect("Income groups hit", [i for i in INCOMES if i in set(table["income"])],
                              key="stress_incomes", placeholder="All income groups")
-    for row in range(0, len(stress.SHOCKS), 4):  # row by row, so phones list them in order
-        for col, s in zip(st.columns(4), stress.SHOCKS[row:row + 4]):
-            col.slider(f"{s.label}, {s.unit}", s.low, s.high, step=s.step, key=KEYS[s.key], on_change=_custom,
-                       format="%+.1f" if s.step < 1 else "%+.0f")
-    st.button("Clear shocks", on_click=_clear, type="tertiary", icon=":material/restart_alt:")
+    # The sliders fold away, so the results sit right under the scenario on a phone too; the label says what is set
+    set_now = [f"{s.label} {st.session_state[KEYS[s.key]]:+g} {s.unit}" for s in stress.SHOCKS
+               if st.session_state[KEYS[s.key]]]
+    with st.expander("Shocks: " + (" · ".join(set_now) if set_now else "none"), icon=":material/tune:",
+                     key="stress_shocks"):  # the key keeps it open while the label changes
+        for row in range(0, len(stress.SHOCKS), 4):  # row by row, so phones list them in order
+            for col, s in zip(st.columns(4), stress.SHOCKS[row:row + 4]):
+                col.slider(f"{s.label}, {s.unit}", s.low, s.high, step=s.step, key=KEYS[s.key], on_change=_custom,
+                           format="%+.1f" if s.step < 1 else "%+.0f")
+        st.button("Clear shocks", on_click=_clear, type="tertiary", icon=":material/restart_alt:")
 
 shocks = {s.key: float(st.session_state[KEYS[s.key]]) for s in stress.SHOCKS if st.session_state[KEYS[s.key]]}
 st.session_state["_stress_last"] = shocks
@@ -132,8 +137,7 @@ else:
             "flags_text": st.column_config.TextColumn("New or worse red flags", width="large"),
         },
     )
-    if event and event.selection.rows:
-        ui.go_to_country(rows.iloc[event.selection.rows[0]]["iso3"])
+    ui.open_selected(event, rows, "stress_rows")
 
 left, right = st.columns(2)
 with left:
@@ -158,6 +162,6 @@ def _csv() -> bytes:
     return out.round(2).to_csv(index=False).encode("utf-8")
 
 
-st.download_button("Results (CSV)", data=_csv, file_name="seismographic-stress-test.csv", mime="text/csv",
+st.download_button("Download results (CSV)", data=_csv, file_name="seismographic-stress-test.csv", mime="text/csv",
                    type="tertiary")
 ui.cite("imf", "wdi", "index")

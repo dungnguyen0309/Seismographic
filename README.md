@@ -30,7 +30,7 @@ an **events watchlist**, and **written analyst assessments** with probabilistic 
 | Section | Page | What it shows |
 |---|---|---|
 | Monitor | **Global overview** | Interactive 3D globe — rotate, zoom, click any country (small states are dots) to see its index and **its latest news**, replay the index year by year since 2015, pulsing rings where armed conflict is active, animated refugee-flow arcs — or a flat map; the countries you **follow** at the top; headline numbers with year-on-year changes; then tabs for hotspots to watch, the biggest moves (including political stability), the sortable ranking with flags and 1-year change arrows, and the risk matrix with the tier mix by region |
-|  | **Country profile** | Composite score and rank (with trend and change vs last year), a **☆ Follow** button (remembered in the browser, no account), automatic data brief, the **conflict outlook** for next year, red flags, pillar scores vs regional median, **risk over time** since 2015, sensitivity check, a **what-if simulator** (move indicator sliders or pick a scenario such as *currency crisis* or *armed conflict* and watch the score, tier and rank update), every indicator with its year and source, WGI trends with confidence intervals, IMF macro charts with projections, live risk-related headlines, protest coverage over three months, the **countries with the most similar risk profile**, links to the country's pages at the World Bank, IMF, ReliefWeb and FAO, a **one-page PDF brief** to download, and the analyst assessment |
+|  | **Country profile** | Composite score and rank (with trend and change vs last year), a **☆ Follow** button (remembered in the browser, no account), automatic data brief, the **conflict outlook** for next year, red flags, pillar scores vs regional median, a **seismogram** of its risk since 2015 (tier changes, conflicts and wars marked on the trace), sensitivity check, a **what-if simulator** (move indicator sliders or pick a scenario such as *currency crisis* or *armed conflict* and watch the score, tier and rank update), every indicator with its year and source, WGI trends with confidence intervals, IMF macro charts with projections, live risk-related headlines, protest coverage over three months, the **countries with the most similar risk profile**, links to the country's pages at the World Bank, IMF, ReliefWeb and FAO, a **one-page PDF brief** to download, and the analyst assessment |
 |  | **Compare countries** | Up to six countries — add them from any profile with *Add to compare* or from the *similar to* suggestions; the address is a **shareable link** to the comparison: pillar radar, governance over time, indicator table, economic trajectories |
 |  | **Score changes** | This year vs last: biggest risers and fallers, tier changes, the pillar that drove each move, red flags newly crossed or cleared |
 |  | **Live video** | 25 round-the-clock live news channels from five regions (Europe, the Americas, the Middle East, Africa and Asia-Pacific), each labelled with where it is based and who owns it, plus the latest video reports, think-tank analysis (CFR, Crisis Group, Carnegie, Brookings, Atlantic Council, CSIS) and briefings from institutions and NGOs (UN, IMF, World Bank, ICRC, Human Rights Watch), filterable by country; each profile also shows the videos about that country |
@@ -57,12 +57,12 @@ underneath, with links.
 
 A **console bar** along the bottom of every page keeps the tracked country one tap away (flag, score, tier,
 change and a small seismogram of its risk since 2015) next to tabs for Home, Compare, Live and Guide and a
-*Find* sheet that searches every country and every page.
+*Find* sheet that searches every country and every page (press / or Ctrl+K).
 
 ## Method in brief
 
 * **17 indicators in 4 pillars**: Political Stability & Violence (35%), Governance & Institutions (25%),
-  Macroeconomic & Financial (25%), Social & Humanitarian Pressure (15%). Weights are adjustable in the app.
+  Macroeconomic & Financial (25%), Social & Humanitarian Pressure (15%). Weights are adjustable in the app, and custom weights travel in shared links.
 * **Normalisation**: percentile ranks (0 = lowest risk in the sample, 100 = highest); battle deaths and
   displacement use a capped log scale so that "no conflict" scores zero.
 * **Aggregation**: arithmetic mean within pillars, weighted mean across pillars, with minimum-data rules.

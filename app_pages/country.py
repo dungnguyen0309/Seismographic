@@ -64,7 +64,7 @@ def _add_to_compare() -> None:
 def _brief_pdf() -> bytes:
     """Built only when the button is clicked."""
     reading = interpret.country_reading(iso3, table, values, scores, hist, content.load_events(), core.get("flows"), year)
-    return report.country_pdf(reading, row, country_hist, scoring.red_flags(v), year)
+    return report.country_pdf(reading, row, country_hist, scoring.red_flags(v), year, ui.custom_weights_label())
 
 
 if toast := st.session_state.pop("_compare_toast", None):
@@ -78,7 +78,7 @@ with st.container(horizontal=True, vertical_alignment="center", key="country_act
                   help=f"You can compare up to {config.MAX_COMPARE} countries. Remove one on the Compare page.")
     else:
         st.button("Add to compare", key="compare_add", on_click=_add_to_compare)
-    st.download_button("PDF brief", data=_brief_pdf, file_name=f"{iso3}_risk_brief_{year}.pdf",
+    st.download_button("Download PDF brief", data=_brief_pdf, file_name=f"{iso3}_risk_brief_{year}.pdf",
                        mime="application/pdf", on_click="ignore", key="brief_pdf",
                        help="A one-page brief: score, pillars, trend, red flags and what it means in real life.")
     follow.follow_button(iso3, name)
@@ -96,18 +96,33 @@ st.caption(f"Sources: {sources}  \nElsewhere: " + " · ".join(f"[{label} ↗]({u
 flags = scoring.red_flags(v)
 trend = scoring.wgi_trend(core["series"], iso3, "pv")
 
+TABS = {"summary": ":material/summarize: Summary", "real": ":material/explore: In real life",
+        "peers": ":material/groups: Peers", "map": ":material/map: Map & refugees", "whatif": ":material/tune: What-if",
+        "indicators": ":material/list_alt: Indicators", "governance": ":material/account_balance: Governance",
+        "economy": ":material/monitoring: Economy", "news": ":material/newspaper: News",
+        "assessment": ":material/edit_note: Assessment"}
+if st.query_params.get("tab") in TABS:  # e.g. ?country=KEN&tab=news
+    st.session_state["country_tab"] = TABS[st.query_params["tab"]]
+    del st.query_params["tab"]
 (t_summary, t_real, t_peers, t_map, t_whatif, t_indicators, t_governance, t_economy, t_news,
- t_analyst) = st.tabs(
-    [":material/summarize: Summary", ":material/explore: In real life", ":material/groups: Peers",
-     ":material/map: Map & refugees", ":material/tune: What-if", ":material/list_alt: Indicators",
-     ":material/account_balance: Governance", ":material/monitoring: Economy", ":material/newspaper: News",
-     ":material/edit_note: Assessment"],
-    key="country_tab", on_change="rerun",  # only the open tab is built: much lighter on phones
-)
+ t_analyst) = st.tabs(list(TABS.values()), key="country_tab", on_change="rerun")  # only the open tab is built
 
 # --- Summary --------------------------------------------------------------------
 with t_summary:
     if t_summary.open:
+        st.header("Risk over time")
+        if country_hist["composite"].notna().sum() >= 2:
+            st.plotly_chart(charts.risk_history(country_hist, marks=True), config={"displayModeBar": False})
+            ui.cite("index")
+            st.caption(
+                f"The index recomputed for every year since {config.HISTORY_START}, each time with only the data "
+                "available for that year. Scores are relative to the other countries that year, so a rising line means "
+                f"{name} moved up the risk ranking. Marks = a new tier or armed conflict entering or leaving the data; "
+                f"bands = tiers; the pillars can be switched on in the legend. {year} uses IMF estimates."
+            )
+        else:
+            st.info("Not enough history to draw a trend for this country.")
+
         c1, c2 = st.columns([1.1, 1])
         with c1:
             st.header("What the data says")
@@ -122,15 +137,17 @@ with t_summary:
                 if mine["status"] == "In armed conflict":
                     st.markdown(f"**In armed conflict** in the latest data ({outlook.data_year}).")
                 else:
-                    level = "🟠" if mine["relative"] >= 3 else ("🟡" if mine["relative"] >= 1 else "🟢")
-                    st.markdown(f"{level} **{mine['probability']:.1%}** chance that armed conflict breaks out in "
-                                f"{outlook.index_year + 1} — {mine['relative']:.1f}× the average for a country at peace.")
+                    level = ui.sev_mark("serious" if mine["relative"] >= 3 else "warning", spoken=False) \
+                        if mine["relative"] >= 1 else ""
+                    st.markdown(f"{level}**{mine['probability']:.1%}** chance that armed conflict breaks out in "
+                                f"{outlook.index_year + 1} — {mine['relative']:.1f}× the average for a country at peace.",
+                                unsafe_allow_html=True)
                 st.page_link("app_pages/conflict.py", label="How this is estimated (Conflict outlook)",
                              icon=":material/insights:", query_params={"tab": "outlook"})
             st.header("Red flags")
             if trend and trend["change"] <= -config.WGI_TREND_THRESHOLD:
                 flags.append({"severity": "warning",
-                              "label": f"Political stability deteriorating ({trend['change']:+.1f} pts since {trend['start_year']})"})
+                              "label": f"Political stability deteriorating ({trend['change']:+.1f} points since {trend['start_year']})"})
             if flags:
                 for f in sorted(flags, key=lambda f: config.SEVERITY_ORDER[f["severity"]]):
                     st.markdown(f"{ui.sev_mark(f['severity'], spoken=False)}**{SEVERITY_LABEL[f['severity']]}** — "
@@ -143,25 +160,13 @@ with t_summary:
             st.header("Upcoming events")
             country_events = content.load_events()
             ui.upcoming_events(country_events[country_events["iso3"] == iso3].assign(country=name), limit=5)
-            st.page_link("app_pages/watchlist.py", label="Add or see all events in the watchlist", icon=":material/event:")
+            st.page_link("app_pages/watchlist.py", label="Events watchlist", icon=":material/event:")
             ui.cite("ifes")
 
         st.header("Pillar scores")
         peers = table[table["region"] == row["region"]]
         st.plotly_chart(charts.pillar_bars(s, peers[[p.key for p in PILLARS]].median()), config={"displayModeBar": False})
         ui.cite("index")
-
-        st.header("Risk over time")
-        if country_hist["composite"].notna().sum() >= 2:
-            st.plotly_chart(charts.risk_history(country_hist), config={"displayModeBar": False})
-            ui.cite("index")
-            st.caption(
-                f"The index recomputed for every year since {config.HISTORY_START}, each time with only the data "
-                "available for that year. Scores are relative to the other countries that year, so a rising line means "
-                f"{name} moved up the risk ranking. Bands = tiers; {year} uses IMF estimates."
-            )
-        else:
-            st.info("Not enough history to draw a trend for this country.")
 
         with st.expander("How robust is this score? (sensitivity to the weights)"):
             sens = data.get_sensitivity(core, year, iso3, ui.weights_tuple(), core["version"])
@@ -181,8 +186,8 @@ with t_summary:
 with t_real:
     if t_real.open:
         st.header(f"What the data means for {name} in real life")
-        st.caption("A plain-language translation of the scores, red flags, trend and upcoming events — and how "
-                   "different people commonly act on them. General guidance, not advice.")
+        st.caption("The scores, red flags, trend and upcoming events in plain language, and how people commonly "
+                   "act on them. General guidance only.")
         reading = interpret.country_reading(iso3, table, values, scores, hist, content.load_events(), core.get("flows"),
                                             year)
         ui.render_reading(reading, key=f"real_{iso3}")
@@ -220,7 +225,7 @@ with t_peers:
             peer_table, key="peer_table", height=min(460, 38 * (len(peer_table) + 1)),
             extra={"group_rank": st.column_config.NumberColumn("Rank in group", format="%d")},
         )
-        st.caption(f"▶ marks {name}. Click a row to open another country.")
+        st.caption(f"▶ marks {name}. Tick a row to open another country.")
 
         st.header("Most similar risk profiles")
         like = scoring.similar(scores, iso3, n=8)
@@ -237,7 +242,7 @@ with t_peers:
                     help="100 = the same four pillar scores; based on the distance between the profiles")},
             )
             st.caption(f"Countries anywhere in the world whose stability, governance, economic and social scores are "
-                       f"closest to {name}'s. Click a row to open one.")
+                       f"closest to {name}'s. Tick a row to open one.")
 
 # --- Map & refugee links ------------------------------------------------------------
 with t_map:
@@ -284,7 +289,6 @@ WHATIF_PRESETS = {
     "Reform & recovery": {"inflation": ("min", 5), "gdp_growth": ("max", 4), "wgi_ge": ("add", 10),
                             "wgi_rl": ("add", 10), "wgi_cc": ("add", 10)},
 }
-PILLAR_SQUARES = {"stability": "🟦", "governance": "🟧", "economic": "🟩", "social": "🟨"}
 BATTLE_DEATH_STEPS = [0, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000]
 WHATIF_PREFIX = f"wi_{iso3}_"
 
@@ -348,7 +352,7 @@ def what_if_simulator() -> None:
     with st.container(horizontal=True, wrap=True, key="whatif_presets"):  # full names; they wrap instead of truncating
         for preset in WHATIF_PRESETS:
             st.button(preset, on_click=_apply_preset, args=(preset, specs), key=f"preset_{preset}")
-        st.button("↺ Reset", on_click=_reset_whatif, key="whatif_reset")
+        st.button("Reset indicators", on_click=_reset_whatif, key="whatif_reset", icon=":material/restart_alt:")
 
     controls, results = st.container(key="split_whatif").columns([1, 1.15], gap="large")
     changes, moved = {}, []
@@ -357,7 +361,7 @@ def what_if_simulator() -> None:
             keys = [k for k, s in specs.items() if s["ind"].pillar == pillar.key]
             if not keys:
                 continue
-            with st.expander(f"{PILLAR_SQUARES[pillar.key]} {pillar.label}", expanded=i == 0):
+            with st.expander(pillar.label, expanded=i == 0):
                 for key in keys:
                     spec = specs[key]
                     widget_key = WHATIF_PREFIX + key
@@ -530,7 +534,7 @@ with t_news:
             if about is None or about.empty:
                 st.caption(f"None of the latest videos from the international broadcasters and think tanks mention {name}.")
             else:
-                st.caption("From the latest uploads of international broadcasters and think tanks; press ▶ to watch here.")
+                st.caption("From the latest uploads of international broadcasters and think tanks; play one here or open it on YouTube.")
                 ui.video_gallery(about, key=f"profile_videos_{iso3}", limit=6)
             st.page_link("app_pages/video.py", label="Live TV and all video reports", icon=":material/live_tv:")
             ui.cite("youtube")
@@ -538,7 +542,7 @@ with t_news:
             if st.toggle("Show media tone over the last 3 months (GDELT)"):
                 tone, terr = data.load_tone(news_name)
                 if terr:
-                    st.info("GDELT's tone data can't be reached right now. It is tried again in a few minutes.")
+                    st.info("GDELT's tone data can't be reached right now. Try again in a few minutes.")
                 elif tone is None or tone.empty:
                     st.info("No tone data returned.")
                 else:
@@ -585,9 +589,9 @@ with t_analyst:
         else:
             st.info(f"No analyst assessment for {name} yet.")
             st.markdown(
-                "The model gives you the *what*; an assessment adds the *so what*: key judgments with probabilities, "
-                "scenarios, and the indicators that would change your mind. Write one in the **Assessment builder** and "
-                "add the file to the project's `assessments/` folder."
+                "An assessment adds key judgments with probabilities, scenarios and the indicators that would change "
+                "your mind. Write one in the **Assessment builder** and add the file to the project's `assessments/` "
+                "folder."
             )
             st.page_link("app_pages/builder.py", label="Open the assessment builder", icon=":material/edit_note:")
 

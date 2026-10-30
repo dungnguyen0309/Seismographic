@@ -20,16 +20,16 @@ def grid(cards: list[str], min_width: int = 220) -> None:
                 f'gap:10px;margin:6px 0 14px">{"".join(cards)}</div>', unsafe_allow_html=True)
 
 
-ui.hero("Introduction", "What Seismographic is, how it works, and how to get the most out of it.")
+ui.hero("Introduction", "What Seismographic is and how the score works.")
 
 # --- What it is ------------------------------------------------------------------------------------------
 st.header("What it is")
 st.markdown(
-    f"**{config.APP_TITLE}** is a transparent, open-data index of **political, governance, economic and social "
-    f"risk** for {n_scored} economies. It is built the way professional country-risk models are: indicators are "
+    f"**{config.APP_TITLE}** is an open-data index of **political, governance, economic and social "
+    f"risk** for {n_scored} economies. It is built like professional country-risk models: indicators are "
     "grouped into pillars, and the pillars are combined into one weighted score, with absolute red flags and room "
-    "for an analyst's judgment on top. Every figure comes from a public source you can check, and every step of the "
-    "method is written down."
+    "for an analyst's judgment on top. Every figure comes from a public source, and every step of the method is "
+    "documented."
 )
 stats = [
     (n_scored, "economies scored"), (len(config.SCORED_INDICATORS), "indicators"), (len(PILLARS), "pillars"),
@@ -59,9 +59,9 @@ grid([f'<div style="{CARD}">'
 st.markdown(f"**Tiers:** {tiers}", unsafe_allow_html=True)
 st.markdown(
     "On top of the score: **red flags** mark absolute danger lines (such as inflation above 20% or an active war) "
-    "that matter wherever a country ranks, and an **analyst assessment** can add the judgment no dataset captures. "
+    "that matter wherever a country ranks, and an **analyst assessment** can add judgment the data cannot capture. "
     "Scores are **relative**: 0 is the lowest risk in the sample and 100 the highest, so a low score means *safer "
-    "than most*, not *safe*."
+    "than most countries*, and such a country can still be dangerous."
 )
 
 # --- The four pillars ---------------------------------------------------------------------------------------
@@ -88,7 +88,8 @@ st.markdown(
     "1. Open the **Global overview** and click any country on the globe to see its score.\n"
     "2. Open its **Country profile** and read the *In real life* tab: what the numbers mean on the ground.\n"
     "3. Use the bar at the bottom of every page to jump between Home, Compare, Live and Guide; **Find** searches "
-    "every country and every page. The country on the left of the bar is the last one you opened.\n"
+    "every country and every page. The country on the left of the bar is the last one you opened in this visit "
+    "(on a new visit, the first country you follow).\n"
     "4. **☆ Follow** the countries you care about: they stay at the top of the Global overview, in this browser.\n"
     "5. Not sure what a term means? The **Glossary & legend** explains every one."
 )

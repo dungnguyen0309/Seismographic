@@ -10,10 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 APP_TITLE = "Seismographic"
-APP_TAGLINE = "Picking up political tremors before they become earthquakes."
 APP_DESCRIPTION = (
-    "A transparent country risk index built from open data — "
-    "with an analyst's judgment on top."
+    "A country risk index built from open data, with room for an analyst's judgment."
 )
 AUTHOR = "Tuan Dung Nguyen"  # shown in the footer and on assessments
 
@@ -766,7 +764,8 @@ FLAG_SHORT: dict[tuple[str, float], str] = {
     ("displaced_share", 5): "Displaced ≥ 5%", ("homicide", 20): "Homicides ≥ 20/100k",
 }
 SEVERITY_ORDER = {"critical": 0, "serious": 1, "warning": 2}
-SEVERITY_ICON = {"critical": "🔴", "serious": "🟠", "warning": "🟡"}
+# Red-flag severities: a drawn dot in text (ui.sev_mark), the word in tables; status colours, not tier colours
+SEVERITY_COLOR = {"critical": "#d03b3b", "serious": "#ec835a", "warning": "#fab219"}
 SEVERITY_LABEL = {"critical": "Critical", "serious": "Serious", "warning": "Watch"}
 
 # A WGI change is flagged as deteriorating when the score falls by at least this much over 3 years

@@ -12,12 +12,10 @@ table = ui.master_table(core, values, scores, hist)
 econ_keys = [k for k, _ in ECON_COLUMNS]
 df = table.join(values[econ_keys], on="iso3")  # table already carries the n_* risk scores
 
-ui.hero("Economic stress")
+ui.hero("Economic stress", "Where an economic crisis could trigger political trouble.")
 edition = core["meta"].get("gdp_growth", {}).get("edition") or "IMF World Economic Outlook"
-st.markdown(
-    "Where an economic crisis could trigger political trouble: runaway prices, recession, unsustainable debt and "
-    f"deficits, and thin foreign-exchange buffers. Figures are {year} estimates from the {edition}, plus World Bank "
-    "reserves data."
+st.caption(
+    f"Figures are {year} estimates from the {edition}, plus World Bank reserves data."
 )
 
 regions = sorted(df["region"].dropna().unique())
@@ -33,7 +31,7 @@ k3.metric("Public debt ≥ 90% of GDP", int((view["gov_debt"] >= 90).sum()), bor
 k4.metric("Deficit ≥ 5% of GDP", int((view["fiscal_balance"] <= -5).sum()), border=True)
 k5.metric("Reserves < 3 months of imports", int((view["reserves_months"] < 3).sum()), border=True)
 ui.cite("imf", "wdi", "imf_ara")
-st.page_link("app_pages/stress.py", label="What if a shock hits them all? Run a stress test", icon=":material/bolt:")
+st.page_link("app_pages/stress.py", label="Stress test: apply one shock to many countries", icon=":material/bolt:")
 
 # Economic red flags per country (used by the globe and the warning-lights table)
 econ_flag_keys = {"inflation", "gdp_growth", "gov_debt", "fiscal_balance", "current_account", "reserves_months"}
@@ -91,13 +89,13 @@ with o_col:
     ui.cite("imf")
 
 # --- Warning lights -------------------------------------------------------------------------------------
-st.header("Countries flashing several warning lights")
+st.header("Countries crossing several warning thresholds")
 rows = []
 for r in view.itertuples(index=False):
     hits = econ_flags.get(r.iso3, [])
     if len(hits) >= 2:
         rows.append({"iso3": r.iso3, "flag": r.flag, "name": r.name, "count": len(hits),
-                     "warnings": " · ".join(f"{config.SEVERITY_ICON[f['severity']]} {f['short']}" for f in hits),
+                     "warnings": " · ".join(f"{f['short']} ({config.SEVERITY_LABEL[f['severity']].lower()})" for f in hits),
                      "economic": r.economic})
 warnings = pd.DataFrame(rows, columns=["iso3", "flag", "name", "count", "warnings", "economic"])
 if warnings.empty:
@@ -114,8 +112,7 @@ else:
                                                         color=config.PILLAR_COLORS["economic"]),
         },
     )
-    if event and event.selection.rows:
-        ui.go_to_country(warnings.iloc[event.selection.rows[0]]["iso3"])
+    ui.open_selected(event, warnings, "economy_warnings")
     st.caption("Thresholds: inflation ≥ 20%, negative growth, debt ≥ 90% of GDP, deficit or current-account deficit "
                "≥ 5% of GDP, reserves under 3 months of imports. See the Methodology page.")
     ui.cite("imf", "wdi", "imf_ara")

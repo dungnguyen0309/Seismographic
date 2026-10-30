@@ -367,7 +367,8 @@ def country_brief(
     if trend:
         direction = "improved" if trend["change"] > 0 else "deteriorated" if trend["change"] < 0 else "was unchanged"
         lines.append(
-            f"WGI political stability {direction} from {trend['start']:.1f} ({trend['start_year']}) to "
+            f"Political stability (World Bank governance indicators) {direction} from {trend['start']:.1f} "
+            f"({trend['start_year']}) to "
             f"{trend['end']:.1f} ({trend['end_year']}), a change of {trend['change']:+.1f} points."
         )
 

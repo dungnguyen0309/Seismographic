@@ -12,10 +12,10 @@ core, year, values, scores = ui.load()
 countries = core["countries"]
 options, names = ui.country_options(countries)
 
-ui.hero("Assessment builder")
+ui.hero("Assessment builder", "Write a structured risk assessment for one country.")
 st.markdown(
-    "Turn the data into analysis. Fill in the sections below, download the file, and upload it to the "
-    "project's `assessments/` folder — it then appears on the country profile. "
+    "Fill in the sections, download the file and add it to the project's `assessments/` folder; it then appears "
+    "on the country profile. "
     "The structure follows professional intelligence and political-risk writing: **bottom line up front, "
     "key judgments with probabilities, drivers, scenarios and signposts.**"
 )
@@ -110,9 +110,9 @@ def _prefill() -> None:
 
 
 st.header("4 · Drivers")
-st.button("Pre-fill with the data", on_click=_prefill,
+st.button("Fill in the latest figures", on_click=_prefill,
           help="Writes the latest figures for each driver into the boxes below, as a starting point. "
-               "Replace them with your own analysis — the data says *what*, you explain *why* and *what next*.")
+               "Replace them with your analysis: why it is happening and what comes next.")
 d1, d2 = st.columns(2)
 drv_political = d1.text_area("Political", height=150, key="drv_political",
                              placeholder="Elections, succession, coalition dynamics, protest…")
@@ -135,7 +135,7 @@ for label, default_p in [("Base case", 60), ("Upside", 15), ("Downside", 25)]:
         scenarios.append({"name": label, "probability": int(p), "description": desc, "signposts": signs})
 total = sum(x["probability"] for x in scenarios)
 if total != 100:
-    st.warning(f"Scenario probabilities add up to {total}%, not 100%.")
+    st.warning(f"Scenario probabilities add up to {total}%. Adjust them so they total 100%.")
 
 st.header("6 · Indicators, implications and sources")
 watch = st.text_area("Indicators to watch (one per line)", height=110,

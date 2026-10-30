@@ -81,6 +81,26 @@ def test_find_opens_pages_and_countries(app):
     assert app.session_state["country"] == "KEN"
 
 
+def test_weights_travel_in_the_link(app):
+    from prm import ui
+    from prm.config import PILLARS
+
+    assert ui.decode_weights("50,20,20,10") == {"stability": 50, "governance": 20, "economic": 20, "social": 10}
+    assert all(ui.decode_weights(bad) is None for bad in ["", "50,20,20", "51,20,20,10", "0,0,0,0", "a,b,c,d", None])
+    app.switch_page("app_pages/overview.py")
+    if "_weights_from_link" in app.session_state:
+        del app.session_state["_weights_from_link"]
+    app.query_params["w"] = "50,20,20,10"
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.session_state["w_stability"] == 50 and app.session_state["w_social"] == 10
+    assert any("Scores use your pillar weights" in c.value for c in app.caption)
+    for p in PILLARS:  # back to the defaults for the other tests
+        app.session_state[ui.WEIGHT_KEYS[p.key]] = p.default_weight
+    app.run()
+    assert not any("Scores use your pillar weights" in c.value for c in app.caption)
+
+
 def test_shared_comparison_link(app):
     app.switch_page("app_pages/compare.py")
     if "compare_picked" in app.session_state:

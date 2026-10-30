@@ -1,6 +1,7 @@
 """Page-level accessibility that Streamlit leaves out, added once per page by the dock:
 
 - a "Skip to content" link as the first tab stop (the sidebar and dock put about 40 links before the page title)
+- "/" or Ctrl/Cmd + K to open Find
 - Material icons, which Streamlit draws as ligature text ("public", "compare_arrows"), hidden from screen readers
   so links read "Global overview" rather than "public Global overview"
 """
@@ -26,6 +27,25 @@ export default function () {
       requestAnimationFrame(() => { queued = false; hide(); });
     });
     window.sgIconWatch.observe(document.body, { childList: true, subtree: true });
+  }
+  // Find from the keyboard: "/" (when not typing) or Ctrl/Cmd + K opens the Find sheet with the cursor in its box
+  if (!window.sgFindKey) {
+    window.sgFindKey = true;
+    document.addEventListener("keydown", (e) => {
+      const el = document.activeElement;
+      const typing = el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable);
+      if (!((e.key === "k" && (e.ctrlKey || e.metaKey)) || (e.key === "/" && !typing && !e.ctrlKey && !e.metaKey))) return;
+      const find = [...document.querySelectorAll(".st-key-sg_tabs button")].find((b) => /Find/.test(b.innerText));
+      if (!find) return;
+      e.preventDefault();
+      if (find.getAttribute("aria-expanded") !== "true") find.click();
+      const focusBox = (tries) => {
+        const box = document.querySelector('[data-testid="stPopoverBody"] input');
+        if (box) box.focus();
+        else if (tries > 0) setTimeout(() => focusBox(tries - 1), 60);
+      };
+      focusBox(10);
+    });
   }
   // Skip link: the first thing a keyboard user reaches; it moves focus to the page title
   if (!document.querySelector(".sg-skip")) {

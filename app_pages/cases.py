@@ -49,7 +49,7 @@ event = st.dataframe(
         "tier": "Tier", "rank": st.column_config.NumberColumn("Rank", format="%d", help="1 = riskiest"),
     },
 )
-st.caption("Click a row for the full case.")
+st.caption("Tick a row for the full case.")
 
 # --- One case ----------------------------------------------------------------------------------------------
 keys = [c.key for c in cases.CASES]
@@ -112,8 +112,8 @@ else:
 
 st.caption(
     "Read with care: the scores are rebuilt with data as published today, which includes later revisions, and "
-    "governance scores for a year are only published the following year. A handful of cases shows how the index "
-    "behaves; it is not a test of prediction (see the track record on the Methodology page)."
+    "governance scores for a year are only published the following year. These cases show how the index "
+    "behaves; for a test of prediction, see the track record on the Methodology page."
 )
 ui.cite("index", "wikipedia", "ucdp_def")
 ui.footer()

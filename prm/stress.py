@@ -32,14 +32,14 @@ class Shock:
 
 
 SHOCKS: list[Shock] = [
-    Shock("gdp_growth", "GDP growth", "pts", -8.0, 4.0, 0.5),
-    Shock("inflation", "Inflation", "pts", -5.0, 30.0, 1.0),
-    Shock("gov_debt", "Public debt", "pts of GDP", -10.0, 40.0, 1.0),
-    Shock("fiscal_balance", "Fiscal balance", "pts of GDP", -8.0, 3.0, 0.5),
-    Shock("current_account", "Current account", "pts of GDP", -6.0, 3.0, 0.5),
+    Shock("gdp_growth", "GDP growth", "points", -8.0, 4.0, 0.5),
+    Shock("inflation", "Inflation", "points", -5.0, 30.0, 1.0),
+    Shock("gov_debt", "Public debt", "points of GDP", -10.0, 40.0, 1.0),
+    Shock("fiscal_balance", "Fiscal balance", "points of GDP", -8.0, 3.0, 0.5),
+    Shock("current_account", "Current account", "points of GDP", -6.0, 3.0, 0.5),
     Shock("reserves_months", "FX reserves", "% change", -60.0, 30.0, 5.0, relative=True),
-    Shock("unemployment", "Unemployment", "pts", -2.0, 8.0, 0.5),
-    Shock("youth_unemployment", "Youth unemployment", "pts", -4.0, 16.0, 1.0),
+    Shock("unemployment", "Unemployment", "points", -2.0, 8.0, 0.5),
+    Shock("youth_unemployment", "Youth unemployment", "points", -4.0, 16.0, 1.0),
 ]
 SHOCK_BY_KEY = {s.key: s for s in SHOCKS}
 
@@ -95,7 +95,7 @@ def run(values: pd.DataFrame, weights: dict[str, float], shocks: dict[str, float
             flags_after.append(n)
             continue
         worse = [f for k, f in now.items() if k not in was or rank[f["severity"]] < rank[was[k]["severity"]]]
-        new_flags.append([f"{config.SEVERITY_ICON[f['severity']]} {f['short']}" for f in
+        new_flags.append([f"{f['short']} ({config.SEVERITY_LABEL[f['severity']].lower()})" for f in
                           sorted(worse, key=lambda f: rank[f["severity"]])])
         flags_before.append(len(was))
         flags_after.append(len(now))

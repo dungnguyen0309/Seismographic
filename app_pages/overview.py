@@ -43,7 +43,7 @@ def globe_with_news(metric: str, map_title: str, in_view: set[str], region: str 
         if selected in names:
             row = table.set_index("iso3").loc[selected]
             ui.country_heading(names[selected], row["iso2"], level=2, css="sg-panel-title")
-            st.caption("Latest risk news · click another country to switch")
+            st.caption("Latest news · click another country to switch")
             news = (config.NEWS_NAMES.get(selected, names[selected]), row["iso2"])
         else:
             st.markdown('<h2 class="sg-panel-title">Global risk news</h2>', unsafe_allow_html=True)
@@ -67,7 +67,9 @@ def _pick_region() -> None:
         st.session_state["ov_region"] = full.get(points[0]["y"], points[0]["y"])
 
 
-ui.hero("Global overview", config.APP_TAGLINE)
+ui.hero("Global overview")
+if not st.session_state.get("_explored"):  # until the visitor opens any other page
+    st.page_link("app_pages/intro.py", label="Introduction: how the index works", icon=":material/waving_hand:")
 ui.following_strip(table)
 
 # --- Map controls: what the map shows, and one filter for the whole page ---------------------------------------
@@ -144,9 +146,12 @@ n_assessed = int((view["assessment"] == "✓").sum())
 if n_assessed:
     k5.metric("Analyst assessments", n_assessed, border=True, height="stretch",
               help="Countries with a written assessment in the assessments/ folder.")
-else:  # until assessments are written, show something informative instead of a zero
-    k5.metric("With a red flag", int((scored["flags"] > 0).sum()), border=True, height="stretch",
-              help="Countries crossing at least one absolute warning threshold, such as inflation of 20% or more.")
+else:  # until assessments are written, the most severe warnings (most countries have some lesser flag)
+    critical = sum(any(f["severity"] == "critical" for f in scoring.red_flags(values.loc[i]))
+                   for i in scored["iso3"] if i in values.index)
+    k5.metric("With a critical red flag", critical, border=True, height="stretch",
+              help="War-level violence (1,000+ battle deaths in a year) or inflation of 50% or more. "
+                   f"{int((scored['flags'] > 0).sum())} of {len(scored)} cross at least one lesser warning line.")
 ui.cite("index", "natural_earth")
 
 # --- The rest, one tab at a time (only the open tab is computed) -----------------------------------------------
@@ -186,7 +191,7 @@ with tab_hot:
                                  "tier": r.tier, "signals": len(reasons), "why": " · ".join(reasons)})
         hotspots = pd.DataFrame(hotspots, columns=["iso3", "flag", "name", "composite", "why", "tier", "signals"])
         if hotspots.empty:
-            st.info("No country meets the screen with the current filters.")
+            st.info("No hotspots with the current filters.")
         else:
             hotspots = hotspots.sort_values(["signals", "composite"], ascending=False).head(12).reset_index(drop=True)
             hot_event = st.dataframe(
@@ -199,8 +204,7 @@ with tab_hot:
                     "why": st.column_config.TextColumn("Why it is on the list", width="large"),
                 },
             )
-            if hot_event and hot_event.selection.rows:
-                ui.go_to_country(hotspots.iloc[hot_event.selection.rows[0]]["iso3"])
+            ui.open_selected(hot_event, hotspots, "overview_hotspots")
             ui.cite("index", "ifes")
 
 with tab_changes:
@@ -215,15 +219,15 @@ with tab_changes:
         if region != "All regions" or income:
             changes = changes[changes["iso3"].isin(view["iso3"])]
         if changes.empty:
-            st.info("Not enough WGI history to compute changes.")
+            st.info("Not enough governance data to show changes.")
         else:
             names = dict(zip(table["iso3"], table["name"]))
             changes = changes.assign(name=changes["iso3"].map(names))
             y0, y1 = int(changes["start_year"].iloc[0]), int(changes["end_year"].iloc[0])
             st.caption(
-                f"Change in the World Bank WGI *Political Stability & Absence of Violence* score, {y0} → {y1}. "
-                "Red = deterioration, blue = improvement. Small changes can fall within the WGI margin of error — "
-                "check the confidence intervals on each country profile. Click a bar to open the country."
+                f"Change in the World Bank's *Political Stability & Absence of Violence* score, {y0} → {y1}. "
+                "Red = worse, blue = better. Small changes may be within the margin of error, shown on each country "
+                "profile. Click a bar to open the country."
             )
             movers_event = st.plotly_chart(charts.movers(changes), config={"displayModeBar": False},
                                            on_select="rerun", selection_mode="points", key="movers_click")
@@ -233,7 +237,7 @@ with tab_changes:
 
 with tab_rank:
     if tab_rank.open:
-        st.caption(f"Click a row to open the country profile. Sort by any column. *1-yr change* compares the composite "
+        st.caption(f"Tick a row to open the country. Sort by any column. *1-yr change* compares the composite "
                    f"with {year - 1}: ▲ = riskier, ▼ = safer, ■ = steady (under 1 point).")
         ranking = view.sort_values("rank", na_position="last")[
             ["iso3", "flag", "name", "composite", "trend", "tier", "rank", *[p.key for p in PILLARS], "flags", "region",
@@ -269,10 +273,9 @@ with tab_rank:
                 "analyst_rating": "Analyst rating",
             },
         )
-        if event and event.selection.rows:
-            ui.go_to_country(ranking.iloc[event.selection.rows[0]]["iso3"])
+        ui.open_selected(event, ranking, "overview_ranking")
         st.download_button(
-            "Download this table (CSV)",
+            "Download ranking (CSV)",
             ranking.drop(columns=["iso3", "flag"]).to_csv(index=False).encode("utf-8"),
             file_name=f"seismographic_risk_index_{year}.csv",
             mime="text/csv",

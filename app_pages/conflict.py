@@ -94,7 +94,7 @@ with tab_conflict:
             ui.cite("ucdp")
 
         st.header(f"Countries in armed conflict ({bd_year})")
-        st.caption("At least 25 battle-related deaths in the year. Click a row to open the country.")
+        st.caption("At least 25 battle-related deaths in the year. Tick a row to open the country.")
         conflict = table[table["iso3"].isin(latest_bd[latest_bd >= 25].index)].copy()
         conflict["deaths"] = conflict["iso3"].map(latest_bd)
         conflict["deaths_prev"] = conflict["iso3"].map(prev_bd).fillna(0)
@@ -120,8 +120,7 @@ with tab_conflict:
             },
         )
         ui.cite("ucdp", "ucdp_def", "unhcr", "wgi")
-        if event and event.selection.rows:
-            ui.go_to_country(conflict.iloc[event.selection.rows[0]]["iso3"])
+        ui.open_selected(event, conflict, "conflict_conflict")
 
 # --- Displacement ----------------------------------------------------------------------------------------------
 with tab_displacement:
@@ -188,9 +187,9 @@ with tab_outlook:
             top = peaceful.iloc[0] if len(peaceful) else None
             o2.metric("Highest chance", "—" if top is None else f"{top['probability']:.0%}", border=True,
                       help=None if top is None else str(top["name"]))
-            o3.metric("Tested accuracy (AUC)", "—" if outlook.auc is None else f"{outlook.auc:.2f}", border=True,
+            o3.metric("Tested accuracy", "—" if outlook.auc is None else f"{outlook.auc:.2f}", border=True,
                       help="On years the model had not seen: the chance a country where conflict broke out had a higher "
-                           "prediction than one where it did not. 0.5 = a coin flip, 1 = perfect.")
+                           "prediction than one where it did not (the AUC). 0.5 = a coin flip, 1 = perfect.")
             o4.metric("Already in conflict", int((preds["status"] == "In armed conflict").sum()), border=True,
                       help=f"25+ battle deaths in {outlook.data_year}: not given a chance of a new outbreak.")
 
@@ -208,8 +207,7 @@ with tab_outlook:
                     "recent": st.column_config.TextColumn("Conflict in past 5 yrs"), "tier": "Index tier",
                 },
             )
-            if event and event.selection.rows:
-                ui.go_to_country(shown.iloc[event.selection.rows[0]]["iso3"])
+            ui.open_selected(event, shown, "conflict_shown")
             g1, g2 = st.columns(2)
             with g1:
                 st.header("What raises the chance")
@@ -223,9 +221,9 @@ with tab_outlook:
                                f"conflicts. The predictions beat the average rate by {outlook.brier_skill:.0%} "
                                "(Brier skill score).")
             st.caption(
-                "A statistical estimate, not a forecast of any one event: few conflicts break out each year, the conflict "
-                f"data end in {outlook.data_year}, and coups or invasions can come without warning in this data. Use it "
-                "to decide where to look closer."
+                "A statistical estimate across countries; it cannot foresee any one event. Few conflicts break out "
+                f"each year, the conflict data end in {outlook.data_year}, and coups or invasions can come without "
+                "warning in this data. Use it to decide where to look closer."
             )
             ui.cite("ucdp", "ucdp_def", "index")
 

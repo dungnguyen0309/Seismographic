@@ -11,12 +11,8 @@ hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 prev_year = year - 1
 
-ui.hero("Score changes")
-st.markdown(
-    f"The index for **{year}** compared with **{prev_year}**: who became riskier or safer, which tiers moved, "
-    "what drove each change and which absolute warning thresholds were newly crossed. "
-    f"{year} uses IMF estimates for the current year, so economic moves can still be revised."
-)
+ui.hero("Score changes", f"{year} compared with {prev_year}")
+st.caption(f"{year} uses IMF estimates for the current year, so economic moves can still be revised.")
 
 regions = sorted(table["region"].dropna().unique())
 region = st.selectbox("Region", ["All regions", *regions], key="chg_region")
@@ -121,8 +117,7 @@ else:
                        "move": "Tier", "trend": "Score change",
                        "driver": st.column_config.TextColumn("Main driver", help="Pillar that moved most")},
     )
-    if event and event.selection.rows:
-        ui.go_to_country(tiers.iloc[event.selection.rows[0]]["iso3"])
+    ui.open_selected(event, tiers, "changes_tiers")
 
 # --- What drove the change ------------------------------------------------------------------------------
 st.header("What drove each change")
@@ -139,15 +134,14 @@ event = st.dataframe(
         "driver": "Main driver",
     },
 )
-if event and event.selection.rows:
-    ui.go_to_country(drivers.iloc[event.selection.rows[0]]["iso3"])
+ui.open_selected(event, drivers, "changes_drivers")
 
 # --- Red flags --------------------------------------------------------------------------------------------
 st.header("Red flags crossed or cleared")
 if flags.empty:
     st.caption("No red flags changed.")
 else:
-    flags = flags.assign(severity=flags["severity"].map(lambda s: f"{config.SEVERITY_ICON[s]} {config.SEVERITY_LABEL[s]}"
+    flags = flags.assign(severity=flags["severity"].map(lambda s: config.SEVERITY_LABEL[s]
                                                         if s else "Cleared"))
     flags = flags.sort_values(["change", "name"], ascending=[False, True]).reset_index(drop=True)
     event = st.dataframe(
@@ -156,8 +150,7 @@ else:
         column_config={"iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country", "change": "Change",
                        "severity": "Severity", "flag_label": st.column_config.TextColumn("Red flag", width="large")},
     )
-    if event and event.selection.rows:
-        ui.go_to_country(flags.iloc[event.selection.rows[0]]["iso3"])
+    ui.open_selected(event, flags, "changes_flags")
 ui.cite("index", "ucdp_def", "imf_ara")
 
 ui.footer()

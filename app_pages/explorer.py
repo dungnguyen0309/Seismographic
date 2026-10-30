@@ -83,7 +83,6 @@ for col, title, rows in ((left, "Riskiest 10", known.nlargest(10, "risk")), (rig
                                                         color=config.PILLAR_COLORS[ind.pillar]),
             },
         )
-        if event and event.selection.rows:
-            ui.go_to_country(rows.iloc[event.selection.rows[0]]["iso3"])
+        ui.open_selected(event, rows, "explorer_rows")
 
 ui.footer()

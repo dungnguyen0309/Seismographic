@@ -66,7 +66,7 @@ ui.cite("index")
 
 # --- Ranking ----------------------------------------------------------------------------------------------
 st.header("Ranking")
-st.caption("Click a row to open the country profile.")
+st.caption("Tick a row to open the country.")
 ui.country_table(rv, key="reg_table", height=min(460, 38 * (len(rv) + 1)))
 ui.cite("index", "wb_countries", "flags")
 

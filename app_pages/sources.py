@@ -15,9 +15,8 @@ meta = core["meta"]
 ui.hero("Sources",
         "Every number, map, headline and video in Seismographic, traced back to the organisation that published it.")
 st.markdown(
-    "Seismographic does not collect data itself. Everything comes from international organisations, academic "
-    "research centres and the broadcasters themselves, and every chart in the tool names its source underneath. "
-    "This page lists them all, with links to the originals so you can check any figure."
+    "Seismographic collects no data itself. Every chart names its source underneath; this page lists them all, "
+    "with links to the originals."
 )
 
 references = [k for keys in config.SOURCE_GROUPS.values() for k in keys]
@@ -212,16 +211,16 @@ with t_index:
 with t_thresholds:
     # --- Thresholds -------------------------------------------------------------------------------------------
     st.header("Where the warning thresholds come from")
-    st.caption("Red flags are fixed lines, not relative scores. Some come straight from a definition or a well-known "
+    st.caption("Red flags are fixed thresholds that do not depend on other countries. Some come from a definition or a well-known "
                "study; others are Seismographic's own lines, set out here so you can judge them.")
     flag_rows = []
     for key, op, threshold, severity, label in config.RED_FLAGS:
         source, basis = config.FLAG_BASIS.get((key, threshold), (None, "Seismographic line"))
-        flag_rows.append({"Severity": f"{config.SEVERITY_ICON[severity]} {config.SEVERITY_LABEL[severity]}",
+        flag_rows.append({"Severity": config.SEVERITY_LABEL[severity],
                           "Red flag": label, "Basis": basis,
                           "Reference": ui.source_label(source) if source else "—",
                           "Link": SOURCES[source].url if source else None})
-    flag_rows.append({"Severity": f"{config.SEVERITY_ICON['warning']} {config.SEVERITY_LABEL['warning']}",
+    flag_rows.append({"Severity": config.SEVERITY_LABEL["warning"],
                       "Red flag": f"Political stability deteriorating (WGI down {config.WGI_TREND_THRESHOLD:g}+ points in "
                                   f"{config.WGI_TREND_YEARS} years)",
                       "Basis": "Seismographic line, chosen to be larger than most year-to-year noise in the WGI",
@@ -236,8 +235,8 @@ with t_thresholds:
 with t_cross:
     # --- Cross-checks -----------------------------------------------------------------------------------------
     st.header("Cross-check the scores")
-    st.caption("Respected independent indices measuring similar things. They are not used in the score; if Seismographic "
-               "and they disagree about a country, find out why before you rely on either.")
+    st.caption("Independent indices that measure similar things. They are not used in the score; if they and "
+               "Seismographic disagree about a country, find out why before relying on either.")
     for pillar_key, keys in config.CROSS_CHECKS.items():
         if pillar_key == "composite":
             st.markdown("**Overall fragility**")
