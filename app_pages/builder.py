@@ -63,7 +63,7 @@ author = st.text_input("Author", value=config.AUTHOR)
 
 st.header("2 · Bottom line up front")
 bluf = st.text_area(
-    "Two or three sentences a busy reader can act on",
+    "Two or three sentences a busy reader can act on (required)",
     placeholder=f"e.g. {name}'s risk is likely to rise over the next 12 months as … The main threat to operations is … "
                 "A shift to … would signal a worse path.",
     height=110,
@@ -73,7 +73,7 @@ st.header("3 · Key judgments")
 judgments = []
 for i in range(1, 4):
     j1, j2 = st.columns([4, 1])
-    text = j1.text_input(f"Judgment {i}", key=f"j{i}", placeholder="A specific, checkable statement about the future")
+    text = j1.text_input(f"Judgment {i}" + (" (required)" if i == 1 else ""), key=f"j{i}", placeholder="A specific, checkable statement about the future")
     prob = j2.slider("Probability %", 1, 99, 65 if i == 1 else 50, key=f"jp{i}")
     j2.caption(f"→ *{config.estimative_term(prob)}*")
     judgments.append({"text": text, "probability": prob, "term": config.estimative_term(prob)})
@@ -145,7 +145,7 @@ divergence = st.text_area(
     placeholder="The model is backward-looking: WGI data runs to last year and does not yet capture …",
 )
 implications = st.text_area("Implications for businesses, NGOs or governments", height=100)
-sources_txt = st.text_area("Sources (one per line)", height=110,
+sources_txt = st.text_area("Sources, one per line (required)", height=110,
                            placeholder="IMF Article IV report, 2026\nCrisis Group, CrisisWatch, September 2026")
 
 fields = {

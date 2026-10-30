@@ -66,7 +66,7 @@ _HTML = """
     <div class="rg-legend-keys"></div>
   </div>
   <div class="rg-time">
-    <button class="rg-play" title="Replay the index year by year">▶</button>
+    <button class="rg-play" title="Replay the index year by year" aria-label="Replay the index year by year">▶</button>
     <input class="rg-year-input" type="range" min="0" max="0" value="0" step="1" aria-label="Year">
     <span class="rg-year"></span>
   </div>
@@ -630,7 +630,10 @@ function renderTime(root, ctx) {
   input.max = String(ctx.data.years.length - 1);
   input.value = String(ctx.yearIndex);
   root.querySelector(".rg-year").textContent = ctx.data.years[ctx.yearIndex];
-  root.querySelector(".rg-play").textContent = ctx.timer ? "❚❚" : "▶";
+  const play = root.querySelector(".rg-play");
+  play.textContent = ctx.timer ? "❚❚" : "▶";
+  play.setAttribute("aria-label", ctx.timer ? "Pause the replay" : "Replay the index year by year");
+  play.title = play.getAttribute("aria-label");
 }
 
 function setYear(root, ctx, index) {

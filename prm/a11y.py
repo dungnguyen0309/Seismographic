@@ -16,36 +16,31 @@ _HTML = '<span class="sg-a11y" hidden></span>'
 _JS = """
 export default function (component) {
   const { data } = component;
-  // A control that was just used and then redrawn (e.g. "Add to compare" becoming "Open comparison") gets the focus
-  // back, so a keyboard user is not sent to the top of the page. The page draws after this runs, so wait for it.
-  // The old element can still be on screen while the page redraws, so for a few seconds the focus is put back
-  // whenever it falls to the page itself.
-  if (data && data.focus === "__title__") {
-    // After a jump from Find: focus the new page's title once it is drawn (the old page's title is marked stale)
-    // The old page's title can still be on screen for a moment: focus the first title found, then for a few seconds
-    // move the focus again whenever it falls to the page itself (the title it was on has been replaced)
+  // Focus after a redraw: a control that was used and then redrawn (e.g. "Add to compare" becoming "Open comparison")
+  // gets the focus back, and after a jump from Find the new page's title gets it, so a keyboard user is not sent to
+  // the top of the page. The page draws after this runs and the old elements linger for a moment, so for a few
+  // seconds the focus is put back whenever it falls to the page itself. Only the newest request acts, and it stops
+  // as soon as the visitor moves the focus somewhere else.
+  if (data && data.focus) {
+    const token = (window.sgFocusToken = (window.sgFocusToken || 0) + 1);
     const started = Date.now();
-    let done = false;
-    const toTitle = () => {
-      const h1 = document.querySelector('[data-testid="stMain"] h1');
-      const lost = !document.activeElement || document.activeElement === document.body;
-      if (h1 && !h1.closest('[data-stale="true"]') && (!done || lost)) {
-        h1.setAttribute("tabindex", "-1");
-        h1.focus();
-        done = true;
-      }
-      if (Date.now() - started < 6000) setTimeout(toTitle, 100);
+    const toTitle = data.focus === "__title__";
+    const title = () => document.querySelector('[data-testid="stMain"] h1');
+    const target = () => toTitle ? title()
+      : document.querySelector(".st-key-" + data.focus + " button, .st-key-" + data.focus + " a");
+    const put = (el) => { if (el.tagName === "H1") el.setAttribute("tabindex", "-1"); el.focus(); placed = el; };
+    let placed = null;
+    const step = () => {
+      if (window.sgFocusToken !== token || Date.now() - started > 6000) return;
+      const now = document.activeElement;
+      const lost = !now || now === document.body;
+      if (placed && !lost && now !== placed) return;  // the visitor moved on
+      const el = target();
+      if (el && !el.disabled && !el.closest('[data-stale="true"]') && (lost || (toTitle && !placed))) put(el);
+      else if (lost && !el && Date.now() - started > 3000 && title()) put(title());  // the control is gone for good
+      setTimeout(step, 100);
     };
-    toTitle();
-  } else if (data && data.focus) {
-    const started = Date.now();
-    const refocus = () => {
-      const lost = !document.activeElement || document.activeElement === document.body;
-      const el = document.querySelector(".st-key-" + data.focus + " button, .st-key-" + data.focus + " a");
-      if (lost && el && !el.disabled && !el.closest('[data-stale="true"]')) el.focus();
-      if (Date.now() - started < 4000) setTimeout(refocus, 100);
-    };
-    refocus();
+    step();
   }
   // Icons drawn as ligature text are decoration: hide them from assistive tech, also as Streamlit redraws the page
   // (two forms: icon elements, and icons inside Markdown labels, e.g. tab names, which carry an "x icon" label)

@@ -104,6 +104,11 @@ def _reset_weights() -> None:
         st.session_state[WEIGHT_KEYS[p.key]] = p.default_weight
 
 
+def _reset_weights_from_note() -> None:
+    _reset_weights()
+    a11y.keep_focus(a11y.TITLE)  # the note and its button disappear: the keyboard goes to the page title
+
+
 def _refresh_data() -> None:
     st.toast(data.refresh(), icon=":material/refresh:")
 
@@ -361,6 +366,11 @@ GLOBAL_CSS = """
   [data-testid="stMetric"] { padding: 10px 12px !important; }
   [data-testid="stMetricValue"] { font-size: 1.55rem !important; }
 }
+/* Markdown tables (e.g. the assessment preview) scroll inside themselves instead of widening the page */
+[data-testid="stMarkdownContainer"] table { display: block; max-width: 100%; overflow-x: auto; }
+/* the remove (x) on multiselect chips: a 24px target (it is drawn about 15x7) without making the chip taller */
+[data-testid="stMultiSelectTagsContainer"] [data-tag] button { min-width: 24px; min-height: 24px; margin: -6px -6px -6px -2px;
+  display: inline-flex; align-items: center; justify-content: center; }
 /* headings carry no "link to heading" icon: it was an extra tab stop on every heading */
 [data-testid="stHeaderActionElements"] { display: none !important; }
 /* tabs: a little tighter, and they wrap onto a second line instead of hiding behind a sideways scroll */
@@ -455,7 +465,8 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
 .sg-country-name { margin: 0 !important; padding: 0 !important; font-size: clamp(1.7rem, 4.4vw, 2.4rem) !important;
   line-height: 1.1 !important; }
 .sg-country-meta { color: var(--sg-muted); font-size: 0.84rem; margin-top: 6px; line-height: 1.45; }
-.sg-country-score { display: flex; align-items: center; gap: 16px; flex: 0 1 auto; }
+.sg-country-score { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; flex: 0 1 auto; }
+@media (max-width: 400px) { .sg-cs-spark { display: none; } }  /* 320px phones: no sideways scroll */
 .sg-cs-num { font-size: 3rem; font-weight: 700; line-height: 1; color: var(--c); }
 .sg-cs-num span { font-size: 0.95rem; color: var(--sg-faint); font-weight: 400; margin-left: 2px; }
 .sg-cs-side { display: flex; flex-direction: column; gap: 5px; font-size: 0.8rem; color: var(--sg-soft); }
@@ -661,7 +672,7 @@ def load():
     if label := custom_weights_label():  # every score on the page depends on them, so say so
         with st.container(horizontal=True, vertical_alignment="center", key="sg_weights_note", gap="small"):
             st.caption(f"Scores use your pillar weights: {label}.")
-            st.button("Reset weights", on_click=_reset_weights, type="tertiary", key="sg_weights_reset")
+            st.button("Reset weights", on_click=_reset_weights_from_note, type="tertiary", key="sg_weights_reset")
     return core, year, values, scores
 
 

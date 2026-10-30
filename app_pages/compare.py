@@ -5,7 +5,7 @@ import html
 import pandas as pd
 import streamlit as st
 
-from prm import charts, config, scoring, ui
+from prm import a11y, charts, config, scoring, ui
 from prm.config import COUNTRY_COLORS, INDICATORS, MAX_COMPARE, PILLARS, WGI_DIMENSIONS
 
 core, year, values, scores = ui.load()
@@ -32,6 +32,7 @@ if "compare_picked" not in st.session_state:
 def _add_similar(iso3: str) -> None:
     if iso3 not in st.session_state["compare_picked"] and len(st.session_state["compare_picked"]) < MAX_COMPARE:
         st.session_state["compare_picked"] = [*st.session_state["compare_picked"], iso3]
+        a11y.keep_focus("similar_row")  # the button just used disappears: focus moves to the next suggestion
 
 
 # Each chip wears its country's colour, the same one its lines use in every chart on this page
