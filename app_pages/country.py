@@ -6,7 +6,7 @@ import math
 import pandas as pd
 import streamlit as st
 
-from prm import charts, config, content, data, follow, interpret, report, scoring, ui
+from prm import a11y, charts, config, content, data, follow, interpret, report, scoring, ui
 from prm.config import INDICATORS, PILLARS, SEVERITY_LABEL, TIER_ORDER, WGI_DIMENSIONS
 
 core, year, values, scores = ui.load()
@@ -59,6 +59,8 @@ ui.country_header(name, row,
 def _add_to_compare() -> None:
     ui.add_to_compare(iso3)
     st.session_state["_compare_toast"] = f"{name} added to your comparison"
+    st.session_state["_compare_just_added"] = True
+    a11y.keep_focus("compare_add")  # the button is redrawn as "Open comparison"; keep the keyboard on it
 
 
 def _brief_pdf() -> bytes:
@@ -71,10 +73,15 @@ if toast := st.session_state.pop("_compare_toast", None):
     st.toast(toast, icon=":material/check:")
 compare_list = st.session_state.get(ui.COMPARE_LIST, [])
 with st.container(horizontal=True, vertical_alignment="center", key="country_actions"):
+    # One enabled button in one place (same key), so keyboard focus stays on it after adding: a disabled or a new
+    # button would drop focus back to the top of the page
     if iso3 in compare_list:
-        st.button("✓ In your comparison", disabled=True, key="compare_added")
+        just_added = st.session_state.pop("_compare_just_added", False)  # the adding press must not also open it
+        if st.button(f"Open comparison ({len(compare_list)})", key="compare_add", icon=":material/compare_arrows:",
+                     help=f"{name} is in your comparison") and not just_added:
+            st.switch_page(ui.COMPARE_PAGE)
     elif len(compare_list) >= config.MAX_COMPARE:
-        st.button("Comparison is full", disabled=True, key="compare_full",
+        st.button("Comparison is full", disabled=True, key="compare_add",
                   help=f"You can compare up to {config.MAX_COMPARE} countries. Remove one on the Compare page.")
     else:
         st.button("Add to compare", key="compare_add", on_click=_add_to_compare)
@@ -82,7 +89,7 @@ with st.container(horizontal=True, vertical_alignment="center", key="country_act
                        mime="application/pdf", on_click="ignore", key="brief_pdf",
                        help="A one-page brief: score, pillars, trend, red flags and what it means in real life.")
     follow.follow_button(iso3, name)
-    if compare_list:
+    if compare_list and iso3 not in compare_list:  # once this country is in, the button above opens the comparison
         st.page_link(ui.COMPARE_PAGE, label=f"Open comparison ({len(compare_list)})", icon=":material/compare_arrows:")
 
 elsewhere = ([("World Bank", f"https://data.worldbank.org/country/{row['iso2']}")] if isinstance(row["iso2"], str) else []) + [

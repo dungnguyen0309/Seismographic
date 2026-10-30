@@ -321,7 +321,7 @@ GLOBAL_CSS = """
 }
 [class*="st-key-split_"] { container: sgsplit / inline-size; }
 @container sgsplit (max-width: 1000px) {  /* beside the globe the news column is narrow: headlines get the room */
-  .st-key-ov_news .sg-news a > :first-child { display: none; }
+  .st-key-ov_news .sg-news-thumb { display: none !important; }
 }
 @container sgsplit (max-width: 900px) {  /* What-if: its result needs more width than the news column does */
   .st-key-split_whatif [data-testid="stHorizontalBlock"]:not([data-testid="stColumn"] *) > [data-testid="stColumn"] {
@@ -810,9 +810,9 @@ def _news_list(query_name: str | None, limit: int, iso2) -> None:
         meta = " · ".join(x for x in (html.escape(str(row.domain or "")), _time_ago(row.seen)) if x)
         image = row.image if isinstance(row.image, str) and row.image.startswith("https://") else None
         if image:
-            thumb = f'<img src="{html.escape(image)}" alt="" loading="lazy" style="{THUMB}">'
+            thumb = f'<img class="sg-news-thumb" src="{html.escape(image)}" alt="" loading="lazy" style="{THUMB}">'
         elif fallback:
-            thumb = (f'<span style="{THUMB};display:flex;align-items:center;justify-content:center">'
+            thumb = (f'<span class="sg-news-thumb" style="{THUMB};display:flex;align-items:center;justify-content:center">'
                      f'<img src="{fallback}" alt="" style="width:40px;border-radius:3px;opacity:0.85"></span>')
         else:  # no picture: no empty placeholder either, the headline takes the room
             thumb = ""

@@ -2,6 +2,7 @@
 
 - a "Skip to content" link as the first tab stop (the sidebar and dock put about 40 links before the page title)
 - "/" or Ctrl/Cmd + K to open Find
+- focus put back on a control that Streamlit redraws after it is used (see keep_focus)
 - Material icons, which Streamlit draws as ligature text ("public", "compare_arrows"), hidden from screen readers
   so links read "Global overview" rather than "public Global overview"
 """
@@ -12,7 +13,22 @@ import streamlit as st
 
 _HTML = '<span class="sg-a11y" hidden></span>'
 _JS = """
-export default function () {
+export default function (component) {
+  const { data } = component;
+  // A control that was just used and then redrawn (e.g. "Add to compare" becoming "Open comparison") gets the focus
+  // back, so a keyboard user is not sent to the top of the page. The page draws after this runs, so wait for it.
+  // The old element can still be on screen while the page redraws, so for a few seconds the focus is put back
+  // whenever it falls to the page itself.
+  if (data && data.focus) {
+    const started = Date.now();
+    const refocus = () => {
+      const lost = !document.activeElement || document.activeElement === document.body;
+      const el = document.querySelector(".st-key-" + data.focus + " button, .st-key-" + data.focus + " a");
+      if (lost && el && !el.disabled && !el.closest('[data-stale="true"]')) el.focus();
+      if (Date.now() - started < 4000) setTimeout(refocus, 100);
+    };
+    refocus();
+  }
   // Icons drawn as ligature text are decoration: hide them from assistive tech, also as Streamlit redraws the page
   // (two forms: icon elements, and icons inside Markdown labels, e.g. tab names, which carry an "x icon" label)
   const hide = () => document.querySelectorAll(
@@ -67,6 +83,14 @@ export default function () {
 _component = st.components.v2.component("sg_a11y", html=_HTML, js=_JS, isolate_styles=False)
 
 
+FOCUS = "_sg_focus"  # session key: the widget key to give the focus back to on the next run
+
+
+def keep_focus(widget_key: str) -> None:
+    """Call from a widget's callback when the widget is redrawn as a new element: the focus returns to it."""
+    st.session_state[FOCUS] = widget_key
+
+
 def page_helper() -> None:
     """Mount once per page (renders nothing visible)."""
-    _component(key="sg_a11y", width="content")
+    _component(key="sg_a11y", data={"focus": st.session_state.pop(FOCUS, None)}, width="content")
