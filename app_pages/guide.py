@@ -1,4 +1,4 @@
-"""How to analyze Seismographic data: what Seismographic's numbers mean in real life, and how to put them to work."""
+"""Guide: what Seismographic's numbers mean in real life, and how to put them to work."""
 
 import pandas as pd
 import streamlit as st
@@ -12,7 +12,7 @@ countries = core["countries"]
 options, names = ui.country_options(countries)
 events = content.load_events()
 
-ui.hero("How to analyze Seismographic data?")
+ui.hero("Guide")
 st.markdown(
     "Seismographic turns open data into numbers: a 0–100 score, a tier, four pillars and a set of red flags. This "
     "page translates those numbers into real life — what they usually look like for the people living, working or "
@@ -83,7 +83,7 @@ workflows = {
         ("Shortlist", "Rank candidate countries on the Global overview; set the pillar weights in the sidebar to "
                       "match your exposure (e.g. more weight on Economy for trade, Governance for long-term assets).",
          "app_pages/overview.py"),
-        ("Check the trend", "Look for countries getting riskier on *What changed* — a mid-tier country sliding fast "
+        ("Check the trend", "Look for countries getting riskier on *Score changes* — a mid-tier country sliding fast "
                             "can be a bigger worry than a stable high-tier one.", "app_pages/changes.py"),
         ("Understand the drivers", "Open each profile's *In real life* tab, then *Peers* to compare with neighbours.",
          ui.COUNTRY_PAGE),
@@ -112,7 +112,7 @@ workflows = {
          ui.COUNTRY_PAGE),
         ("Separate signal from noise", "Governance trends show whether a change is outside the margin of error.",
          ui.COUNTRY_PAGE),
-        ("Compare", "Regional briefings and Compare put a country in its neighbourhood.", "app_pages/regions.py"),
+        ("Compare", "Regions and Compare put a country in its neighbourhood.", "app_pages/regions.py"),
         ("Write it up", "The Assessment builder turns your judgment into a structured brief with probabilities.",
          "app_pages/builder.py"),
     ],

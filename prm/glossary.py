@@ -73,7 +73,7 @@ TERMS: dict[str, list[tuple[str, str]]] = {
         ("Follow (★)", "Mark countries to keep them on the Global overview and in Find. The list stays in your "
                        "browser; no account needed."),
         ("Share link", "The address of the Compare and Stress test pages holds your selection, so you can send it."),
-        ("Open data", "Every table behind the index, free to download as CSV, Excel or JSON on the Download data "
+        ("Open data", "Every table behind the index, free to download as CSV, Excel or JSON on the Data downloads "
                       "page, with a data dictionary."),
     ],
     "Warnings": [
@@ -182,11 +182,14 @@ TERMS: dict[str, list[tuple[str, str]]] = {
         ("Map of change", "Blue = safer than last year, grey = little change, red = riskier; brighter and taller = "
                           "a bigger move."),
         ("3D (height)", "On the globe, countries are raised by their score: the taller, the riskier."),
-        ("Conflict rings", "Pulsing rings mark active armed conflict; bigger and faster = more battle deaths."),
+        ("Conflict rings", "Rings mark active armed conflict; bigger and faster = more battle deaths. With reduced "
+                           "motion turned on, each is a still dot sized by battle deaths."),
         ("Flows (arcs)", "Animated arcs run from refugees' country of origin (dim end) to the host country (bright "
                          "end); thicker = more people."),
         ("Year slider / ▶", "Replays the index on the globe year by year since 2015."),
         ("Spin / Reset / + −", "Turn auto-rotation on or off, return to the starting view, zoom in and out."),
+        ("Zooming the globe", "Ctrl + scroll (⌘ on a Mac), a trackpad pinch or the + − buttons; a plain scroll moves the "
+                              "page. On a touch screen, tap the globe first, and Done hands swiping back to the page."),
         ("Bubble size", "In the risk matrix and growth-vs-inflation chart, bubbles are sized by population."),
         ("Dashed line", "An IMF projection rather than reported data."),
         ("Shaded band", "A 90% confidence interval (governance charts) or the middle half of countries (IMF outlook)."),

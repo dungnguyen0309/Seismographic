@@ -14,9 +14,10 @@ MAX_FOLLOWED = 12
 _HTML = '<button class="sg-follow" type="button" hidden></button>'
 _CSS = """
 .sg-follow { font: inherit; font-size: 0.86rem; height: 2.5rem; padding: 0 14px; border-radius: 8px; cursor: pointer;
-  background: transparent; color: #ececec; border: 1px solid rgba(250,250,250,0.2); white-space: nowrap; }
-.sg-follow:hover { border-color: #fd8078; color: #fff; }
-.sg-follow.on { border-color: rgba(253,128,120,0.6); color: #fd8078; background: rgba(253,128,120,0.08); }
+  background: transparent; color: var(--sg-text); border: 1px solid rgba(250,250,250,0.2); white-space: nowrap; }
+.sg-follow:hover { border-color: var(--sg-accent); color: var(--sg-strong); }
+.sg-follow.on { border-color: color-mix(in srgb, var(--sg-accent) 60%, transparent); color: var(--sg-strong);
+  background: rgba(244,243,238,0.08); }
 .sg-follow[hidden] { display: none; }
 """
 _JS = """

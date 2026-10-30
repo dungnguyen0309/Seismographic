@@ -9,8 +9,8 @@ core, year, values, scores = ui.load()
 hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 
-ui.hero("Stress test")
-st.markdown("Apply one economic shock to many countries at once and see who crosses a risk tier or a red-flag line.")
+ui.hero("Stress test", "Apply one economic shock to many countries at once and see who crosses a risk tier or a "
+                       "red-flag line.")
 
 CUSTOM = "Custom"
 FIRST = next(iter(stress.SCENARIOS))
@@ -105,7 +105,7 @@ ui.globe_panel(
 )
 
 # --- Who crosses a line ----------------------------------------------------------------------------------------
-st.subheader("Who crosses a line")
+st.header("Who crosses a line")
 show = st.segmented_control("Show", ["Crossing a line", "All countries hit"], default="Crossing a line",
                             key="stress_show", label_visibility="collapsed") or "Crossing a line"
 rows = hit if show == "All countries hit" else hit[(hit["tier_move"] > 0) | (hit["new_flag_count"] > 0)]
@@ -118,7 +118,8 @@ if rows.empty:
     st.caption("No country crosses a tier or a red-flag line under these shocks.")
 else:
     event = st.dataframe(
-        rows[["iso3", "flag", "name", "composite_before", "composite_after", "delta", "tier_change", "flags_text"]],
+        # What crossed a line comes first; the scores behind it follow
+        rows[["iso3", "flag", "name", "tier_change", "delta", "flags_text", "composite_before", "composite_after"]],
         hide_index=True, on_select="rerun", selection_mode="single-row", key="stress_table",
         height=min(520, 36 * (len(rows) + 1) + 4),
         column_config={
@@ -127,7 +128,7 @@ else:
             "composite_after": st.column_config.ProgressColumn("Under stress", min_value=0, max_value=100,
                                                                format="%.0f", color=config.TIER_COLORS["Elevated"]),
             "delta": st.column_config.NumberColumn("Change", format="%+.1f"),
-            "tier_change": "Tier",
+            "tier_change": st.column_config.TextColumn("Tier", width="medium"),
             "flags_text": st.column_config.TextColumn("New or worse red flags", width="large"),
         },
     )

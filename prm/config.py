@@ -18,7 +18,7 @@ APP_DESCRIPTION = (
 AUTHOR = "Tuan Dung Nguyen"  # shown in the footer and on assessments
 
 # ---------------------------------------------------------------------------
-# Source links (used on the Methodology and Resources pages)
+# Source links (used on the Methodology and Sources pages)
 # ---------------------------------------------------------------------------
 URL_WGI = "https://www.worldbank.org/en/publication/worldwide-governance-indicators"
 URL_WGI_2025 = (
@@ -524,7 +524,8 @@ LOG_CAP_QUANTILE = 0.90
 # Risk tiers (ordinal ramp validated for contrast and step visibility)
 # ---------------------------------------------------------------------------
 # The app uses a black theme, so every ramp runs dark -> bright: low risk recedes into the
-# background and high risk glows. Ramps hold one hue in OKLCH with even lightness steps.
+# background and high risk glows. Ramps hold one hue in OKLCH with even lightness steps; the two
+# lowest tiers also lose chroma (Low is a dim brown, not a red), so only real risk reads as alarm.
 @dataclass(frozen=True)
 class Tier:
     label: str
@@ -534,8 +535,8 @@ class Tier:
 
 
 TIERS: list[Tier] = [
-    Tier("Low", 0, "#9b0e1b", "#ffffff"),
-    Tier("Moderate", 20, "#c42d31", "#ffffff"),
+    Tier("Low", 0, "#713c38", "#ffffff"),
+    Tier("Moderate", 20, "#ac4642", "#ffffff"),
     Tier("Elevated", 40, "#e94f4d", "#000000"),
     Tier("High", 60, "#fd8078", "#000000"),
     Tier("Severe", 80, "#feb5ae", "#000000"),
@@ -545,9 +546,9 @@ TIER_COLORS = {t.label: t.color for t in TIERS}
 
 # Continuous scale for maps: near-zero recedes toward the black surface, then the tier ramp
 MAP_COLORSCALE = [
-    [0.0, "#4f0007"],
-    [0.2, "#9b0e1b"],
-    [0.4, "#c42d31"],
+    [0.0, "#59302d"],
+    [0.2, "#713c38"],
+    [0.4, "#ac4642"],
     [0.6, "#e94f4d"],
     [0.8, "#fd8078"],
     [1.0, "#feb5ae"],
@@ -690,11 +691,33 @@ REGION_CENTERS = {
     "Sub-Saharan Africa": (20, -3),
 }
 
-# Categorical colours for comparing countries (fixed order, never cycled; dark-mode steps)
-SERIES_COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300"]
-MAX_COMPARE = len(SERIES_COLORS)
-PRIMARY = "#3987e5"
-FORECAST_GREY = "#898781"
+# Interface colours: black paper and grey-to-white ink. Hue is kept for data (tiers, pillars, compared
+# countries), so the interface never borrows a data colour; selection, focus and the current page are
+# shown in the brightest ink. Pages use them as CSS variables (--sg-<name>, see ui.TOKENS_CSS).
+INK = {
+    "bg": "#000000",           # canvas
+    "bar": "#0a0a0a",          # dock and sidebar
+    "raised": "#0e0e0e",       # cards
+    "panel": "#141414",        # panels, hovered cards
+    "hover": "#1a1a19",
+    "line": "#2c2c2a",         # borders and gridlines
+    "line-strong": "#383835",
+    "text": "#ececec",
+    "strong": "#ffffff",       # titles, names
+    "soft": "#c3c2b7",         # secondary text
+    "muted": "#a3a29a",        # captions, meta lines
+    "faint": "#8f8e87",        # hints, axis labels (4.5:1 on every panel)
+    "accent": "#f4f3ee",       # selection, focus, current page, primary action
+    "on-accent": "#000000",
+    "worse": "#fd8078",        # riskier: rising scores, red flags
+    "better": "#5ac698",       # safer: falling scores (green, as in the metric deltas)
+}
+
+# Compared countries (fixed order, never cycled): hues the pillars and tiers don't use, validated on black
+# for colour-blind separation of neighbours and of the first three as a set; black text reads on all six
+COUNTRY_COLORS = ["#16a6c1", "#9163d5", "#af930d", "#c454b0", "#7fa51b", "#149483"]
+MAX_COMPARE = len(COUNTRY_COLORS)
+FORECAST_GREY = INK["faint"]
 MONO_FONT = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
 
 # ---------------------------------------------------------------------------

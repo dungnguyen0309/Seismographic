@@ -1,9 +1,10 @@
 """Plotly figure builders.
 
 Colour rules (black theme): risk magnitude uses one red ramp (dim = low, bright = high);
-comparing countries uses fixed categorical colours in a fixed order; a single
-series uses one blue. Text never carries the series colour. Marks are separated
-by a ring in the surface colour (black).
+comparing countries uses their own fixed colours in a fixed order; a single
+series takes its pillar's colour (governance, economy), otherwise the ink. Text
+never carries the series colour. Marks are separated by a ring in the surface
+colour (black).
 """
 
 from __future__ import annotations
@@ -20,22 +21,22 @@ from .config import (
     NO_DATA_COLOR,
     OCEAN_COLOR,
     PILLAR_COLORS,
+    COUNTRY_COLORS,
+    INK,
     PILLARS,
-    PRIMARY,
-    SERIES_COLORS,
     TIER_COLORS,
     TIER_ORDER,
     WGI_DIMENSIONS,
 )
 
 FONT = dict(family=config.MONO_FONT, size=12)
-SURFACE = "#000000"
-GRID = "#2c2c2a"
-MUTED = "#898781"
-CI_FILL = "rgba(57,135,229,0.22)"
+SURFACE = INK["bg"]
+GRID = INK["line"]
+MUTED = INK["faint"]
+CI_FILL = "rgba(255,255,255,0.09)"  # neutral, so it sits under a line of any colour
 WORSE = "#e66767"
 BETTER = "#3987e5"
-HOVER = dict(bgcolor="#1a1a19", bordercolor="#383835", font=dict(color="#ffffff", **FONT))
+HOVER = dict(bgcolor=INK["hover"], bordercolor=INK["line-strong"], font=dict(color=INK["strong"], **FONT))
 
 
 def _base(fig: go.Figure, height: int = 420, legend: bool = False) -> go.Figure:
@@ -321,7 +322,7 @@ def wgi_small_multiples(series: dict[str, pd.DataFrame], ci: dict[str, pd.DataFr
             fig.add_trace(go.Scatter(x=band["year"], y=band["value_lb"], mode="lines", line=dict(width=0),
                                      fill="tonexty", fillcolor=CI_FILL, hoverinfo="skip",
                                      name="90% confidence interval", showlegend=(i == 0)), r, c)
-        fig.add_trace(go.Scatter(x=s["year"], y=s["value"], mode="lines", line=dict(color=PRIMARY, width=2),
+        fig.add_trace(go.Scatter(x=s["year"], y=s["value"], mode="lines", line=dict(color=PILLAR_COLORS["governance"], width=2),
                                  name="Score", showlegend=(i == 0),
                                  hovertemplate=label + "<br>%{x}: %{y:.1f}<extra></extra>"), r, c)
     fig.update_yaxes(range=[0, 100], gridcolor=GRID)
@@ -349,7 +350,7 @@ def macro_small_multiples(series: dict[str, pd.DataFrame], iso3: str, year: int,
         s = s[(s["year"] >= year - history) & (s["year"] <= year + ahead)]
         actual = s[s["year"] <= year - 1]
         projected = s[s["year"] >= year - 1]
-        fig.add_trace(go.Scatter(x=actual["year"], y=actual["value"], mode="lines", line=dict(color=PRIMARY, width=2),
+        fig.add_trace(go.Scatter(x=actual["year"], y=actual["value"], mode="lines", line=dict(color=PILLAR_COLORS["economic"], width=2),
                                  name="Reported / estimated", showlegend=(i == 0),
                                  hovertemplate=title + "<br>%{x}: %{y:.1f}<extra></extra>"), r, c)
         fig.add_trace(go.Scatter(x=projected["year"], y=projected["value"], mode="lines",
@@ -363,7 +364,7 @@ def macro_small_multiples(series: dict[str, pd.DataFrame], iso3: str, year: int,
 
 
 def tone_chart(df: pd.DataFrame) -> go.Figure:
-    fig = go.Figure(go.Scatter(x=df["date"], y=df["tone"], mode="lines", line=dict(color=PRIMARY, width=2),
+    fig = go.Figure(go.Scatter(x=df["date"], y=df["tone"], mode="lines", line=dict(color=INK["text"], width=2),
                                hovertemplate="%{x|%d %b %Y}<br>Average tone: %{y:.2f}<extra></extra>"))
     fig.add_hline(y=0, line=dict(color=MUTED, width=1))
     fig.update_yaxes(title="Average tone (negative = more negative coverage)")
@@ -389,7 +390,7 @@ def radar(scores: pd.DataFrame, names: dict[str, str]) -> go.Figure:
         vals = [0 if pd.isna(v) else v for v in vals]
         fig.add_trace(go.Scatterpolar(
             r=vals + vals[:1], theta=labels + labels[:1], name=names.get(iso3, iso3), mode="lines+markers",
-            line=dict(color=SERIES_COLORS[i % len(SERIES_COLORS)], width=2), marker=dict(size=8),
+            line=dict(color=COUNTRY_COLORS[i], width=2), marker=dict(size=8),
             hovertemplate="%{theta}: %{r:.0f}<extra>" + names.get(iso3, iso3) + "</extra>",
         ))
     fig.update_layout(polar=dict(radialaxis=dict(range=[0, 100], tickvals=[20, 40, 60, 80], gridcolor=GRID),
@@ -414,7 +415,7 @@ def compare_lines(series: dict[str, pd.DataFrame], key: str, iso3s: list[str], n
         if end_year:
             s = s[s["year"] <= end_year]
         fig.add_trace(go.Scatter(x=s["year"], y=s["value"], mode="lines", name=names.get(iso3, iso3),
-                                 line=dict(color=SERIES_COLORS[i % len(SERIES_COLORS)], width=2),
+                                 line=dict(color=COUNTRY_COLORS[i], width=2),
                                  hovertemplate=names.get(iso3, iso3) + "<br>%{x}: %{y:.1f}<extra></extra>"))
     fig.update_yaxes(title=title)
     fig.update_layout(hovermode="x unified")
@@ -446,7 +447,7 @@ def events_timeline(df: pd.DataFrame) -> go.Figure:
 
 
 # ---------------------------------------------------------------------------
-# Briefing pages (What changed, Regions, Conflict & displacement, Economic stress)
+# Briefing pages (Score changes, Regions, Conflict & displacement, Economic stress)
 # ---------------------------------------------------------------------------
 def change_bars(df: pd.DataFrame, n: int = 10) -> go.Figure:
     """Largest rises (red) and falls (blue) in the composite vs last year. df: iso3, name, delta_1y."""
@@ -529,7 +530,7 @@ def calibration_bars(cal: pd.DataFrame) -> go.Figure:
     """Out-of-time test: predicted chance against what happened, in fifths of the prediction."""
     labels = [FIFTHS[int(f) - 1].replace("Safest", "Lowest").replace("Riskiest", "Highest") for f in cal["fifth"]]
     fig = go.Figure([
-        go.Bar(name="Predicted", x=labels, y=cal["predicted"] * 100, marker=dict(color="#3987e5"),
+        go.Bar(name="Predicted", x=labels, y=cal["predicted"] * 100, marker=dict(color=FORECAST_GREY),
                hovertemplate="%{x}: predicted %{y:.1f}%<extra></extra>"),
         go.Bar(name="What happened", x=labels, y=cal["observed"] * 100, marker=dict(color="#fd8078"),
                hovertemplate="%{x}: conflict began in %{y:.1f}% of cases<extra></extra>"),
@@ -687,7 +688,7 @@ def imf_outlook(series: pd.DataFrame, year: int, title: str, start: int, end: in
     fig.add_trace(go.Scatter(x=q.index, y=q[0.25], mode="lines", line=dict(width=0), fill="tonexty",
                              fillcolor=CI_FILL, name="Middle half of countries", hoverinfo="skip"))
     actual, projected = q[q.index <= year - 1], q[q.index >= year - 1]
-    fig.add_trace(go.Scatter(x=actual.index, y=actual[0.5], mode="lines", name="Median", line=dict(color=PRIMARY, width=2.5),
+    fig.add_trace(go.Scatter(x=actual.index, y=actual[0.5], mode="lines", name="Median", line=dict(color=PILLAR_COLORS["economic"], width=2.5),
                              hovertemplate="%{x}: %{y:.1f}%<extra>median</extra>"))
     fig.add_trace(go.Scatter(x=projected.index, y=projected[0.5], mode="lines", name="IMF projection",
                              line=dict(color=FORECAST_GREY, width=2.5, dash="dash"),
@@ -731,7 +732,7 @@ def peer_strip(country: pd.Series, peers: pd.DataFrame, name: str) -> go.Figure:
                                      hovertemplate="Peer median: %{x:.0f}<extra>" + label + "</extra>"))
         value = country.get(key)
         if pd.notna(value):
-            color = TIER_COLORS.get(country.get("tier"), PRIMARY) if key == "composite" else PILLAR_COLORS[key]
+            color = TIER_COLORS.get(country.get("tier"), MUTED) if key == "composite" else PILLAR_COLORS[key]
             fig.add_trace(go.Scatter(x=[value], y=[i], mode="markers+text", showlegend=False, text=[f"{value:.0f}"],
                                      textposition="top center", textfont=dict(color="#ffffff"),
                                      marker=dict(size=16, color=color, line=dict(color="#ffffff", width=2)),

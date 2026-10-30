@@ -31,7 +31,7 @@ if not events.empty:
     k3.metric("High significance", int((upcoming["significance"].str.title() == "High").sum()), border=True)
 
     if not upcoming.empty:
-        st.subheader("Upcoming events on the globe")
+        st.header("Upcoming events on the globe")
         next_event = upcoming.sort_values("date").groupby("iso3").first()
         days = (next_event["date"] - today).dt.days.clip(lower=0)
         ui.globe_panel(

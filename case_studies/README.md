@@ -1,6 +1,6 @@
 # Case-study commentary
 
-The *Did it see it coming?* page shows, for each case, what the index said the year before the event. Add your
+The *Case studies* page shows, for each case, what the index said the year before the event. Add your
 own analysis by creating a Markdown file here named after the case. It appears under the data as
 **Analyst commentary**.
 

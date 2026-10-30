@@ -1,12 +1,13 @@
 """Country profile: score, red flags, automatic brief, what-if simulator, trends, economy, news and the analyst view."""
 
+import html
 import math
 
 import pandas as pd
 import streamlit as st
 
 from prm import charts, config, content, data, follow, interpret, report, scoring, ui
-from prm.config import INDICATORS, PILLARS, SEVERITY_ICON, SEVERITY_LABEL, TIER_ORDER, WGI_DIMENSIONS
+from prm.config import INDICATORS, PILLARS, SEVERITY_LABEL, TIER_ORDER, WGI_DIMENSIONS
 
 core, year, values, scores = ui.load()
 hist = ui.history(core)
@@ -36,6 +37,7 @@ row = table.set_index("iso3").loc[iso3]
 v = values.loc[iso3]
 s = scores.loc[iso3]
 name = names[iso3]
+st.set_page_config(page_title=f"{name} · {config.APP_TITLE}")
 assessment = ui.assessments().get(iso3)
 
 # --- Header -----------------------------------------------------------------
@@ -108,7 +110,7 @@ with t_summary:
     if t_summary.open:
         c1, c2 = st.columns([1.1, 1])
         with c1:
-            st.subheader("What the data says")
+            st.header("What the data says")
             for line in scoring.country_brief(iso3, name, values, scores, core["series"], countries, year):
                 st.markdown(f"- {line}")
             ui.cite("index")
@@ -116,7 +118,7 @@ with t_summary:
             outlook = data.get_outlook(core, core["version"])
             mine = None if outlook is None else outlook.predictions.set_index("iso3").reindex([iso3]).iloc[0]
             if mine is not None and isinstance(mine["status"], str):
-                st.subheader("Conflict outlook")
+                st.header("Conflict outlook")
                 if mine["status"] == "In armed conflict":
                     st.markdown(f"**In armed conflict** in the latest data ({outlook.data_year}).")
                 else:
@@ -125,30 +127,31 @@ with t_summary:
                                 f"{outlook.index_year + 1} — {mine['relative']:.1f}× the average for a country at peace.")
                 st.page_link("app_pages/conflict.py", label="How this is estimated (Conflict outlook)",
                              icon=":material/insights:", query_params={"tab": "outlook"})
-            st.subheader("Red flags")
+            st.header("Red flags")
             if trend and trend["change"] <= -config.WGI_TREND_THRESHOLD:
                 flags.append({"severity": "warning",
                               "label": f"Political stability deteriorating ({trend['change']:+.1f} pts since {trend['start_year']})"})
             if flags:
                 for f in sorted(flags, key=lambda f: config.SEVERITY_ORDER[f["severity"]]):
-                    st.markdown(f"{SEVERITY_ICON[f['severity']]} **{SEVERITY_LABEL[f['severity']]}** — {f['label']}")
+                    st.markdown(f"{ui.sev_mark(f['severity'], spoken=False)}**{SEVERITY_LABEL[f['severity']]}** — "
+                                f"{html.escape(f['label'])}", unsafe_allow_html=True)
             else:
                 st.markdown("No absolute warning thresholds crossed.")
             st.caption("Red flags use fixed thresholds (e.g. inflation ≥ 20%), independent of how other countries score.")
             ui.cite("index", "ucdp_def", "imf_ara")
 
-            st.subheader("Upcoming events")
+            st.header("Upcoming events")
             country_events = content.load_events()
             ui.upcoming_events(country_events[country_events["iso3"] == iso3].assign(country=name), limit=5)
             st.page_link("app_pages/watchlist.py", label="Add or see all events in the watchlist", icon=":material/event:")
             ui.cite("ifes")
 
-        st.subheader("Pillar scores")
+        st.header("Pillar scores")
         peers = table[table["region"] == row["region"]]
         st.plotly_chart(charts.pillar_bars(s, peers[[p.key for p in PILLARS]].median()), config={"displayModeBar": False})
         ui.cite("index")
 
-        st.subheader("Risk over time")
+        st.header("Risk over time")
         if country_hist["composite"].notna().sum() >= 2:
             st.plotly_chart(charts.risk_history(country_hist), config={"displayModeBar": False})
             ui.cite("index")
@@ -177,14 +180,14 @@ with t_summary:
 # --- In real life ------------------------------------------------------------------
 with t_real:
     if t_real.open:
-        st.subheader(f"What the data means for {name} in real life")
+        st.header(f"What the data means for {name} in real life")
         st.caption("A plain-language translation of the scores, red flags, trend and upcoming events — and how "
                    "different people commonly act on them. General guidance, not advice.")
         reading = interpret.country_reading(iso3, table, values, scores, hist, content.load_events(), core.get("flows"),
                                             year)
         ui.render_reading(reading, key=f"real_{iso3}")
         ui.cite("index", "ifes", "ucdp_def", "imf_ara")
-        st.page_link("app_pages/guide.py", label="How to analyze Seismographic data?",
+        st.page_link("app_pages/guide.py", label="Guide: reading the numbers",
                      icon=":material/explore:")
 
 # --- Peers ------------------------------------------------------------------------
@@ -210,7 +213,7 @@ with t_peers:
                    f"big dot = {name}.")
         ui.cite("index", "wb_countries")
 
-        st.subheader("Peer ranking")
+        st.header("Peer ranking")
         peer_table = ranked.assign(name=[f"▶ {n}" if i == iso3 else n for i, n in zip(ranked["iso3"], ranked["name"])],
                                    group_rank=range(1, len(ranked) + 1))
         ui.country_table(
@@ -219,7 +222,7 @@ with t_peers:
         )
         st.caption(f"▶ marks {name}. Click a row to open another country.")
 
-        st.subheader("Most similar risk profiles")
+        st.header("Most similar risk profiles")
         like = scoring.similar(scores, iso3, n=8)
         if like.empty:
             st.caption("Not enough data to compare profiles.")
@@ -255,7 +258,7 @@ with t_map:
                 (in_col, f"Who {name} hosts", "host", "origin", charts.BETTER, "people hosted"),
             ):
                 with col:
-                    st.subheader(title)
+                    st.header(title)
                     links = (flows[(flows[side] == iso3) & flows[other].isin(names)]
                              .nlargest(10, "value").rename(columns={other: "iso3"}))
                     if links.empty:
@@ -336,18 +339,18 @@ def _reset_whatif() -> None:
 
 @st.fragment
 def what_if_simulator() -> None:
-    st.subheader("What if…?")
+    st.header("What if…?")
     st.caption(
         f"Change {name}'s indicators and watch the index react. Every country is re-scored, exactly as the real index "
         "would be — so you can see which levers move the score and how far a crisis or a reform would shift the rank."
     )
     specs = _whatif_controls()
-    p_cols = st.columns(len(WHATIF_PRESETS) + 1)
-    for col, preset in zip(p_cols, WHATIF_PRESETS):
-        col.button(preset, on_click=_apply_preset, args=(preset, specs), width="stretch", key=f"preset_{preset}")
-    p_cols[-1].button("↺ Reset", on_click=_reset_whatif, width="stretch", key="whatif_reset")
+    with st.container(horizontal=True, wrap=True, key="whatif_presets"):  # full names; they wrap instead of truncating
+        for preset in WHATIF_PRESETS:
+            st.button(preset, on_click=_apply_preset, args=(preset, specs), key=f"preset_{preset}")
+        st.button("↺ Reset", on_click=_reset_whatif, key="whatif_reset")
 
-    controls, results = st.columns([1, 1.15], gap="large")
+    controls, results = st.container(key="split_whatif").columns([1, 1.15], gap="large")
     changes, moved = {}, []
     with controls:
         for i, pillar in enumerate(PILLARS):
@@ -387,17 +390,14 @@ def what_if_simulator() -> None:
         n = new_scores.loc[iso3]
         score_delta = n["composite"] - s["composite"]
         rank_delta = int(n["rank"] - s["rank"])
-        r1, r2, r3 = st.columns(3)
+        r1, r2 = st.columns(2)  # two figures fit a half-width panel; the tier goes on its own line below
         r1.metric("Composite score", f"{n['composite']:.0f} / 100",
                   delta=f"{score_delta:+.1f}" if round(score_delta, 1) else None, delta_color="inverse", border=True)
         r2.metric("Global rank", f"{int(n['rank'])} of {int(n['n_ranked'])}",
                   delta=f"{rank_delta:+d} places" if rank_delta else None, border=True,
                   help="1 = highest risk, so a smaller number means riskier.")
-        with r3:
-            st.markdown("**Risk tier**")
-            st.markdown(ui.tier_badge(n["tier"]), unsafe_allow_html=True)
-            if n["tier"] != s["tier"]:
-                st.caption(f"was {s['tier']}")
+        was = f" <span style='color:var(--sg-muted)'>was {s['tier']}</span>" if n["tier"] != s["tier"] else ""
+        st.markdown(f"Risk tier&nbsp; {ui.tier_badge(n['tier'])}{was}", unsafe_allow_html=True)
         st.plotly_chart(charts.whatif_pillars(s, n), config={"displayModeBar": False}, key="whatif_chart")
         ui.cite("index")
 
@@ -408,7 +408,7 @@ def what_if_simulator() -> None:
         if new_flags or cleared:
             st.markdown("**Red flags in this scenario**")
             for f in new_flags:
-                st.markdown(f"{SEVERITY_ICON[f['severity']]} **New:** {f['label']}")
+                st.markdown(f"{ui.sev_mark(f['severity'])}**New:** {html.escape(f['label'])}", unsafe_allow_html=True)
             for label in sorted(cleared):
                 st.markdown(f"**Cleared:** {label}")
         if moved:
@@ -424,7 +424,7 @@ with t_whatif:
 # --- Indicators -------------------------------------------------------------------
 with t_indicators:
     if t_indicators.open:
-        st.subheader("Every indicator behind the score")
+        st.header("Every indicator behind the score")
         rows = []
         for ind in INDICATORS:
             raw = v.get(ind.key)
@@ -468,7 +468,7 @@ with t_indicators:
 # --- Governance trends ---------------------------------------------------------------
 with t_governance:
     if t_governance.open:
-        st.subheader("Worldwide Governance Indicators over time")
+        st.header("Worldwide Governance Indicators over time")
         st.caption(
             "World Bank WGI governance scores (0–100, higher = better governance) with the 90% confidence interval. "
             "When intervals for two years overlap, the change may be within the margin of error."
@@ -497,7 +497,7 @@ with t_governance:
 with t_economy:
     if t_economy.open:
         edition = core["meta"].get("gdp_growth", {}).get("edition") or "IMF World Economic Outlook"
-        st.subheader("Macroeconomic picture")
+        st.header("Macroeconomic picture")
         st.caption(f"Source: {edition}. Dashed lines are IMF projections.")
         st.plotly_chart(charts.macro_small_multiples(core["series"], iso3, year), config={"displayModeBar": False})
         ui.cite("imf", "wdi", "unhcr")
@@ -514,7 +514,7 @@ with t_economy:
 with t_news:
     if t_news.open:
         news_name = config.NEWS_NAMES.get(iso3, name)
-        st.subheader("Risk-related news, last 7 days")
+        st.header("Risk-related news, last 7 days")
         st.caption(
             f"Live headlines matching “{news_name}” plus risk keywords (protest, election, coup, sanctions, clashes…), "
             "newest first, from Bing News and Google News (photos where the feed has one), with GDELT as a backup."
@@ -523,7 +523,7 @@ with t_news:
         ui.cite("news", "gdelt")
 
         with ui.guard("Video reports"):
-            st.subheader(f"Video reports on {name}")
+            st.header(f"Video reports on {name}")
             all_videos = data.load_videos()
             about = (ui.videos_about(all_videos, iso3, names, countries.set_index("iso3").get("official_name", pd.Series())
                                      .get(iso3)) if all_videos is not None else None)

@@ -1,4 +1,4 @@
-"""What changed: this year's index against last year's — risers, fallers, tier moves and new red flags."""
+"""Score changes: this year's index against last year's — risers, fallers, tier moves and new red flags."""
 
 import pandas as pd
 import streamlit as st
@@ -11,7 +11,7 @@ hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 prev_year = year - 1
 
-ui.hero("What changed")
+ui.hero("Score changes")
 st.markdown(
     f"The index for **{year}** compared with **{prev_year}**: who became riskier or safer, which tiers moved, "
     "what drove each change and which absolute warning thresholds were newly crossed. "
@@ -74,7 +74,7 @@ k5.metric("New red flags", int((flags["change"] == "New").sum()), border=True,
           help="Absolute warning thresholds crossed this year that were not crossed last year")
 
 # --- Map of change ----------------------------------------------------------------------------------
-st.subheader("Map of change")
+st.header("Map of change")
 
 
 def _change_note(r) -> str:
@@ -95,7 +95,7 @@ st.caption("Red = riskier than last year, blue = safer, grey = little change; th
 ui.cite("index")
 
 # --- Biggest moves -------------------------------------------------------------------------------
-st.subheader("Biggest moves")
+st.header("Biggest moves")
 if moved.empty:
     st.info("No year-on-year comparison is available for this selection.")
 else:
@@ -108,7 +108,7 @@ else:
     ui.cite("index")
 
 # --- Tier changes --------------------------------------------------------------------------------------
-st.subheader("Tier changes")
+st.header("Tier changes")
 tiers = moved[moved["tier_move"].fillna(0) != 0].sort_values(["tier_move", "delta_1y"], ascending=False)
 if tiers.empty:
     st.caption("No country changed tier.")
@@ -125,7 +125,7 @@ else:
         ui.go_to_country(tiers.iloc[event.selection.rows[0]]["iso3"])
 
 # --- What drove the change ------------------------------------------------------------------------------
-st.subheader("What drove each change")
+st.header("What drove each change")
 st.caption("Change in each pillar score since last year, for every country whose composite moved by a point or more.")
 ui.cite("index")
 drivers = moved[moved["delta_1y"].abs() >= ui.TREND_THRESHOLD].sort_values("delta_1y", ascending=False)
@@ -143,7 +143,7 @@ if event and event.selection.rows:
     ui.go_to_country(drivers.iloc[event.selection.rows[0]]["iso3"])
 
 # --- Red flags --------------------------------------------------------------------------------------------
-st.subheader("Red flags crossed or cleared")
+st.header("Red flags crossed or cleared")
 if flags.empty:
     st.caption("No red flags changed.")
 else:

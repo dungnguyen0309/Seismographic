@@ -1,13 +1,14 @@
 [theme]
 base = "dark"
-primaryColor = "#3987e5"
+# The interface accent is ink, not a hue: every hue in the app belongs to the data (prm/config.py INK)
+primaryColor = "#f4f3ee"
 backgroundColor = "#000000"
 secondaryBackgroundColor = "#141414"
 textColor = "#ececec"
 borderColor = "#2c2c2a"
-linkColor = "#74b1fe"
-font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap, sans-serif"
-headingFont = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap, sans-serif"
+linkColor = "#ececec"
+font = "JetBrains Mono:https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap, monospace"
+headingFont = "JetBrains Mono:https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap, monospace"
 codeFont = "JetBrains Mono:https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap, monospace"
 
 [theme.sidebar]

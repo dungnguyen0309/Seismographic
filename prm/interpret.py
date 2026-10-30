@@ -343,7 +343,7 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
                         "just before it.")
     if calm:
         business.append("A relatively stable profile: standard due diligence is usually enough — keep an eye on "
-                        "*What changed* for early shifts.")
+                        "*Score changes* for early shifts.")
 
     ngo = []
     if pd.notna(displaced) and displaced >= 1:

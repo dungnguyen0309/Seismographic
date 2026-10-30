@@ -9,9 +9,8 @@ core, year, values, scores = ui.load()
 hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 
-ui.hero("Indicator explorer")
-st.markdown("Pick any of the indicators behind the index and see it around the world: where it is worst, how "
-            "countries are spread, and the riskiest and safest economies.")
+ui.hero("Indicator explorer", "Any indicator behind the index around the world: where it is worst, how countries "
+                               "are spread, and the riskiest and safest economies.")
 
 options = [i.key for i in config.SCORED_INDICATORS]
 labels = {i.key: f"{config.PILLAR_BY_KEY[i.pillar].short} · {i.label}" for i in config.SCORED_INDICATORS}
@@ -64,7 +63,7 @@ st.caption(f"Colour and height = risk score for this indicator (0 = safest count
 ui.cite(source, "natural_earth")
 
 # --- Distribution and leaders ----------------------------------------------------------------------------
-st.subheader("How countries are spread")
+st.header("How countries are spread")
 st.plotly_chart(charts.distribution(known["value"], f"{ind.short} ({ind.unit})", config.PILLAR_COLORS[ind.pillar],
                                     log=ind.norm == "log"), config={"displayModeBar": False})
 ui.cite(source)
@@ -72,7 +71,7 @@ ui.cite(source)
 left, right = st.columns(2)
 for col, title, rows in ((left, "Riskiest 10", known.nlargest(10, "risk")), (right, "Safest 10", known.nsmallest(10, "risk"))):
     with col:
-        st.subheader(title)
+        st.header(title)
         rows = rows.assign(shown=rows["value"].map(ind.fmt)).reset_index(drop=True)
         event = st.dataframe(
             rows[["iso3", "flag", "name", "shown", "year", "risk"]], hide_index=True, on_select="rerun",

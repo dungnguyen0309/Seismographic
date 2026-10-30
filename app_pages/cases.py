@@ -1,4 +1,4 @@
-"""Did it see it coming? What the index showed the year before major political shocks."""
+"""Case studies: what the index showed the year before major political shocks."""
 
 import html
 
@@ -12,7 +12,7 @@ hist = ui.history(core)
 names = dict(zip(core["countries"]["iso3"], core["countries"]["name"]))
 iso2 = dict(zip(core["countries"]["iso3"], core["countries"]["iso2"]))
 
-ui.hero("Did it see it coming?")
+ui.hero("Case studies")
 st.markdown(
     "Eight shocks since 2020 (coups, wars, an invasion, a default and an uprising) and what the index said about each "
     "country **the year before**. The verdict follows a fixed rule, shown under each case, so you can check it."
@@ -27,7 +27,7 @@ for case in cases.CASES:
 counts = {v: sum(1 for r in readings.values() if r.get("verdict") == v) for v in cases.VERDICTS}
 st.markdown(
     '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin:6px 0 10px">'
-    + "".join(f'<div style="border:1px solid #2c2c2a;border-top:3px solid {color};border-radius:10px;padding:10px 12px">'
+    + "".join(f'<div style="border:1px solid var(--sg-line);border-radius:10px;padding:10px 12px">'
               f'<div style="font-size:1.7rem;font-weight:700;line-height:1.1">{counts[v]} of {len(cases.CASES)}</div>'
               f'<div style="font-size:0.8rem;color:{color};margin-top:2px">{v}</div></div>'
               for v, (color, _) in cases.VERDICTS.items())
@@ -64,7 +64,7 @@ case = next(c for c in cases.CASES if c.key == pick)
 r = readings[pick]
 name = names.get(case.iso3, case.iso3)
 
-ui.country_heading(f"{name}: {case.title}", iso2.get(case.iso3), level=3)
+ui.country_heading(f"{name}: {case.title}", iso2.get(case.iso3), level=2)
 when = pd.Timestamp(case.date)
 st.markdown(f"**{when:%d %B %Y}** · {html.escape(case.kind)} · {html.escape(case.what)} "
             f"[Background ↗]({case.source})")
@@ -76,7 +76,7 @@ else:
     st.markdown(
         f'<span style="display:inline-block;border:1px solid {color};color:{color};border-radius:999px;'
         f'padding:2px 12px;font-weight:700">{r["verdict"]}</span> '
-        f'<span style="color:#a3a29a;font-size:0.85rem">{html.escape(meaning)}</span>',
+        f'<span style="color:var(--sg-muted);font-size:0.85rem">{html.escape(meaning)}</span>',
         unsafe_allow_html=True,
     )
     m1, m2, m3 = st.columns(3)
@@ -101,13 +101,13 @@ else:
         st.markdown(f"**Red flags in {r['before']}**")
         if r["flags"]:
             for f in r["flags"]:
-                st.markdown(f"- {config.SEVERITY_ICON[f['severity']]} {f['label']}")
+                st.markdown(f"- {ui.sev_mark(f['severity'])}{html.escape(f['label'])}", unsafe_allow_html=True)
         else:
             st.markdown("- None")
 
     note = cases.commentary(case)
     if note:
-        st.markdown("#### Analyst commentary")
+        st.markdown("### Analyst commentary")
         st.markdown(note)
 
 st.caption(

@@ -17,7 +17,7 @@ an **events watchlist**, and **written analyst assessments** with probabilistic 
 
 <p align="center"><img src="docs/screenshots/overview.png" alt="Global overview: the 3D globe with conflict rings, refugee flows and live news" width="100%"></p>
 
-| Country profile | Did it see it coming? |
+| Country profile | Case studies |
 |---|---|
 | ![A country profile with score, rank, red flags and the bottom console bar](docs/screenshots/country.png) | ![A case study: Ethiopia's risk before the war in Tigray](docs/screenshots/cases.png) |
 | **Stress test** | **Conflict outlook** |
@@ -27,38 +27,37 @@ an **events watchlist**, and **written analyst assessments** with probabilistic 
 
 ## What you can do in the app
 
-| Page | What it shows |
-|---|---|
-| **Introduction** | What the tool is, how the score is built (indicators → risk scores → pillars → composite and tiers), the four pillars and their weights, a map of every page, a quick start and the caveats |
-| **Global overview** | Interactive 3D globe — rotate, zoom, click any country (small states are dots) to see its index and **its latest news**, replay the index year by year since 2015, pulsing rings where armed conflict is active, animated refugee-flow arcs — or a flat map; the countries you **follow** at the top; headline numbers with sparklines and year-on-year changes; risk matrix, tier distribution by region, sortable ranking with flags and 1-year change arrows, biggest movers in political stability |
-| **Country profile** | Composite score and rank (with trend and change vs last year), a **☆ Follow** button (remembered in the browser, no account), automatic data brief, the **conflict outlook** for next year, red flags, pillar scores vs regional median, **risk over time** since 2015, sensitivity check, a **what-if simulator** (move indicator sliders or pick a scenario such as *currency crisis* or *armed conflict* and watch the score, tier and rank update), every indicator with its year and source, WGI trends with confidence intervals, IMF macro charts with projections, live risk-related headlines, protest coverage over three months, the **countries with the most similar risk profile**, links to the country's pages at the World Bank, IMF, ReliefWeb and FAO, a **one-page PDF brief** to download, and the analyst assessment |
-| **Compare countries** | Up to six countries — add them from any profile with *Add to compare* or from the *similar to* suggestions; the address is a **shareable link** to the comparison: pillar radar, governance over time, indicator table, economic trajectories |
-| **Events watchlist** | Elections, deadlines and other dated events on a timeline |
-| **Live TV & video** | 25 round-the-clock live news channels from five regions (Europe, the Americas, the Middle East, Africa and Asia-Pacific), each labelled with where it is based and who owns it, plus the latest video reports, think-tank analysis (CFR, Crisis Group, Carnegie, Brookings, Atlantic Council, CSIS) and briefings from institutions and NGOs (UN, IMF, World Bank, ICRC, Human Rights Watch), filterable by country; each profile also shows the videos about that country |
-| **How to analyze Seismographic data?** | What the numbers mean in real life: a plain-language reading of any country, what each tier, pillar and warning threshold looks like on the ground, practical steps for business, NGOs, travel and research, and the tool's limits. Each country profile also has an *In real life* tab with the same reading |
-| **Did it see it coming?** | Eight shocks since 2020 (the coups in Myanmar and Niger, the wars in Tigray and Sudan, the fall of Kabul, Russia's invasion of Ukraine, Sri Lanka's default and Bangladesh's uprising) and what the index said about each country the year before, with a verdict from a fixed, published rule and room for analyst commentary |
-| **What changed** | This year vs last: biggest risers and fallers, tier changes, the pillar that drove each move, red flags newly crossed or cleared |
-| **Regional briefings** | One region at a time: headline numbers with trends, zoomed map, tier mix since 2015, risers and fallers, ranking, upcoming events and regional news |
-| **Conflict & displacement** | Battle deaths worldwide and by conflict, a table of active wars and conflicts, displacement over time, largest origin and host countries, the 25 largest refugee corridors, and the **Outlook**: the chance of new armed conflict next year in every country at peace, from a small statistical model tested out of time |
-| **Economic stress** | A heatmap of inflation, growth, debt, deficits, current account and reserves, a growth-vs-inflation (stagflation) chart, the IMF outlook, and countries crossing several warning thresholds |
-| **Indicator explorer** | Any of the 17 indicators on the 3D globe, with its distribution and the riskiest and safest 10 countries |
-| **Assessment builder** | A form that turns your analysis into a structured assessment file (BLUF, key judgments with ICD 203 estimative language, drivers, scenarios, signposts) |
-| **Stress test** | Hit many countries at once with one economic shock (a 2009-style recession, a 2020-style pandemic, a 2022-style price surge, higher-for-longer rates, or your own) and see who crosses a risk tier or a red flag, on the globe and in a table; filter by region and income group, share the link, download the results |
-| **Methodology** | Every indicator, normalisation, weight, threshold and limitation, plus two tests of the model: its **track record** before new armed conflicts and a **benchmark** against the Fragile States Index |
-| **Glossary & legend** | 122 terms in nine colour-coded categories, each with its icon and the sources behind it, searchable; every term links to the organisation that defines or publishes it; plus a visual legend for tiers, pillars, colour scales and globe layers |
-| **Sources & citations** | Every dataset, definition and feed behind the tool, with links, update dates and the status of the data loaded now; the source of every warning threshold; independent indices to cross-check the scores against; who owns each video channel; and how to cite the tool |
-| **Download data** | Every table behind the index (the index, all 17 indicators with years and scores, red flags, history since 2015, the conflict outlook) as CSV, one Excel workbook or JSON, with a data dictionary; where the app runs as an ASGI app, a read-only **JSON API** too |
-| **Resources** | Curated data sources, professional outlooks, tradecraft guides and books |
+| Section | Page | What it shows |
+|---|---|---|
+| Monitor | **Global overview** | Interactive 3D globe — rotate, zoom, click any country (small states are dots) to see its index and **its latest news**, replay the index year by year since 2015, pulsing rings where armed conflict is active, animated refugee-flow arcs — or a flat map; the countries you **follow** at the top; headline numbers with year-on-year changes; then tabs for hotspots to watch, the biggest moves (including political stability), the sortable ranking with flags and 1-year change arrows, and the risk matrix with the tier mix by region |
+|  | **Country profile** | Composite score and rank (with trend and change vs last year), a **☆ Follow** button (remembered in the browser, no account), automatic data brief, the **conflict outlook** for next year, red flags, pillar scores vs regional median, **risk over time** since 2015, sensitivity check, a **what-if simulator** (move indicator sliders or pick a scenario such as *currency crisis* or *armed conflict* and watch the score, tier and rank update), every indicator with its year and source, WGI trends with confidence intervals, IMF macro charts with projections, live risk-related headlines, protest coverage over three months, the **countries with the most similar risk profile**, links to the country's pages at the World Bank, IMF, ReliefWeb and FAO, a **one-page PDF brief** to download, and the analyst assessment |
+|  | **Compare countries** | Up to six countries — add them from any profile with *Add to compare* or from the *similar to* suggestions; the address is a **shareable link** to the comparison: pillar radar, governance over time, indicator table, economic trajectories |
+|  | **Score changes** | This year vs last: biggest risers and fallers, tier changes, the pillar that drove each move, red flags newly crossed or cleared |
+|  | **Live video** | 25 round-the-clock live news channels from five regions (Europe, the Americas, the Middle East, Africa and Asia-Pacific), each labelled with where it is based and who owns it, plus the latest video reports, think-tank analysis (CFR, Crisis Group, Carnegie, Brookings, Atlantic Council, CSIS) and briefings from institutions and NGOs (UN, IMF, World Bank, ICRC, Human Rights Watch), filterable by country; each profile also shows the videos about that country |
+| Briefings | **Regions** | One region at a time: headline numbers with trends, zoomed map, tier mix since 2015, risers and fallers, ranking, upcoming events and regional news |
+|  | **Conflict & displacement** | Battle deaths worldwide and by conflict, a table of active wars and conflicts, displacement over time, largest origin and host countries, the 25 largest refugee corridors, and the **Outlook**: the chance of new armed conflict next year in every country at peace, from a small statistical model tested out of time |
+|  | **Economic stress** | A heatmap of inflation, growth, debt, deficits, current account and reserves, a growth-vs-inflation (stagflation) chart, the IMF outlook, and countries crossing several warning thresholds |
+|  | **Events watchlist** | Elections, deadlines and other dated events on a timeline |
+|  | **Case studies** | Eight shocks since 2020 (the coups in Myanmar and Niger, the wars in Tigray and Sudan, the fall of Kabul, Russia's invasion of Ukraine, Sri Lanka's default and Bangladesh's uprising) and what the index said about each country the year before, with a verdict from a fixed, published rule and room for analyst commentary |
+| Tools | **Indicator explorer** | Any of the 17 indicators on the 3D globe, with its distribution and the riskiest and safest 10 countries |
+|  | **Stress test** | Hit many countries at once with one economic shock (a 2009-style recession, a 2020-style pandemic, a 2022-style price surge, higher-for-longer rates, or your own) and see who crosses a risk tier or a red flag, on the globe and in a table; filter by region and income group, share the link, download the results |
+|  | **Assessment builder** | A form that turns your analysis into a structured assessment file (BLUF, key judgments with ICD 203 estimative language, drivers, scenarios, signposts) |
+|  | **Data downloads** | Every table behind the index (the index, all 17 indicators with years and scores, red flags, history since 2015, the conflict outlook) as CSV, one Excel workbook or JSON, with a data dictionary; where the app runs as an ASGI app, a read-only **JSON API** too |
+| Reference | **Introduction** | What the tool is, how the score is built (indicators → risk scores → pillars → composite and tiers), the four pillars and their weights, a quick start and the caveats |
+|  | **Guide** | What the numbers mean in real life: a plain-language reading of any country, what each tier, pillar and warning threshold looks like on the ground, practical steps for business, NGOs, travel and research, and the tool's limits. Each country profile also has an *In real life* tab with the same reading |
+|  | **Methodology** | Every indicator, normalisation, weight, threshold and limitation, plus two tests of the model: its **track record** before new armed conflicts and a **benchmark** against the Fragile States Index |
+|  | **Glossary & legend** | 123 terms in nine colour-coded categories, each with its icon and the sources behind it, searchable; every term links to the organisation that defines or publishes it; plus a visual legend for tiers, pillars, colour scales and globe layers |
+|  | **Sources** | Every dataset, definition and feed behind the tool, with links, update dates and the status of the data loaded now; the source of every warning threshold; independent indices to cross-check the scores against; who owns each video channel; and how to cite the tool; plus further reading: data sources worth adding, professional outlooks, tradecraft guides and books |
 
-Most pages open on their own **3D globe**: the overview (with a live news column and hotspots to watch), regional
-briefings (turned to the region), conflict & displacement (conflict rings and refugee arcs), economic stress, a
-diverging *map of change* on *What changed*, the compared countries on *Compare*, upcoming events on the
+Most pages open on their own **3D globe**: the overview (with a live news column and hotspots to watch), regions
+(turned to the region), conflict & displacement (conflict rings and refugee arcs), economic stress, a
+diverging *map of change* on *Score changes*, the compared countries on *Compare*, upcoming events on the
 watchlist, and each country's own refugee links on its profile. Every chart, map and table names its sources
 underneath, with links.
 
 A **console bar** along the bottom of every page keeps the tracked country one tap away (flag, score, tier,
 change and a small seismogram of its risk since 2015) next to tabs for Home, Compare, Live and Guide and a
-*Find* sheet for countries and pages.
+*Find* sheet that searches every country and every page.
 
 ## Method in brief
 

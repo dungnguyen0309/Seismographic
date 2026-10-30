@@ -39,6 +39,8 @@ CONFLICT_THRESHOLD = 25  # UCDP: 25 battle deaths a year = active armed conflict
 _HTML = """
 <div class="rg-wrap">
   <div class="rg-canvas"></div>
+  <button class="rg-lock" type="button" hidden><span>Tap to explore the globe</span></button>
+  <div class="rg-toast" role="status" aria-live="polite"></div>
   <div class="rg-status">Loading the 3D globe…</div>
   <div class="rg-controls">
     <div class="rg-group" role="group" aria-label="View">
@@ -52,8 +54,11 @@ _HTML = """
       <button data-act="flows" title="Show the largest refugee flows (origin → host)">Flows</button>
       <button data-act="conflict" title="Pulse where battle deaths are high (≥ 25 a year)">Conflict</button>
     </div>
+    <div class="rg-group rg-done-group" hidden>
+      <button data-act="lock" title="Lock the globe so swiping scrolls the page again">Done</button>
+    </div>
   </div>
-  <div class="rg-hint">Drag to rotate · scroll, pinch or +/− to zoom · click a country</div>
+  <div class="rg-hint">Drag to rotate · +/− to zoom · click a country</div>
   <div class="rg-legend">
     <div class="rg-legend-title"></div>
     <div class="rg-legend-bar"></div>
@@ -71,74 +76,90 @@ _HTML = """
 
 _CSS = """
 .rg-wrap { position: relative; width: 100%; height: 640px; border-radius: 14px; overflow: hidden;
-  background: #000;
-  border: 1px solid #1f1f1e; font-family: inherit; color: #ececec; }
+  background: var(--sg-bg);
+  border: 1px solid var(--sg-line); font-family: inherit; color: var(--sg-text); }
 .rg-canvas { position: absolute; inset: 0; cursor: grab; }
 .rg-status { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  padding: 24px; text-align: center; color: #898781; font-size: 0.85rem; }
+  padding: 24px; text-align: center; color: var(--sg-faint); font-size: 0.85rem; }
 .rg-status[hidden], .rg-panel[hidden] { display: none; }
 .rg-status { flex-direction: column; gap: 10px; }
-.rg-retry { font: inherit; font-size: 0.8rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; color: #ececec;
-  background: #141414; border: 1px solid #383835; }
-.rg-retry:hover { border-color: #3987e5; }
+.rg-retry { font: inherit; font-size: 0.8rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; color: var(--sg-text);
+  background: var(--sg-panel); border: 1px solid var(--sg-line-strong); }
+.rg-retry:hover { border-color: var(--sg-accent); }
+/* touch screens: the globe is still until tapped, so swipes scroll the page */
+.rg-lock { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center;
+  padding: 0; border: 0; background: transparent; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.rg-lock span { font-size: 0.8rem; color: var(--sg-text); padding: 8px 14px; background: rgba(10,10,10,0.82);
+  border: 1px solid var(--sg-line-strong); border-radius: 8px; }
+.rg-lock[hidden], .rg-done-group[hidden] { display: none; }
+.rg-locked .rg-canvas { pointer-events: none; }
+/* a short note when the wheel scrolls past the globe instead of zooming it */
+.rg-toast { position: absolute; left: 50%; top: 50%; z-index: 4; transform: translate(-50%, -50%); padding: 8px 14px;
+  font-size: 0.8rem; color: var(--sg-text); background: rgba(10,10,10,0.9); border: 1px solid var(--sg-line-strong); border-radius: 8px;
+  pointer-events: none; opacity: 0; transition: opacity 0.2s ease-out; }
+.rg-toast.on { opacity: 1; }
 .rg-controls { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 2; display: flex; flex-wrap: wrap;
   gap: 6px; pointer-events: none; }
-.rg-group { display: flex; pointer-events: auto; background: rgba(10,10,10,0.82); border: 1px solid #2c2c2a;
+.rg-group { display: flex; pointer-events: auto; background: rgba(10,10,10,0.82); border: 1px solid var(--sg-line);
   border-radius: 8px; overflow: hidden; }
 .rg-group button, .rg-play { font: inherit; font-size: 0.74rem; min-width: 34px; height: 30px; padding: 0 10px;
-  cursor: pointer; background: transparent; color: #c3c2b7; border: 0; }
-.rg-group button + button { border-left: 1px solid #2c2c2a; }
-.rg-group button:hover { background: rgba(255,255,255,0.06); color: #fff; }
-.rg-group button.on { background: rgba(57,135,229,0.22); color: #a9cbff; font-weight: 600; }
-.rg-play { background: rgba(20,20,20,0.85); color: #ececec; border: 1px solid #383835; border-radius: 8px; }
-.rg-play:hover { border-color: #3987e5; }
-.rg-hint { position: absolute; top: 50px; left: 14px; z-index: 1; color: #6f6e69; font-size: 0.68rem;
+  cursor: pointer; background: transparent; color: var(--sg-soft); border: 0; }
+.rg-group button + button { border-left: 1px solid var(--sg-line); }
+.rg-group button:hover { background: rgba(255,255,255,0.06); color: var(--sg-strong); }
+.rg-group button.on { background: rgba(244,243,238,0.16); color: var(--sg-strong); font-weight: 600; }
+.rg-play { background: rgba(20,20,20,0.85); color: var(--sg-text); border: 1px solid var(--sg-line-strong); border-radius: 8px; }
+.rg-play:hover { border-color: var(--sg-accent); }
+.rg-hint { position: absolute; top: 50px; left: 14px; z-index: 1; color: var(--sg-faint); font-size: 0.75rem;
   pointer-events: none; }
 .rg-legend { position: absolute; left: 12px; bottom: 12px; z-index: 2; width: 240px; padding: 8px 10px;
-  background: rgba(10,10,10,0.82); border: 1px solid #2c2c2a; border-radius: 8px; font-size: 0.7rem; }
+  background: rgba(10,10,10,0.82); border: 1px solid var(--sg-line); border-radius: 8px; font-size: 0.75rem; }
 .rg-legend-bar { height: 8px; border-radius: 4px; margin: 6px 0 4px; }
-.rg-legend-ticks { display: flex; justify-content: space-between; color: #898781; }
-.rg-legend-keys { margin-top: 6px; color: #c3c2b7; line-height: 1.5; }
+.rg-legend-ticks { display: flex; justify-content: space-between; color: var(--sg-faint); }
+.rg-legend-keys { margin-top: 6px; color: var(--sg-soft); line-height: 1.5; }
 .rg-legend-keys i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px;
   vertical-align: -1px; }
 .rg-time { position: absolute; left: 266px; right: 12px; bottom: 12px; z-index: 2; display: flex; align-items: center;
-  gap: 10px; padding: 8px 12px; background: rgba(10,10,10,0.82); border: 1px solid #2c2c2a; border-radius: 8px; }
+  gap: 10px; padding: 8px 12px; background: rgba(10,10,10,0.82); border: 1px solid var(--sg-line); border-radius: 8px; }
 .rg-time[hidden] { display: none; }
-.rg-time input { flex: 1; accent-color: #3987e5; min-width: 60px; }
+.rg-time input { flex: 1; accent-color: var(--sg-accent); min-width: 60px; }
 .rg-custom { margin-top: 10px; font-size: 0.85rem; }
 .rg-custom b { font-size: 1.05rem; }
 .rg-year { font-weight: 700; min-width: 3.2em; text-align: right; }
 .rg-panel { position: absolute; top: 50px; right: 12px; z-index: 3; width: 300px; max-height: calc(100% - 122px);
-  overflow: auto; padding: 14px 16px; background: rgba(12,12,12,0.95); border: 1px solid #383835;
+  overflow: auto; padding: 14px 16px; background: rgba(12,12,12,0.95); border: 1px solid var(--sg-line-strong);
   border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
-.rg-close { position: absolute; top: 6px; right: 8px; background: none; border: 0; color: #898781;
+.rg-close { position: absolute; top: 6px; right: 8px; background: none; border: 0; color: var(--sg-faint);
   font-size: 1.3rem; cursor: pointer; }
 .rg-name { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; font-weight: 700; padding-right: 22px; }
-.rg-name img { height: 1.05em; aspect-ratio: 4 / 3; border-radius: 3px; box-shadow: 0 0 0 1px #2c2c2a; }
-.rg-sub { color: #898781; font-size: 0.75rem; margin-top: 2px; }
+.rg-name img { height: 1.05em; aspect-ratio: 4 / 3; border-radius: 3px; box-shadow: 0 0 0 1px var(--sg-line); }
+.rg-sub { color: var(--sg-faint); font-size: 0.75rem; margin-top: 2px; }
 .rg-score { display: flex; align-items: baseline; gap: 6px; margin-top: 10px; }
 .rg-big { font-size: 2.4rem; font-weight: 700; line-height: 1; }
-.rg-of { color: #898781; }
+.rg-of { color: var(--sg-faint); }
 .rg-delta { font-size: 0.8rem; }
 .rg-badge { margin-left: auto; padding: 3px 10px; border-radius: 999px; font-weight: 600; font-size: 0.75rem; }
 .rg-rank { font-size: 0.78rem; margin-top: 6px; }
-.rg-rank span, .rg-tip span, .rg-muted { color: #898781; }
+.rg-rank span, .rg-tip span, .rg-muted { color: var(--sg-faint); }
 .rg-spark { margin-top: 10px; }
 .rg-spark svg { display: block; width: 100%; height: 54px; }
-.rg-section { margin-top: 12px; font-size: 0.7rem; color: #898781; text-transform: uppercase; letter-spacing: 0.04em; }
+.rg-section { margin-top: 12px; font-size: 0.75rem; font-weight: 600; color: var(--sg-muted); }
 .rg-pillars { margin-top: 6px; display: grid; gap: 6px; }
 .rg-prow { display: grid; grid-template-columns: 92px 1fr 30px; align-items: center; gap: 8px;
-  font-size: 0.75rem; color: #c3c2b7; }
-.rg-prow.rg-active { color: #ffffff; font-weight: 700; }
-.rg-ptrack { height: 8px; background: #262624; border-radius: 4px; overflow: hidden; }
+  font-size: 0.75rem; color: var(--sg-soft); }
+.rg-prow.rg-active { color: var(--sg-strong); font-weight: 700; }
+.rg-ptrack { height: 8px; background: var(--sg-line); border-radius: 4px; overflow: hidden; }
 .rg-pbar { display: block; height: 100%; border-radius: 4px; }
 .rg-pval { text-align: right; }
-.rg-flags { margin-top: 10px; font-size: 0.75rem; color: #fd8078; }
-.rg-flags.ok { color: #5ac698; }
-.rg-note { color: #c3c2b7; font-size: 0.8rem; }
+.rg-flags { margin-top: 10px; font-size: 0.75rem; color: var(--sg-worse); }
+.rg-flags.ok { color: var(--sg-soft); }
+.rg-note { color: var(--sg-soft); font-size: 0.8rem; }
 .rg-open { margin-top: 12px; width: 100%; font: inherit; font-size: 0.8rem; font-weight: 600; padding: 8px;
-  background: #3987e5; color: #000; border: 0; border-radius: 8px; cursor: pointer; }
+  background: var(--sg-accent); color: var(--sg-on-accent); border: 0; border-radius: 8px; cursor: pointer; }
 .rg-tip { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.45; }
+.rg-narrow .rg-hint { display: none; }
+.rg-narrow .rg-legend { left: 12px; right: 12px; width: auto; bottom: 62px; padding: 6px 8px; }
+.rg-narrow .rg-time { left: 12px; right: 12px; }
+.rg-narrow .rg-panel { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; max-height: 72%; }
 @media (max-width: 640px) {
   .rg-wrap { height: var(--rg-mobile-h, 520px) !important; }
   .rg-hint { display: none; }
@@ -167,6 +188,31 @@ const lastViews = {};  // per globe (component key): the camera survives Streaml
 const LITE = window.matchMedia("(pointer: coarse)").matches || Math.min(screen.width, screen.height) < 700 ||
   (navigator.hardwareConcurrency || 8) <= 4;
 const PIXEL_RATIO = Math.min(window.devicePixelRatio || 1, LITE ? 1.5 : 1.75);
+// Reduced motion: no spin, no camera flights, still conflict markers and solid flow lines
+const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)");
+const flyMs = (ms) => (REDUCED.matches ? 0 : ms);
+// Touch screens: the globe stays still until tapped, so a one-finger swipe scrolls the page instead of turning it
+const TOUCH = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+const ZOOM_KEY = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? "⌘" : "Ctrl";
+const defaultHint = () => (TOUCH ? "Tap to explore · pinch to zoom · tap a country"
+                                 : "Drag to rotate · " + ZOOM_KEY + " + scroll or +/− to zoom · click a country");
+
+function lockGlobe(root, ctx, locked) {
+  ctx.locked = locked;
+  root.classList.toggle("rg-locked", locked);
+  root.querySelector(".rg-lock").hidden = !locked;
+  root.querySelector(".rg-done-group").hidden = locked || !TOUCH;
+}
+
+function toast(root, text) {
+  const el = root.querySelector(".rg-toast");
+  if (Date.now() - (el.shownAt || 0) < 6000) return;  // once in a while, not on every wheel tick
+  el.shownAt = Date.now();
+  el.textContent = text;
+  el.classList.add("on");
+  clearTimeout(el.timer);
+  el.timer = setTimeout(() => el.classList.remove("on"), 1800);
+}
 
 function loadLibrary() {
   if (window.Globe) return Promise.resolve(window.Globe);
@@ -417,10 +463,18 @@ function drawRings(ctx) {
       if (at) rings.push({ iso3: c.iso3, lat: at.lat, lng: at.lng, deaths });
     }
   }
-  const key = rings.map((r) => r.iso3 + ":" + r.deaths + ":" + heightFor(ctx, r.iso3, 0).toFixed(4)).join();
+  const still = REDUCED.matches;
+  const key = (still ? "still|" : "") +
+    rings.map((r) => r.iso3 + ":" + r.deaths + ":" + heightFor(ctx, r.iso3, 0).toFixed(4)).join();
   if (key === ctx.ringsKey) return;  // unchanged: keep the running animation instead of restarting it
   ctx.ringsKey = key;
-  ctx.globe.ringsData(rings)
+  // Reduced motion: a still dot per conflict, sized by battle deaths, instead of pulsing rings
+  ctx.globe.labelsData(still ? rings : [])
+    .labelLat("lat").labelLng("lng").labelText(() => "").labelSize(0.01).labelResolution(2)
+    .labelDotRadius((r) => 0.4 + Math.log10(r.deaths) * 0.35)
+    .labelColor(() => "rgba(253,128,120,0.9)")
+    .labelAltitude((r) => heightFor(ctx, r.iso3, 0.006) + 0.002);
+  ctx.globe.ringsData(still ? [] : rings)
     .ringColor(() => (t) => "rgba(253,128,120," + Math.sqrt(Math.max(0, 1 - t)).toFixed(3) + ")")
     .ringAltitude((r) => heightFor(ctx, r.iso3, 0.006) + 0.002)
     .ringMaxRadius((r) => 1.5 + Math.log10(r.deaths) * 1.4)
@@ -441,16 +495,17 @@ function drawArcs(ctx) {
     const a = locate(ctx, f.from), b = locate(ctx, f.to);
     if (a && b) arcs.push({ ...f, startLat: a.lat, startLng: a.lng, endLat: b.lat, endLng: b.lng, w: Math.sqrt(f.value / max) });
   }
-  const key = arcs.map((d) => d.from + ">" + d.to + ":" + d.value).join();
+  const still = REDUCED.matches;  // reduced motion: solid lines, no travelling dashes
+  const key = (still ? "still|" : "") + arcs.map((d) => d.from + ">" + d.to + ":" + d.value).join();
   if (key === ctx.arcsKey) return;
   ctx.arcsKey = key;
   ctx.globe.arcsData(arcs)
     .arcColor(() => ["rgba(116,177,254,0.08)", "rgba(185,215,254,0.95)"])
     .arcStroke((d) => 0.25 + 1.2 * d.w)
     .arcAltitudeAutoScale(0.35)
-    .arcDashLength(0.45).arcDashGap(0.2)
-    .arcDashInitialGap(() => Math.random())
-    .arcDashAnimateTime(2600)
+    .arcDashLength(still ? 1 : 0.45).arcDashGap(still ? 0 : 0.2)
+    .arcDashInitialGap(() => (still ? 0 : Math.random()))
+    .arcDashAnimateTime(still ? 0 : 2600)
     .arcLabel((d) => '<div class="rg-tip"><b>' + esc(d.fromName) + " → " + esc(d.toName) + "</b><br>" +
       fmtPeople(d.value) + " refugees &amp; asylum seekers <span>(UNHCR " + ctx.data.flowsYear + ")</span></div>");
 }
@@ -529,7 +584,7 @@ function renderPanel(root, ctx) {
     const tier = tierFor(ctx, score);
     const prev = yi > 0 ? c.composite[yi - 1] : null;
     const d = prev == null ? null : score - prev;
-    const delta = d == null ? "" : '<span class="rg-delta" style="color:' + (d >= 1 ? "#fd8078" : d <= -1 ? "#5ac698" : "#898781") +
+    const delta = d == null ? "" : '<span class="rg-delta" style="color:' + (d >= 1 ? "#fd8078" : d <= -1 ? "#5ac698" : "#8f8e87") +
       '">' + (d >= 1 ? "▲" : d <= -1 ? "▼" : "■") + " " + (d > 0 ? "+" : "") + d.toFixed(0) + " vs " + (year - 1) + "</span>";
     html += '<div class="rg-sub">' + esc(c.region) + " · " + year + "</div>" +
       '<div class="rg-score"><span class="rg-big">' + score.toFixed(0) + '</span><span class="rg-of">/100</span>' +
@@ -601,24 +656,28 @@ function select(root, ctx, iso, fly) {
   const at = fly && locate(ctx, iso);
   if (at) {
     const view = ctx.globe.pointOfView();
-    ctx.globe.pointOfView({ lat: at.lat, lng: at.lng, altitude: Math.min(view.altitude, 1.7) }, 900);
+    ctx.globe.pointOfView({ lat: at.lat, lng: at.lng, altitude: Math.min(view.altitude, 1.7) }, flyMs(900));
   }
 }
 
 function syncButtons(root, ctx) {
-  root.querySelector('[data-act="spin"]').classList.toggle("on", ctx.spin);
-  root.querySelector('[data-act="extrude"]').classList.toggle("on", ctx.extrude);
-  root.querySelector('[data-act="flows"]').classList.toggle("on", ctx.showFlows);
-  root.querySelector('[data-act="conflict"]').classList.toggle("on", ctx.showConflict);
+  // The tint shows the state; aria-pressed tells assistive tech the same thing
+  for (const [act, on] of [["spin", ctx.spin], ["extrude", ctx.extrude], ["flows", ctx.showFlows],
+                           ["conflict", ctx.showConflict]]) {
+    const button = root.querySelector('[data-act="' + act + '"]');
+    button.classList.toggle("on", !!on);
+    button.setAttribute("aria-pressed", on ? "true" : "false");
+  }
 }
 
 function control(root, ctx, action) {
   const g = ctx.globe;
   const view = g.pointOfView();
-  if (action === "in") g.pointOfView({ ...view, altitude: Math.max(0.2, view.altitude * 0.65) }, 450);
-  if (action === "out") g.pointOfView({ ...view, altitude: Math.min(5.5, view.altitude / 0.65) }, 450);
-  if (action === "reset") { select(root, ctx, ctx.data.focus || null, false); g.pointOfView(startView(ctx), 900); }
+  if (action === "in") g.pointOfView({ ...view, altitude: Math.max(0.2, view.altitude * 0.65) }, flyMs(450));
+  if (action === "out") g.pointOfView({ ...view, altitude: Math.min(5.5, view.altitude / 0.65) }, flyMs(450));
+  if (action === "reset") { select(root, ctx, ctx.data.focus || null, false); g.pointOfView(startView(ctx), flyMs(900)); }
   if (action === "spin") { ctx.spin = !ctx.spin; g.controls().autoRotate = ctx.spin; }
+  if (action === "lock") lockGlobe(root, ctx, true);
   if (action === "extrude") ctx.extrude = !ctx.extrude;
   if (action === "flows") ctx.showFlows = !ctx.showFlows;
   if (action === "conflict") ctx.showConflict = !ctx.showConflict;
@@ -628,12 +687,14 @@ function control(root, ctx, action) {
 
 function fitSize(root, ctx) {
   ctx.globe.width(root.clientWidth).height(root.clientHeight);
+  // A narrow globe (a half-width column on a laptop) stacks its legend over the year bar, as on a phone
+  root.classList.toggle("rg-narrow", root.clientWidth < 640);
 }
 
 function build(root, ctx, Globe, features) {
   const el = root.querySelector(".rg-canvas");
   const lastView = lastViews[ctx.data.key];
-  const options = { animateIn: !lastView && !LITE,
+  const options = { animateIn: !lastView && !LITE && !REDUCED.matches,
                     rendererConfig: { antialias: !LITE, alpha: true, powerPreference: "high-performance" } };
   let g;
   try { g = new Globe(el, options); } catch (err) { g = Globe(options)(el); }
@@ -686,6 +747,7 @@ function build(root, ctx, Globe, features) {
   ctx.watch = new IntersectionObserver((entries) => {
     ctx.visible = entries[entries.length - 1].isIntersecting;
     ctx.setActive();
+    if (TOUCH && !ctx.visible && !ctx.locked) lockGlobe(root, ctx, true);  // scrolled away: lock it again
   }, { rootMargin: "120px" });
   ctx.watch.observe(root);
   document.addEventListener("visibilitychange", ctx.setActive);
@@ -697,6 +759,22 @@ function build(root, ctx, Globe, features) {
   controls.maxDistance = 650;
   controls.zoomSpeed = 0.9;
   controls.addEventListener("start", () => stopSpin(root, ctx));
+  // The wheel scrolls the page; Ctrl/⌘ + wheel zooms the globe (a trackpad pinch arrives as Ctrl + wheel too).
+  // Stopped in the capture phase, a plain wheel never reaches the globe's controls, so nothing blocks the scroll.
+  el.addEventListener("wheel", (e) => {
+    if (e.ctrlKey || e.metaKey) return;
+    e.stopPropagation();
+    toast(root, "Hold " + ZOOM_KEY + " and scroll to zoom the globe");
+  }, { capture: true });
+  if (TOUCH) lockGlobe(root, ctx, true);
+  root.querySelector(".rg-lock").onclick = () => lockGlobe(root, ctx, false);
+  // The motion setting can change while the page is open
+  ctx.motion = () => {
+    ctx.ringsKey = ctx.arcsKey = null;
+    drawLayers(ctx);
+    if (REDUCED.matches) stopSpin(root, ctx);
+  };
+  REDUCED.addEventListener("change", ctx.motion);
   g.pointOfView(lastView || startView(ctx), 0);
   ctx.centreKey = JSON.stringify([ctx.data.centre, ctx.data.focus]);
   fitSize(root, ctx);
@@ -718,7 +796,8 @@ export default function (component) {
   if (!root) return;
   const picked = data.selected || data.focus || null;
   const ctx = root.__riskGlobe || (root.__riskGlobe = {
-    selected: picked, hover: null, spin: data.layers.spin && !picked && !LITE, extrude: data.layers.extrude,
+    selected: picked, hover: null, spin: data.layers.spin && !picked && !LITE && !REDUCED.matches,
+    extrude: data.layers.extrude,
     showFlows: data.layers.flows, showConflict: data.layers.conflict, globe: null, timer: null,
     yearIndex: data.years.length - 1,
   });
@@ -731,13 +810,13 @@ export default function (component) {
   root.style.height = data.height + "px";
   root.style.setProperty("--rg-mobile-h", Math.min(520, data.height) + "px");
   root.querySelector(".rg-time").hidden = !data.showTime;
-  if (data.hint) root.querySelector(".rg-hint").textContent = data.hint;
+  root.querySelector(".rg-hint").textContent = data.hint || defaultHint();
 
   if (ctx.globe) {
     ctx.points = data.countries.filter((c) => !ctx.featureByIso.has(c.iso3) && c.lat != null && c.lng != null);
     setYear(root, ctx, ctx.yearIndex);
     const key = JSON.stringify([data.centre, data.focus]);
-    if (key !== ctx.centreKey) { ctx.centreKey = key; ctx.globe.pointOfView(startView(ctx), 1200); }
+    if (key !== ctx.centreKey) { ctx.centreKey = key; ctx.globe.pointOfView(startView(ctx), flyMs(1200)); }
   } else if (!ctx.loading && !webglAvailable()) {
     const status = root.querySelector(".rg-status");
     status.hidden = false;
@@ -756,6 +835,7 @@ export default function (component) {
         if (ctx.resize) ctx.resize.disconnect();
         if (ctx.watch) ctx.watch.disconnect();
         if (ctx.setActive) document.removeEventListener("visibilitychange", ctx.setActive);
+        if (ctx.motion) REDUCED.removeEventListener("change", ctx.motion);
         if (ctx.globe._destructor) ctx.globe._destructor();
         ctx.globe = null;
       }

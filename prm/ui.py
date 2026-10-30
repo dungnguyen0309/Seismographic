@@ -12,13 +12,14 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from . import config, content, data, follow, globe, interpret
+from . import a11y, config, content, data, follow, globe, interpret
 from .config import PILLARS, TIERS
 
 WEIGHT_KEYS = {p.key: f"w_{p.key}" for p in PILLARS}
 COUNTRY_PAGE = "app_pages/country.py"
 COMPARE_PAGE = "app_pages/compare.py"
 COMPARE_LIST = "compare_list"  # ISO3 codes picked for the Compare page, kept across pages
+PAGE_KEY = "page:"  # Find's options are ISO3 codes and "page:<url path>"
 log = logging.getLogger("seismographic")
 
 
@@ -45,7 +46,7 @@ def guard(what: str):
 
 
 def _reload() -> None:
-    for key in [k for k in st.session_state if str(k).startswith(("country_tab", "conflict_tab"))]:
+    for key in [k for k in st.session_state if str(k).startswith(("country_tab", "conflict_tab", "ov_tab"))]:
         del st.session_state[key]
 
 
@@ -86,35 +87,10 @@ def _refresh_data() -> None:
     st.toast(data.refresh(), icon=":material/refresh:")
 
 
-def _on_search() -> None:
-    # Remember the pick and clear the box, so it is empty again on the next page
-    st.session_state["_jump_to"] = st.session_state.get("country_search")
-    st.session_state["country_search"] = None
-
-
-def _country_search() -> None:
-    try:
-        countries = data.load_countries()
-    except Exception:  # the search is a convenience; never let it break a page
-        return
-    options, names = country_options(countries)
-    st.selectbox(
-        "Find a country", options, index=None, key="country_search", on_change=_on_search,
-        format_func=lambda i: names.get(i, i), placeholder="Type a country name…",
-    )
-    if jump := st.session_state.pop("_jump_to", None):
-        go_to_country(jump)
-
-
 def sidebar() -> None:
     _init_weights()
     with st.sidebar:
         st.caption(config.APP_TAGLINE)
-        _country_search()
-        st.page_link("app_pages/glossary.py", label="What does it all mean? Glossary & legend", icon=":material/help:")
-        picked = st.session_state.get(COMPARE_LIST, [])
-        if picked:
-            st.page_link(COMPARE_PAGE, label=f"Your comparison ({len(picked)})", icon=":material/compare_arrows:")
         with st.expander("Index weights", expanded=False):
             st.caption(
                 "How much each pillar counts in the composite score. "
@@ -158,13 +134,7 @@ DOCK_TABS = [  # (page, label, icon, url_path); the readout on the left is the w
     ("app_pages/video.py", "Live", ":material/live_tv:", "video"),
     ("app_pages/guide.py", "Guide", ":material/lightbulb:", "guide"),
 ]
-DOCK_LINKS = [  # quick links in the Find sheet
-    ("app_pages/watchlist.py", "Events watchlist", ":material/event:"),
-    ("app_pages/changes.py", "What changed", ":material/trending_up:"),
-    ("app_pages/glossary.py", "Glossary & legend", ":material/help:"),
-    ("app_pages/sources.py", "Sources & citations", ":material/verified:"),
-]
-ACCENT = "#fd8078"
+ACCENT = "var(--sg-accent)"
 
 
 def _wrap(key: str) -> str:
@@ -182,7 +152,7 @@ DOCK_CSS = f"""
 .st-key-sg_dock {{
   position: fixed !important; z-index: 1000; left: 0; right: 0; bottom: 0; width: auto !important;
   container-type: inline-size; container-name: sgdock;
-  background: #0a0a0a; border-top: 1px solid #2c2c2a;
+  background: var(--sg-bar); border-top: 1px solid var(--sg-line);
   padding: 7px max(12px, calc((100% - 980px) / 2)) calc(7px + env(safe-area-inset-bottom)) !important;
   gap: 8px 14px !important; align-items: center !important; justify-content: space-between !important;
   transition: left .25s ease;
@@ -198,10 +168,10 @@ DOCK_CSS = f"""
 
 /* readout: the tracked country (shown first, rendered last so the tabs never wait for it) */
 {_wrap("sg_read")} {{ order: -1; flex: 1 1 260px !important; max-width: 440px; min-width: 0; }}
-.st-key-sg_read {{ position: relative; background: #141414; border: 1px solid #2c2c2a; border-radius: 8px;
+.st-key-sg_read {{ position: relative; background: var(--sg-panel); border: 1px solid var(--sg-line); border-radius: 8px;
   padding: 6px 10px 6px 8px !important; overflow: visible !important; min-height: 46px; }}
-.st-key-sg_read:hover {{ background: #1a1a19; }}
-.st-key-sg_read:has(.sg-read.on) {{ border-color: {ACCENT}88; }}
+.st-key-sg_read:hover {{ background: var(--sg-hover); }}
+.st-key-sg_read:has(.sg-read.on) {{ border-color: color-mix(in srgb, {ACCENT} 55%, transparent); }}
 .st-key-sg_read [data-testid="stMarkdownContainer"] {{ margin-bottom: 0 !important; }}
 .st-key-sg_read > [data-testid="stElementContainer"] {{ flex: 1 1 auto !important; min-width: 0; }}
 .st-key-sg_read_link, .st-key-sg_read_link * {{ position: static !important; }}
@@ -212,9 +182,9 @@ DOCK_CSS = f"""
 .sg-read img {{ width: 26px; height: 19px; object-fit: cover; border-radius: 3px; flex: none;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.14); }}
 .sg-read-text {{ min-width: 0; flex: 1; line-height: 1.25; }}
-.sg-read-name {{ font-weight: 700; font-size: 0.86rem; color: #fff; white-space: nowrap; overflow: hidden;
+.sg-read-name {{ font-weight: 700; font-size: 0.86rem; color: var(--sg-strong); white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; }}
-.sg-read-meta {{ font-size: 0.75rem; color: #a3a29a; white-space: nowrap; }}
+.sg-read-meta {{ font-size: 0.75rem; color: var(--sg-muted); white-space: nowrap; }}
 .sg-read-meta b {{ color: var(--sg-c); font-size: 0.8rem; }}
 .sg-spark {{ flex: none; width: 92px; height: 26px; }}
 
@@ -231,33 +201,33 @@ DOCK_CSS = f"""
   border-radius: 6px !important; background: transparent !important;
 }}
 .st-key-sg_tabs [data-testid="stElementContainer"], .st-key-sg_tabs a {{ margin: 0 !important; }}
-.st-key-sg_tabs a:hover, .st-key-sg_tabs button:hover {{ background: #161616 !important; }}
+.st-key-sg_tabs a:hover, .st-key-sg_tabs button:hover {{ background: var(--sg-hover) !important; }}
 .st-key-sg_tabs a p, .st-key-sg_tabs button p {{ font-size: 0.72rem !important;
   margin: 0 !important; white-space: nowrap; line-height: 1.2 !important; }}
-.st-key-sg_tabs a span, .st-key-sg_tabs a p, .st-key-sg_tabs button p, .st-key-sg_tabs button span {{ color: #8f8e87 !important; }}
+.st-key-sg_tabs a span, .st-key-sg_tabs a p, .st-key-sg_tabs button p, .st-key-sg_tabs button span {{ color: var(--sg-faint) !important; }}
 .st-key-sg_tabs [data-testid="stIconMaterial"] {{ font-size: 1.3rem !important; }}
 .st-key-sg_tabs button [aria-hidden="true"], .st-key-sg_tabs button [data-testid="stIconMaterial"],
 .st-key-sg_tabs button span:has(> [data-testid="stIconMaterial"]) {{ display: none !important; }}
-.st-key-sg_tabs button::before {{ content: ""; width: 1.3rem; height: 1.3rem; flex: none; background: #8f8e87;
+.st-key-sg_tabs button::before {{ content: ""; width: 1.3rem; height: 1.3rem; flex: none; background: var(--sg-faint);
   -webkit-mask: url("{_SEARCH_ICON}") center / contain no-repeat; mask: url("{_SEARCH_ICON}") center / contain no-repeat; }}
 .st-key-sg_tabs button[aria-expanded="true"]::before {{ background: {ACCENT}; }}
 .st-key-sg_tabs button {{ padding-top: 4px !important; }}  /* drawn icon is a touch shorter than the font icons */
 .st-key-sg_tabs button span[data-has-shortcut] {{ display: flex !important; flex-direction: column; align-items: center;
   gap: 2px; }}
-/* active tab: coral text and a short needle line on top */
-.st-key-sg_tabs {_ON} p, .st-key-sg_tabs {_ON} span, .st-key-sg_tabs a:focus p, .st-key-sg_tabs a:focus span {{
+/* active tab: bright ink and a short needle line on top */
+.st-key-sg_tabs {_ON} p, .st-key-sg_tabs {_ON} span, .st-key-sg_tabs a:focus:not(:focus-visible) p,
+.st-key-sg_tabs a:focus:not(:focus-visible) span {{
   color: {ACCENT} !important; }}
-.st-key-sg_tabs {_ON}::before, .st-key-sg_tabs a:focus::before {{
+.st-key-sg_tabs {_ON}::before, .st-key-sg_tabs a:focus:not(:focus-visible)::before {{
   content: ""; position: absolute; top: 0; left: 28%; right: 28%; height: 2px; border-radius: 0 0 2px 2px;
   background: {ACCENT};
 }}
-/* the moment a tab is tapped it takes over the highlight, before the next page has loaded */
-.st-key-sg_dock:has(a:focus) {_ON}:not(:focus) p, .st-key-sg_dock:has(a:focus) {_ON}:not(:focus) span {{
-  color: #8f8e87 !important; }}
-.st-key-sg_dock:has(a:focus) {_ON}:not(:focus)::before {{ display: none; }}
-/* the Live tab carries an on-air dot */
-.st-key-sg_tabs [class*="_live"] a::after {{ content: ""; position: absolute; top: 9px; left: calc(50% + 9px); width: 6px;
-  height: 6px; border-radius: 50%; background: #f0575c; box-shadow: 0 0 0 2px #0a0a0a; }}
+/* the moment a tab is tapped it takes over the highlight, before the next page has loaded (pointer taps only:
+   keyboard focus just shows the focus ring and the current page keeps its highlight) */
+.st-key-sg_dock:has(a:focus:not(:focus-visible)) {_ON}:not(:focus) p,
+.st-key-sg_dock:has(a:focus:not(:focus-visible)) {_ON}:not(:focus) span {{
+  color: var(--sg-faint) !important; }}
+.st-key-sg_dock:has(a:focus:not(:focus-visible)) {_ON}:not(:focus)::before {{ display: none; }}
 
 /* narrow screens: the readout on top, the tabs spread across a row underneath */
 @container sgdock (max-width: 640px) {{
@@ -270,6 +240,8 @@ DOCK_CSS = f"""
 """
 
 
+# Colour tokens (config.INK) as CSS variables, so styles name a role (--sg-muted), not a hex value
+TOKENS_CSS = ":root { " + " ".join(f"--sg-{name}: {value};" for name, value in config.INK.items()) + " }"
 GLOBAL_CSS = """
 /* page frame: less dead space above the content, but clear of the 3.75rem top bar */
 [data-testid="stMainBlockContainer"] { padding-top: 4.6rem !important; }
@@ -278,28 +250,81 @@ GLOBAL_CSS = """
                                          padding-right: 0.9rem !important; }
 }
 /* video cards: titles read like the news cards (no link underline, at most three lines) */
-[class*="st-key-vidcard_"] [data-testid="stMarkdownContainer"] a { color: #ececec !important; text-decoration: none;
+[class*="st-key-vidcard_"] [data-testid="stMarkdownContainer"] a { color: var(--sg-text) !important; text-decoration: none;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-[class*="st-key-vidcard_"] [data-testid="stMarkdownContainer"] a:hover { color: #fff !important; text-decoration: underline; }
-/* phones: rows of headline numbers (a metric in the first and last column) show two per line, not one */
+[class*="st-key-vidcard_"] [data-testid="stMarkdownContainer"] a:hover { color: var(--sg-strong) !important; text-decoration: underline; }
+/* Rows reflow by their own width, not the window's (the sidebar takes 300px of a laptop screen):
+   - headline numbers (a metric in the first and last column): 3 per line, 2 for a row of four, then 2 on phones
+   - filter rows (a selectbox, multiselect or slider first, no charts or tables): 2 per line when narrow
+   - split views (containers keyed split_*): the two sides stack when narrow */
+[data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child [data-testid="stMetric"]):has(> [data-testid="stColumn"]:last-child [data-testid="stMetric"]) {
+  container: sgkpi / inline-size; flex-wrap: wrap !important; }
+@container sgkpi (max-width: 880px) {
+  [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+    min-width: calc(33.333% - 11px) !important; flex: 1 1 calc(33.333% - 11px) !important; }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:nth-child(4)):not(:has(> [data-testid="stColumn"]:nth-child(5))) > [data-testid="stColumn"] {
+    min-width: calc(50% - 8px) !important; flex: 1 1 calc(50% - 8px) !important; }
+}
+@container sgkpi (max-width: 470px) {
+  [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+    min-width: calc(50% - 8px) !important; flex: 1 1 calc(50% - 8px) !important; }
+}
+[data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child :is([data-testid="stSelectbox"], [data-testid="stMultiSelect"], [data-testid="stSlider"])):not(:has([data-testid="stMetric"], [data-testid="stPlotlyChart"], [data-testid="stDataFrame"], iframe)) {
+  container: sginputs / inline-size; flex-wrap: wrap !important; }
+@container sginputs (max-width: 760px) {
+  [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+    min-width: calc(50% - 8px) !important; flex: 1 1 calc(50% - 8px) !important; }
+}
+@container sginputs (max-width: 470px) {  /* phones: one control per line, as wide as the screen */
+  [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] { min-width: 100% !important; flex: 1 1 100% !important; }
+}
+/* two charts, tables or globes side by side stack when the row is narrower than they can be read at */
+[data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:nth-child(2)):not(:has(> [data-testid="stColumn"]:nth-child(3))):has(> [data-testid="stColumn"] :is([data-testid="stPlotlyChart"], [data-testid="stDataFrame"], .rg-wrap)) {
+  container: sgpair / inline-size; flex-wrap: wrap !important; }
+@container sgpair (max-width: 760px) {  /* only the pair's own two columns, not rows nested inside them */
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:nth-child(2)):not(:has(> [data-testid="stColumn"]:nth-child(3))):has(> [data-testid="stColumn"] :is([data-testid="stPlotlyChart"], [data-testid="stDataFrame"], .rg-wrap)) > [data-testid="stColumn"] {
+    min-width: 100% !important; flex: 1 1 100% !important; }
+}
+[class*="st-key-split_"] { container: sgsplit / inline-size; }
+@container sgsplit (max-width: 1000px) {  /* beside the globe the news column is narrow: headlines get the room */
+  .st-key-ov_news .sg-news a > :first-child { display: none; }
+}
+@container sgsplit (max-width: 900px) {  /* What-if: its result needs more width than the news column does */
+  .st-key-split_whatif [data-testid="stHorizontalBlock"]:not([data-testid="stColumn"] *) > [data-testid="stColumn"] {
+    min-width: 100% !important; flex: 1 1 100% !important; }
+  /* stacked, the result comes first, right under the scenario buttons that change it */
+  .st-key-split_whatif [data-testid="stHorizontalBlock"]:not([data-testid="stColumn"] *) > [data-testid="stColumn"]:last-child {
+    order: -1; }
+}
+@container sgsplit (max-width: 780px) {
+  [data-testid="stHorizontalBlock"]:not([data-testid="stColumn"] *) > [data-testid="stColumn"] {
+    min-width: 100% !important; flex: 1 1 100% !important; }
+  /* under the globe, the news needs less height (its wrapper fixes the height as a flex-basis) */
+  [data-testid="stLayoutWrapper"]:has(> .st-key-ov_news) { flex: 0 0 440px !important; height: 440px !important; }
+}
 @media (max-width: 640px) {
-  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child [data-testid="stMetric"]):has(> [data-testid="stColumn"]:last-child [data-testid="stMetric"]) { gap: 8px !important; }
-  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child [data-testid="stMetric"]):has(> [data-testid="stColumn"]:last-child [data-testid="stMetric"]) > [data-testid="stColumn"] {
-    min-width: calc(50% - 4px) !important; flex: 1 1 calc(50% - 4px) !important; }
   [data-testid="stMetric"] { padding: 10px 12px !important; }
   [data-testid="stMetricValue"] { font-size: 1.55rem !important; }
 }
 /* tabs: a little tighter, so more of them fit on one row */
 [data-testid="stTabs"] [role="tablist"] { gap: 12px; }
+/* the accent is bright ink, like body text: unselected tabs, segments and pills step down to muted ink */
+[data-testid="stTabs"] [role="tab"][aria-selected="false"] :is(p, span),
+[data-testid="stButtonGroup"] button:is([aria-checked="false"], [aria-pressed="false"]) { color: var(--sg-muted) !important; }
+[data-testid="stTabs"] [role="tab"][aria-selected="false"]:hover :is(p, span),
+[data-testid="stButtonGroup"] button:is([aria-checked="false"], [aria-pressed="false"]):hover { color: var(--sg-text) !important; }
+/* a switched-on toggle is an ink track: its knob turns black so the position still reads */
+[data-testid="stCheckbox"] label[data-selected="true"] > span + div > div { background: var(--sg-on-accent) !important; }
 /* type scale: calmer headings */
 [data-testid="stMain"] h1 { font-size: clamp(1.7rem, 4vw, 2.2rem); letter-spacing: -0.01em; }
-[data-testid="stMain"] h2 { font-size: clamp(1.25rem, 2.6vw, 1.5rem); letter-spacing: -0.01em; padding-top: 0.9rem; }
+[data-testid="stMain"] h2 { font-size: clamp(1.12rem, 2.2vw, 1.32rem); letter-spacing: -0.01em; padding-top: 0.9rem; }
+[data-testid="stMain"] h2.sg-panel-title { font-size: 1rem; padding: 0; margin: 0 0 2px; }
 [data-testid="stMain"] h3 { font-size: clamp(1.05rem, 2vw, 1.18rem); }
 [data-testid="stMain"] h4, [data-testid="stMain"] h5 { font-size: 1rem; }
-/* metrics: labels wrap instead of being cut off */
+/* metrics: labels wrap between words instead of being cut off or split mid-word */
 [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * { white-space: normal !important; overflow: visible !important;
-  text-overflow: clip !important; }
-[data-testid="stMetricLabel"] p { font-size: 0.8rem !important; color: #a3a29a; line-height: 1.3; }
+  text-overflow: clip !important; word-break: normal !important; overflow-wrap: normal !important; hyphens: none; }
+[data-testid="stMetricLabel"] p { font-size: 0.8rem !important; color: var(--sg-muted); line-height: 1.3; }
 [data-testid="stMetricValue"] p { font-size: clamp(1.4rem, 2.4vw, 2.1rem); }
 /* sidebar: long page names wrap, the glossary link too */
 section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] p,
@@ -310,47 +335,65 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] { min-height: 
 section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="stMarkdownContainer"] p { margin: 0 !important; }
 /* links and focus */
 [data-testid="stMain"] a { text-underline-offset: 3px; text-decoration-thickness: 1px; }
-:focus-visible { outline: 2px solid #fd8078 !important; outline-offset: 2px; }
-::selection { background: rgba(253,128,120,0.35); }
-* { scrollbar-width: thin; scrollbar-color: #383835 transparent; }
+:focus-visible { outline: 2px solid var(--sg-accent) !important; outline-offset: 2px; }
+::selection { background: rgba(244,243,238,0.28); }
+* { scrollbar-width: thin; scrollbar-color: var(--sg-line-strong) transparent; }
 /* page title: the h1 and one line about the data, on the page itself */
 .sg-head { margin: 0 0 18px; }
 [data-testid="stMain"] h1.sg-head-title { font-size: clamp(1.5rem, 3vw, 1.85rem); font-weight: 700; line-height: 1.2;
-  padding: 0; margin: 0; color: #fff; }
-.sg-head-sub { margin: 6px 0 0; font-size: 0.98rem; color: #c3c2b7; max-width: 70ch; }
+  padding: 0; margin: 0; color: var(--sg-strong); }
+.sg-head-sub { margin: 6px 0 0; font-size: 0.98rem; color: var(--sg-soft); max-width: 70ch; }
 /* figures keep the mono face: digits line up and read as data */
 [data-testid="stMetricValue"], .sg-cs-num, .sg-read-meta b, .sg-fol-meta b {
   font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
 /* follow: the sync slot renders nothing */
-.st-key-sg_follow_sync, [data-testid="stElementContainer"]:has(.st-key-sg_follow_sync) { display: none !important; }
+.st-key-sg_follow_sync, [data-testid="stElementContainer"]:has(.st-key-sg_follow_sync),
+.st-key-sg_a11y, [data-testid="stElementContainer"]:has(.st-key-sg_a11y) { display: none !important; }
+/* accessibility: text for screen readers only */
+.sg-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* accessibility: the skip link appears when a keyboard user reaches it */
+.sg-skip { position: fixed; left: 12px; top: 12px; z-index: 1000001; padding: 8px 14px; font-size: 0.9rem;
+  color: var(--sg-strong); background: var(--sg-panel); border: 1px solid var(--sg-accent); border-radius: 8px; text-decoration: none;
+  transform: translateY(-160%); }
+.sg-skip:focus { transform: none; }
+/* captions: full opacity in a muted grey (Streamlit's 0.6 opacity also dimmed the source links to 3.8:1) */
+[data-testid="stCaptionContainer"] { opacity: 1 !important; color: var(--sg-muted) !important; }
+/* dark text on the ink accent (primary buttons, chips); Compare paints its chips in the country colours */
+[data-testid="stBaseButton-primary"], [data-testid="stBaseButton-primary"] *,
+[data-baseweb="tag"], [data-baseweb="tag"] *,
+[data-testid="stMultiSelectTagsContainer"] span { color: var(--sg-on-accent) !important; }
+/* a country's colour on Compare: a short line, like the lines in its charts */
+.sg-swatch { display: inline-block; width: 16px; height: 4px; border-radius: 2px; margin-right: 8px;
+  vertical-align: middle; background: var(--c); }
 /* following strip */
-.sg-follow-head { font-size: 0.95rem; font-weight: 600; color: #fff; margin: 4px 0 -4px; }
-[class*="st-key-fol_"]:not([class*="st-key-fol_open"]) { position: relative; background: #0f1012; border: 1px solid #2c2c2a;
+.sg-follow-head { font-size: 0.95rem; font-weight: 600; color: var(--sg-strong); margin: 4px 0 -4px; }
+[class*="st-key-fol_"]:not([class*="st-key-fol_open"]) { position: relative; background: var(--sg-raised); border: 1px solid var(--sg-line);
   border-radius: 10px; padding: 8px 10px !important; }
-[class*="st-key-fol_"]:not([class*="st-key-fol_open"]):hover { border-color: #3a3a37; background: #141414; }
+[class*="st-key-fol_"]:not([class*="st-key-fol_open"]):hover { border-color: var(--sg-line-strong); background: var(--sg-panel); }
 [class*="st-key-fol_"] [data-testid="stMarkdownContainer"] { margin-bottom: 0 !important; }
 .sg-fol { display: flex; align-items: center; gap: 10px; }
 .sg-fol img { width: 30px; height: 22px; object-fit: cover; border-radius: 3px; box-shadow: 0 0 0 1px rgba(255,255,255,0.14); }
-.sg-fol-name { font-weight: 700; font-size: 0.86rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.sg-fol-name { font-weight: 700; font-size: 0.86rem; color: var(--sg-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   max-width: 140px; }
-.sg-fol-meta { font-size: 0.72rem; color: #a3a29a; }
+.sg-fol-meta { font-size: 0.72rem; color: var(--sg-muted); }
 .sg-fol-meta b { color: var(--c); font-size: 0.84rem; }
 [class*="st-key-fol_open_"] { position: absolute !important; inset: 0; margin: 0 !important; }
 [class*="st-key-fol_open_"] button { position: absolute !important; inset: 0; width: 100%; height: 100%; opacity: 0; }
 [data-testid="stElementContainer"]:has([class*="st-key-fol_open_"]) { position: absolute; inset: 0; }
 /* country header */
 .sg-country { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px;
-  border: 1px solid #2c2c2a; border-radius: 14px; padding: 18px 20px; margin: 6px 0 12px; background: #0d0d0d; }
+  border: 1px solid var(--sg-line); border-radius: 14px; padding: 18px 20px; margin: 6px 0 12px; background: var(--sg-raised); }
 .sg-country-id { display: flex; align-items: center; gap: 16px; min-width: 0; flex: 1 1 320px; }
 .sg-country-id img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; flex: none;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.14); }
 .sg-country-name { margin: 0 !important; padding: 0 !important; font-size: clamp(1.7rem, 4.4vw, 2.4rem) !important;
   line-height: 1.1 !important; }
-.sg-country-meta { color: #a3a29a; font-size: 0.84rem; margin-top: 6px; line-height: 1.45; }
+.sg-country-meta { color: var(--sg-muted); font-size: 0.84rem; margin-top: 6px; line-height: 1.45; }
 .sg-country-score { display: flex; align-items: center; gap: 16px; flex: 0 1 auto; }
 .sg-cs-num { font-size: 3rem; font-weight: 700; line-height: 1; color: var(--c); }
-.sg-cs-num span { font-size: 0.95rem; color: #898781; font-weight: 400; margin-left: 2px; }
-.sg-cs-side { display: flex; flex-direction: column; gap: 5px; font-size: 0.8rem; color: #c3c2b7; }
+.sg-cs-num span { font-size: 0.95rem; color: var(--sg-faint); font-weight: 400; margin-left: 2px; }
+.sg-cs-side { display: flex; flex-direction: column; gap: 5px; font-size: 0.8rem; color: var(--sg-soft); }
 .sg-cs-line:empty { display: none; }
 .sg-cs-spark { width: 150px; height: 46px; flex: none; }
 @media (max-width: 640px) {
@@ -364,14 +407,14 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
 .sg-news li { margin: 0 0 2px; }
 .sg-news li > a, .sg-news li > span { display: flex; gap: 10px; align-items: flex-start; padding: 7px 6px;
   border-radius: 8px; color: inherit !important; text-decoration: none !important; }
-.sg-news li > a:hover { background: #141414; }
+.sg-news li > a:hover { background: var(--sg-panel); }
 .sg-news-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.sg-news-title { color: #ececec; font-size: 0.85rem; line-height: 1.38; display: -webkit-box; -webkit-line-clamp: 3;
+.sg-news-title { color: var(--sg-text); font-size: 0.85rem; line-height: 1.38; display: -webkit-box; -webkit-line-clamp: 3;
   -webkit-box-orient: vertical; overflow: hidden; }
-.sg-news li > a:hover .sg-news-title { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
-.sg-news-meta { color: #898781; font-size: 0.72rem; }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important;
-  transition-duration: 0.01ms !important; } }
+.sg-news li > a:hover .sg-news-title { color: var(--sg-strong); text-decoration: underline; text-underline-offset: 3px; }
+.sg-news-meta { color: var(--sg-faint); font-size: 0.72rem; }
+/* reduced motion: transitions become instant; loading spinners keep turning (they are status, not decoration) */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; } }
 """
 
 
@@ -412,7 +455,7 @@ def _readout(current_url_path: str) -> None:
         return
     score = scores["composite"].get(iso3) if iso3 in scores.index else None
     tier = scores["tier"].get(iso3) if iso3 in scores.index else None
-    color = config.TIER_COLORS.get(tier, "#898781")
+    color = config.TIER_COLORS.get(tier, config.INK["faint"])
     years = (hist[hist["iso3"] == iso3].set_index("year")["composite"].sort_index().dropna() if not hist.empty
              else pd.Series(dtype=float))
     delta = years.iloc[-1] - years.iloc[-2] if len(years) >= 2 else None
@@ -436,10 +479,40 @@ def _readout(current_url_path: str) -> None:
             st.page_link(COUNTRY_PAGE, label=f"Open {row['name']}")
 
 
-def dock(current_url_path: str) -> None:
+def _follow_jump(pages: dict) -> None:
+    """A pick from Find or a followed-country card, made on the previous run: open that country or page now."""
+    jump = st.session_state.pop("_jump_to", None)
+    if not jump:
+        return
+    if jump.startswith(PAGE_KEY):
+        by_path = {p.url_path: p for section in pages.values() for p in section}
+        if jump[len(PAGE_KEY):] in by_path:
+            st.switch_page(by_path[jump[len(PAGE_KEY):]])
+    else:
+        go_to_country(jump)
+
+
+def _find(pages: dict) -> None:
+    """One search for every country and every page; opened with no text, it lists the pages first."""
+    titles = {PAGE_KEY + p.url_path: p.title for section in pages.values() for p in section}
+    try:
+        options, names = country_options(data.load_countries())
+    except Exception:  # the country list is a convenience; the pages still work without it
+        options, names = [], {}
+    st.selectbox("Find a country or page", [*titles, *options], index=None, key="dock_search",
+                 on_change=_on_dock_search, placeholder="Type a country or page…",
+                 format_func=lambda i: f"{titles[i]} · page" if i in titles else names.get(i, i))
+    for iso3 in follow.following():
+        if iso3 in names:
+            st.button(f"★ {names[iso3]}", key=f"dock_fol_{iso3}", on_click=_jump, args=(iso3,), type="tertiary")
+
+
+def dock(current_url_path: str, pages: dict) -> None:
     """A console bar along the bottom of every page: the tracked country, the main pages and Find."""
-    st.html(f"<style>{GLOBAL_CSS}{DOCK_CSS}</style>")
+    _follow_jump(pages)
+    st.html(f"<style>{TOKENS_CSS}{GLOBAL_CSS}{DOCK_CSS}</style>")
     follow.sync()
+    a11y.page_helper()
     with st.container(key="sg_dock", horizontal=True, wrap=True):
         with st.container(key="sg_tabs", horizontal=True, wrap=False, gap=None, width="content"):
             for page, label, icon, url_path in DOCK_TABS:
@@ -449,19 +522,7 @@ def dock(current_url_path: str) -> None:
             with st.container(key="sg_tab_off_find"):
                 with st.popover("Find", icon=":material/search:", type="tertiary", width="stretch",
                                 help="Search countries and pages"):
-                    try:
-                        options, names = country_options(data.load_countries())
-                        st.selectbox("Find a country", options, index=None, key="dock_search",
-                                     on_change=_on_dock_search, format_func=lambda i: names.get(i, i),
-                                     placeholder="Type a country name…")
-                        for iso3 in follow.following():
-                            if iso3 in names:
-                                st.button(f"★ {names[iso3]}", key=f"dock_fol_{iso3}", on_click=_jump, args=(iso3,),
-                                          type="tertiary")
-                    except Exception:
-                        pass
-                    for page, label, icon in DOCK_LINKS:
-                        st.page_link(page, label=label, icon=icon)
+                    _find(pages)
         _readout(current_url_path)  # last, so the tabs never wait for it (CSS shows it first)
 
 
@@ -585,22 +646,22 @@ def flag_img(iso2, height: str = "1em") -> str:
     if not url:
         return ""
     return (f'<img src="{url}" alt="" style="height:{height};aspect-ratio:4/3;border-radius:3px;'
-            f'vertical-align:-0.12em;margin-right:0.35em;box-shadow:0 0 0 1px #2c2c2a">')
+            f'vertical-align:-0.12em;margin-right:0.35em;box-shadow:0 0 0 1px var(--sg-line)">')
 
 
 def country_header(name: str, row: pd.Series, years: pd.Series, delta, year: int, meta: str,
                    analyst_rating: str | None = None) -> None:
     """The top of a country profile: identity on the left, the score with tier, rank, change and trend on the right."""
     tier = row.get("tier")
-    color = config.TIER_COLORS.get(tier, "#898781")
+    color = config.TIER_COLORS.get(tier, config.INK["faint"])
     score = row.get("composite")
     flag = config.flag_url(row.get("iso2"))
     rank = "" if pd.isna(row.get("rank")) else f"#{int(row['rank'])} of {int(row['n_ranked'])}"
     if delta is None or pd.isna(delta):
         change = ""
     else:
-        arrow, tone = ("▲", "#fd8078") if delta >= TREND_THRESHOLD else (("▼", "#5ac698") if delta <= -TREND_THRESHOLD
-                                                                          else ("■", "#898781"))
+        arrow, tone = ("▲", "var(--sg-worse)") if delta >= TREND_THRESHOLD else (
+            ("▼", "var(--sg-better)") if delta <= -TREND_THRESHOLD else ("■", "var(--sg-faint)"))
         change = f'<span style="color:{tone}">{arrow} {delta:+.1f}</span> vs {year - 1}'
     analyst = (f'<div class="sg-cs-line">Analyst: {tier_badge(analyst_rating)}</div>' if analyst_rating else "")
     st.markdown(
@@ -619,7 +680,7 @@ def country_header(name: str, row: pd.Series, years: pd.Series, delta, year: int
 
 
 def _jump(iso3: str) -> None:
-    st.session_state["_jump_to"] = iso3  # the sidebar search handles the jump at the start of the next run
+    st.session_state["_jump_to"] = iso3  # the dock makes the jump at the start of the next run
 
 
 def following_strip(table: pd.DataFrame) -> None:
@@ -632,7 +693,7 @@ def following_strip(table: pd.DataFrame) -> None:
     with st.container(horizontal=True, wrap=True, gap="small", key="following_strip"):
         for iso3 in followed:
             r = rows.loc[iso3]
-            color = config.TIER_COLORS.get(r["tier"], "#898781")
+            color = config.TIER_COLORS.get(r["tier"], config.INK["faint"])
             delta = r.get("delta_1y")
             change = "" if pd.isna(delta) else trend_label(delta)
             flag = config.flag_url(r["iso2"])
@@ -648,9 +709,17 @@ def following_strip(table: pd.DataFrame) -> None:
                 st.button(f"Open {r['name']}", key=f"fol_open_{iso3}", on_click=_jump, args=(iso3,))
 
 
-def country_heading(name: str, iso2, level: int = 1) -> None:
-    """A page heading with the country's flag in front."""
-    st.markdown(f"<h{level}>{flag_img(iso2, '0.85em')}{html.escape(str(name))}</h{level}>", unsafe_allow_html=True)
+def sev_mark(severity: str, spoken: bool = True) -> str:
+    """The coloured severity dot as HTML, silent for screen readers; with spoken=True they hear the word instead
+    ("Serious:"). Use spoken=False where the severity word is already in the sentence."""
+    word = f'<span class="sg-sr">{config.SEVERITY_LABEL[severity]}: </span>' if spoken else ""
+    return f'<span aria-hidden="true">{config.SEVERITY_ICON[severity]}</span> {word}'
+
+
+def country_heading(name: str, iso2, level: int = 1, css: str = "") -> None:
+    """A heading with the country's flag in front (css: an extra class, e.g. sg-panel-title for a small panel title)."""
+    cls = f' class="{css}"' if css else ""
+    st.markdown(f"<h{level}{cls}>{flag_img(iso2, '0.85em')}{html.escape(str(name))}</h{level}>", unsafe_allow_html=True)
 
 
 def _time_ago(ts) -> str:
@@ -664,7 +733,7 @@ def _time_ago(ts) -> str:
     return f"{minutes // (60 * 24)} d ago"
 
 
-THUMB = "width:78px;height:52px;flex:none;border-radius:6px;object-fit:cover;background:#1a1a19"
+THUMB = "width:78px;height:52px;flex:none;border-radius:6px;object-fit:cover;background:var(--sg-hover)"
 
 
 def news_list(query_name: str | None, limit: int = 10, iso2=None) -> None:
@@ -710,7 +779,7 @@ def _news_list(query_name: str | None, limit: int, iso2) -> None:
 
 def tier_badge(tier: str | None, prefix: str = "") -> str:
     if not isinstance(tier, str) or tier not in config.TIER_ORDER:
-        return '<span style="color:#898781">Not rated</span>'
+        return '<span style="color:var(--sg-faint)">Not rated</span>'
     t = next(t for t in TIERS if t.label == tier)
     return (
         f'<span style="background:{t.color};color:{t.text_on};padding:3px 12px;border-radius:999px;'
@@ -719,7 +788,7 @@ def tier_badge(tier: str | None, prefix: str = "") -> str:
 
 
 def tier_legend() -> str:
-    parts = [tier_badge(t.label) + f'<span style="color:#898781;font-size:0.8rem;margin:0 10px 0 4px">'
+    parts = [tier_badge(t.label) + f'<span style="color:var(--sg-faint);font-size:0.8rem;margin:0 10px 0 4px">'
              f'{int(t.lower)}+</span>' for t in TIERS]
     return '<div style="line-height:2.2">' + "".join(parts) + "</div>"
 
@@ -862,7 +931,8 @@ def movers_lists(df: pd.DataFrame, n: int = 5, key: str = "movers") -> None:
 def country_table(df: pd.DataFrame, key: str, height: int | None = None, extra: dict | None = None,
                   sort: str = "rank", ascending: bool = True) -> None:
     """A clickable ranking table (flag, score, change, tier, pillars); a click opens the profile."""
-    cols = ["iso3", "flag", "name", "rank", "composite", "trend", "tier", *[p.key for p in PILLARS], *(extra or {})]
+    # Score and change right after the name, so they stay on screen when the table is narrower than its columns
+    cols = ["iso3", "flag", "name", "composite", "trend", "tier", "rank", *[p.key for p in PILLARS], *(extra or {})]
     frame = df.sort_values(sort, ascending=ascending, na_position="last")[[c for c in cols if c in df.columns]]
     frame = frame.reset_index(drop=True)
     event = st.dataframe(
@@ -893,12 +963,12 @@ def upcoming_events(events: pd.DataFrame, limit: int = 8) -> None:
     for e in upcoming.itertuples(index=False):
         days = (e.date - today).days
         when = "today" if days == 0 else "tomorrow" if days == 1 else f"in {days} days"
-        colour = {"High": "#fd8078", "Medium": "#e19f3f"}.get(str(e.significance).title(), "#898781")
+        colour = {"High": "#fd8078", "Medium": "#e19f3f"}.get(str(e.significance).title(), "var(--sg-faint)")
         source = (f' · <a href="{html.escape(e.source_url)}" target="_blank" rel="noopener">source</a>'
                   if str(e.source_url).startswith("http") else "")
         rows.append(
             f'<li style="margin:0 0 0.6em 0;line-height:1.35"><b>{html.escape(str(e.event))}</b><br>'
-            f'<span style="color:#898781;font-size:0.82em">{html.escape(str(e.country))} · {e.date:%d %b %Y} · '
+            f'<span style="color:var(--sg-faint);font-size:0.82em">{html.escape(str(e.country))} · {e.date:%d %b %Y} · '
             f'<span style="color:{colour}">{when}</span> · {html.escape(str(e.significance))} significance{source}</span></li>'
         )
     st.markdown(f'<ul style="list-style:none;padding:0;margin:0;font-size:0.9rem">{"".join(rows)}</ul>',
@@ -912,7 +982,7 @@ def live_player(channel_id: str, height: int = 460) -> None:
     """A channel's current 24/7 live stream, through YouTube's official embed (privacy-enhanced domain)."""
     components.html(
         f'<iframe src="https://www.youtube-nocookie.com/embed/live_stream?channel={channel_id}&rel=0" '
-        'style="width:100%;height:100%;border:0;border-radius:12px;background:#000" '
+        'style="width:100%;height:100%;border:0;border-radius:12px;background:var(--sg-bg)" '
         'allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen '
         'referrerpolicy="strict-origin-when-cross-origin" title="Live news"></iframe>'
         '<style>html,body{margin:0;height:100%;background:transparent}</style>',
@@ -988,7 +1058,8 @@ def render_reading(r: interpret.Reading, key: str) -> None:
         st.markdown("#### Warning signs right now")
         if r.warnings:
             for w in r.warnings:
-                st.markdown(f"{config.SEVERITY_ICON[w['severity']]} **{w['label']}**  \n{w['meaning']}")
+                st.markdown(f"{sev_mark(w['severity'])}**{html.escape(w['label'])}**  \n{html.escape(w['meaning'])}",
+                            unsafe_allow_html=True)
                 st.caption(f"Typical response: {w['response']}")
         else:
             st.markdown("No absolute warning thresholds crossed.")

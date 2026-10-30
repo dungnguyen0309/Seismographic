@@ -12,7 +12,7 @@ table = ui.master_table(core, values, scores, hist)
 econ_keys = [k for k, _ in ECON_COLUMNS]
 df = table.join(values[econ_keys], on="iso3")  # table already carries the n_* risk scores
 
-ui.hero("Economic stress monitor")
+ui.hero("Economic stress")
 edition = core["meta"].get("gdp_growth", {}).get("edition") or "IMF World Economic Outlook"
 st.markdown(
     "Where an economic crisis could trigger political trouble: runaway prices, recession, unsustainable debt and "
@@ -43,7 +43,7 @@ econ_flags = {
 }
 
 # --- Globe ------------------------------------------------------------------------------------------------
-st.subheader("On the globe")
+st.header("On the globe")
 ui.globe_panel(
     table=df, hist=hist, flows=None, metric="economic", metric_label="Economy", key="eco_globe",
     in_view=set(view["iso3"]), region=None if region == "All regions" else region,
@@ -55,7 +55,7 @@ st.caption("Countries coloured by the Macroeconomic & Financial pillar (brighter
 ui.cite("imf", "wdi")
 
 # --- Heatmap ------------------------------------------------------------------------------------------
-st.subheader("Stress heatmap")
+st.header("Stress heatmap")
 how_many = f2.select_slider("Countries in the heatmap", options=[20, 40, 60, 100, 250], value=40,
                             help="The most economically stressed first (highest Economy pillar score)")
 heat = view.dropna(subset=["economic"]).nlargest(how_many, "economic").reset_index(drop=True)
@@ -71,7 +71,7 @@ ui.cite("imf", "wdi")
 # --- Stagflation scatter and the IMF outlook ---------------------------------------------------------
 s_col, o_col = st.columns([1.15, 1])
 with s_col:
-    st.subheader("Growth vs inflation")
+    st.header("Growth vs inflation")
     event = st.plotly_chart(charts.stagflation_scatter(view), config={"displayModeBar": False}, on_select="rerun",
                             selection_mode="points", key="eco_scatter")
     if iso3 := ui.clicked_iso3(event):
@@ -79,7 +79,7 @@ with s_col:
     st.caption("Top-left = prices rising fast while the economy shrinks. Bubble size = population.")
     ui.cite("imf", "wdi")
 with o_col:
-    st.subheader("IMF outlook")
+    st.header("IMF outlook")
     outlook_key = st.segmented_control("Show", ["Inflation", "Growth", "Public debt"], default="Inflation",
                                        key="eco_outlook") or "Inflation"
     series_key, label = {"Inflation": ("inflation", "Inflation (%)"), "Growth": ("gdp_growth", "Real GDP growth (%)"),
@@ -91,7 +91,7 @@ with o_col:
     ui.cite("imf")
 
 # --- Warning lights -------------------------------------------------------------------------------------
-st.subheader("Countries flashing several warning lights")
+st.header("Countries flashing several warning lights")
 rows = []
 for r in view.itertuples(index=False):
     hits = econ_flags.get(r.iso3, [])

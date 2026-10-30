@@ -20,7 +20,7 @@ from starlette.routing import Route
 
 from . import config, data, export, scoring
 
-ENABLED = False  # set by routes(), so the Download data page only documents the API where it exists
+ENABLED = False  # set by routes(), so the Data downloads page only documents the API where it exists
 PREFIX = "/api/v1"
 HEADERS = {"Access-Control-Allow-Origin": "*", "Cache-Control": "public, max-age=900"}
 _cache: dict = {}

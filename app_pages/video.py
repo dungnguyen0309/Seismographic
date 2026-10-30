@@ -1,4 +1,4 @@
-"""Live TV & video: 24/7 international news channels, and the latest video reports and expert analysis."""
+"""Live video: 24/7 international news channels, and the latest video reports and expert analysis."""
 
 import streamlit as st
 
@@ -9,7 +9,7 @@ countries = core["countries"]
 options, names = ui.country_options(countries)
 official = dict(zip(countries["iso3"], countries.get("official_name", countries["name"])))
 
-ui.hero("Live TV & video")
+ui.hero("Live video")
 
 # --- Live now ---------------------------------------------------------------------------------------
 st.header("Live now")

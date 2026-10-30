@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from prm import charts, config, scoring, ui
-from prm.config import INDICATORS, MAX_COMPARE, PILLARS, WGI_DIMENSIONS
+from prm.config import COUNTRY_COLORS, INDICATORS, MAX_COMPARE, PILLARS, WGI_DIMENSIONS
 
 core, year, values, scores = ui.load()
 hist = ui.history(core)
@@ -34,6 +34,10 @@ def _add_similar(iso3: str) -> None:
         st.session_state["compare_picked"] = [*st.session_state["compare_picked"], iso3]
 
 
+# Each chip wears its country's colour, the same one its lines use in every chart on this page
+st.html("<style>" + "".join(
+    f'.st-key-compare_picked [data-tag-index="{i}"] {{ background: {c} !important; }}'
+    for i, c in enumerate(COUNTRY_COLORS)) + "</style>")
 picked = st.multiselect(
     "Countries", options, key="compare_picked", format_func=lambda i: names.get(i, i),
     max_selections=MAX_COMPARE, placeholder="Choose countries",
@@ -58,24 +62,25 @@ sel = table.loc[picked]
 
 # --- Scorecards -----------------------------------------------------------------
 cols = st.columns(len(picked))
-for col, iso3 in zip(cols, picked):
+for col, iso3, colour in zip(cols, picked, COUNTRY_COLORS):
     r = sel.loc[iso3]
     with col:
         with st.container(border=True):
-            st.markdown(f"{ui.flag_img(r['iso2'])}<b>{html.escape(names[iso3])}</b>", unsafe_allow_html=True)
+            st.markdown(f'<span class="sg-swatch" style="--c:{colour}"></span>{ui.flag_img(r["iso2"])}'
+                        f"<b>{html.escape(names[iso3])}</b>", unsafe_allow_html=True)
             st.markdown(ui.tier_badge(r["tier"]), unsafe_allow_html=True)
             score = "—" if pd.isna(r["composite"]) else f"{r['composite']:.0f}"
             rank = "—" if pd.isna(r["rank"]) else f"#{int(r['rank'])}"
             st.markdown(f"Score **{score}** · Rank **{rank}** · Flags **{int(r['flags'])}**  \n"
                         f"1-yr change **{r.get('trend', '—')}**")
 
-st.subheader("On the globe")
+st.header("On the globe")
 ui.globe_panel(table=table.reset_index(), hist=hist, flows=core.get("flows"), metric="composite",
                metric_label="Composite", key="cmp_globe", in_view=set(picked), height=480,
                layers={"spin": True, "flows": False, "conflict": False})
 ui.cite("index", "natural_earth")
 
-st.subheader("Risk index over time")
+st.header("Risk index over time")
 st.plotly_chart(
     charts.compare_lines({"composite": hist.rename(columns={"composite": "value"})}, "composite", picked, names,
                          "Composite risk score (0–100)"),
@@ -87,12 +92,12 @@ ui.cite("index")
 
 left, right = st.columns([1, 1.2])
 with left:
-    st.subheader("Pillar profile")
+    st.header("Pillar profile")
     st.plotly_chart(charts.radar(sel[[p.key for p in PILLARS]], names), config={"displayModeBar": False})
     st.caption("Further from the centre = higher risk.")
     ui.cite("index")
 with right:
-    st.subheader("Governance over time")
+    st.header("Governance over time")
     dim = st.selectbox("WGI dimension", list(WGI_DIMENSIONS), index=1, format_func=WGI_DIMENSIONS.get)
     st.plotly_chart(
         charts.compare_lines(core["series"], f"wgi_{dim}", picked, names, "WGI score (0–100, higher = better)"),
@@ -101,7 +106,7 @@ with right:
     ui.cite("wgi")
 
 # --- Indicator table -------------------------------------------------------------
-st.subheader("Indicators")
+st.header("Indicators")
 rows = []
 for ind in INDICATORS:
     label = ind.short if "(" in ind.short or "/" in ind.short else f"{ind.short} ({ind.unit})"  # no doubled units
@@ -119,7 +124,7 @@ st.dataframe(pd.DataFrame(rows), hide_index=True, height=min(38 * (len(rows) + 1
 ui.cite("index")
 
 # --- Economy over time ----------------------------------------------------------------
-st.subheader("Economic trajectory")
+st.header("Economic trajectory")
 econ = {
     "gdp_growth": "Real GDP growth (%)",
     "inflation": "Inflation (%)",

@@ -14,6 +14,8 @@ COUNTRY_TABS = [":material/summarize: Summary", ":material/explore: In real life
                 ":material/edit_note: Assessment"]
 CONFLICT_TABS = [":material/swords: Armed conflict", ":material/luggage: Displacement & refugees",
                  ":material/insights: Outlook"]
+OVERVIEW_TABS = [":material/warning: Hotspots", ":material/trending_up: Changes",
+                 ":material/format_list_numbered: Ranking", ":material/scatter_plot: Risk matrix"]
 
 
 def errors(at: AppTest) -> list[str]:
@@ -53,6 +55,30 @@ def test_conflict_tab_runs(app, tab):
     app.session_state["conflict_tab"] = tab
     app.run()
     assert not errors(app), errors(app)
+
+
+@pytest.mark.parametrize("tab", OVERVIEW_TABS)
+def test_overview_tab_runs(app, tab):
+    app.switch_page("app_pages/overview.py")
+    app.session_state["ov_tab"] = tab
+    app.run()
+    assert not errors(app), errors(app)
+
+
+def page_title(at: AppTest) -> str:
+    return next(m.value for m in at.markdown if 'class="sg-head-title"' in m.value)
+
+
+def test_find_opens_pages_and_countries(app):
+    app.switch_page("app_pages/overview.py")
+    app.session_state["_jump_to"] = "page:stress"  # what picking "Stress test · page" in Find leaves for the next run
+    app.run()
+    assert not errors(app), errors(app)
+    assert ">Stress test<" in page_title(app)
+    app.session_state["_jump_to"] = "KEN"
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.session_state["country"] == "KEN"
 
 
 def test_shared_comparison_link(app):

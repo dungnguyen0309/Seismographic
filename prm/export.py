@@ -1,5 +1,5 @@
 """Open data: the index, its inputs, red flags, history and the conflict outlook as tidy tables, with a data
-dictionary. Used by the Download data page and the JSON API (prm/api.py)."""
+dictionary. Used by the Data downloads page and the JSON API (prm/api.py)."""
 
 from __future__ import annotations
 
@@ -147,7 +147,7 @@ def meta(core: dict, year: int, weights: dict[str, float]) -> dict:
         "generated": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
         "weights": {k: float(v) for k, v in weights.items()},
         "scale": "0–100, 100 = highest risk in the sample (relative, not a probability)",
-        "terms": "Data come from the publishers listed on the Sources & citations page; their terms apply. "
+        "terms": "Data come from the publishers listed on the Sources page; their terms apply. "
                  "Cite the original sources.",
     }
 
