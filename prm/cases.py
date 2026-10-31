@@ -57,7 +57,7 @@ CASES: list[Case] = [
          "and leave the country.", "https://en.wikipedia.org/wiki/July_Uprising"),
 ]
 VERDICTS = {  # label -> (colour, meaning)
-    "Flagged": ("#fd8078", "High or Severe tier, or among the 25 riskiest economies, the year before."),
+    "Flagged": ("#fd8078", "High or Severe tier, or among the 25 riskiest countries, the year before."),
     "Partly flagged": ("#e0a458", "Elevated tier, among the 50 riskiest, or 5+ points riskier over the three years before."),
     "Missed": ("#898781", "The index did not single the country out the year before."),
 }

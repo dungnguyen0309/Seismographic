@@ -111,13 +111,13 @@ else:
         config={"displayModeBar": False}, on_select="rerun", selection_mode="points", key="map_click",
     )
     picked_iso3 = ui.clicked_iso3(map_event)
-    caption = "Grey = not enough data. Hover over a country for its score and **click it to open its profile**."
+    caption = "Grey = not enough data. Hover over a country for its score; click it to open its profile."
 if picked_iso3:
     ui.go_to_country(picked_iso3)
 if metric == "composite":
     st.markdown(ui.tier_legend(), unsafe_allow_html=True)
 else:
-    st.markdown(ui.pillar_chip(metric, f"{config.PILLAR_BY_KEY[metric].label} — brighter = riskier"),
+    st.markdown(ui.pillar_chip(metric, f"{config.PILLAR_BY_KEY[metric].label}: brighter = riskier"),
                 unsafe_allow_html=True)
 st.caption(caption)
 
@@ -133,7 +133,7 @@ n_high = int(scored["tier"].isin(["High", "Severe"]).sum())
 n_conflict = int((scored["battle_deaths_raw"] >= 25).sum())
 median_now = scored["composite"].median() if len(scored) else None
 k1, k2, k3, k4, k5 = st.columns(5)
-k1.metric("Economies scored", f"{len(scored)}", border=True, height="stretch")
+k1.metric("Countries scored", f"{len(scored)}", border=True, height="stretch")
 k2.metric("High or Severe risk", n_high, border=True, height="stretch",
           delta=None if last is None else int(n_high - last["high"]), delta_color="inverse", delta_description=vs)
 k3.metric("Median score", "—" if median_now is None else f"{median_now:.0f}", border=True, height="stretch",
@@ -165,7 +165,7 @@ tab_hot, tab_changes, tab_rank, tab_matrix = st.tabs(list(TABS.values()), key="o
 with tab_hot:
     if tab_hot.open:
         st.caption(
-            "Countries scoring **50 or more** that also got at least 2 points riskier "
+            "Countries scoring 50 or more that also got at least 2 points riskier "
             f"since {year - 1}, crossed a new red-flag threshold, or face a high-significance event in the next 120 days."
         )
         prev_values = data.get_values(core, year - 1, core["version"])
@@ -238,7 +238,7 @@ with tab_changes:
 with tab_rank:
     if tab_rank.open:
         st.caption(f"Tick a row to open the country. Sort by any column. *1-yr change* compares the composite "
-                   f"with {year - 1}: ▲ = riskier, ▼ = safer, ■ = steady (under 1 point).")
+                   f"with {year - 1}: ▲ = riskier, ▼ = safer, ■ = little change (under 1 point).")
         ranking = view.sort_values("rank", na_position="last")[
             ["iso3", "flag", "name", "composite", "trend", "tier", "rank", *[p.key for p in PILLARS], "flags", "region",
              "coverage", "assessment", "analyst_rating"]

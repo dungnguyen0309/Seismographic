@@ -16,8 +16,8 @@ ui.hero("Assessment builder", "Write a structured risk assessment for one countr
 st.markdown(
     "Fill in the sections, download the file and add it to the project's `assessments/` folder; it then appears "
     "on the country profile. "
-    "The structure follows professional intelligence and political-risk writing: **bottom line up front, "
-    "key judgments with probabilities, drivers, scenarios and signposts.**"
+    "The structure follows professional intelligence and political-risk writing: bottom line up front, "
+    "key judgments with probabilities, drivers, scenarios and signposts."
 )
 
 iso3 = st.selectbox("Country", options, index=options.index(ui.current_country(countries)),
@@ -37,7 +37,7 @@ with st.container(border=True):
             st.markdown(f"- {line}")
     ui.cite("index")
 
-with st.expander("Estimative language (ICD 203) — use these words consistently"):
+with st.expander("Estimative language (ICD 203): use these words consistently"):
     st.dataframe(
         pd.DataFrame(
             [{"Term": t, "Alternative": alt, "Probability": f"{lo}–{hi}%"} for t, alt, lo, hi in ESTIMATIVE_LANGUAGE]
@@ -54,7 +54,7 @@ st.header("1 · Rating")
 r1, r2, r3, r4 = st.columns(4)
 model_tier = s["tier"] if s["tier"] in TIER_ORDER else "Elevated"
 analyst_rating = r1.selectbox("Your risk rating", TIER_ORDER, index=TIER_ORDER.index(model_tier),
-                              help="Defaults to the model tier. Change it if your judgment differs — and explain why below.")
+                              help="Defaults to the model tier. Change it if your judgment differs, and explain why below.")
 outlook = r2.selectbox("Outlook", content.OUTLOOKS, index=1)
 confidence = r3.selectbox("Confidence", content.CONFIDENCE, index=1,
                           help="How solid is the evidence base? Low = thin or conflicting sources.")
@@ -97,7 +97,7 @@ def _facts(keys: list[str]) -> str:
             continue
         line = f"- {ind.short}: {ind.fmt(raw)} {ind.unit}" + ("" if pd.isna(yr) else f" ({int(yr)})")
         if risk is not None and pd.notna(risk):
-            line += f" — risk score {risk:.0f}/100"
+            line += f", risk score {risk:.0f}/100"
         if key in flags or (key == "battle_deaths_100k" and "battle_deaths_raw" in flags):
             line += f" ⚑ {flags.get(key) or flags['battle_deaths_raw']}"
         lines.append(line)
@@ -164,7 +164,7 @@ with p1:
     st.download_button("Download " + f"{iso3}.md", markdown.encode("utf-8"), file_name=f"{iso3}.md",
                        mime="text/markdown", type="primary")
     st.caption(
-        f"Add **{iso3}.md** to the project's `assessments/` folder; the app picks it up within about 10 minutes."
+        f"Add `{iso3}.md` to the project's `assessments/` folder; the app picks it up within about 10 minutes."
     )
 with p2:
     missing = [n for n, val in [("bottom line", bluf), ("a key judgment", judgments[0]["text"]), ("sources", sources_txt)] if not val.strip()]

@@ -15,7 +15,7 @@ options, names = ui.country_options(core["countries"])
 
 ui.hero("Compare countries")
 st.caption(
-    f"Pick up to {MAX_COMPARE} economies, or use **Add to compare** on any country profile. "
+    f"Pick up to {MAX_COMPARE} countries, or use Add to compare on any country profile. "
     "Colours follow the order you pick them in."
 )
 

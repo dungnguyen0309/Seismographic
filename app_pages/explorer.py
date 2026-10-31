@@ -10,7 +10,7 @@ hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 
 ui.hero("Indicator explorer", "Any indicator behind the index around the world: where it is worst, how countries "
-                               "are spread, and the riskiest and safest economies.")
+                               "are spread, and the riskiest and safest countries.")
 
 options = [i.key for i in config.SCORED_INDICATORS]
 labels = {i.key: f"{config.PILLAR_BY_KEY[i.pillar].short} · {i.label}" for i in config.SCORED_INDICATORS}

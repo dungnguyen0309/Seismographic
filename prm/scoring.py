@@ -339,8 +339,8 @@ def country_brief(
 
     if pd.notna(s["composite"]):
         lines.append(
-            f"**{name}** ranks **{_ordinal(int(s['rank']))} of {int(s['n_ranked'])}** economies on the composite "
-            f"index (score **{s['composite']:.0f}/100**, *{s['tier']}* tier; 1st = highest risk)."
+            f"{name} ranks {_ordinal(int(s['rank']))} of {int(s['n_ranked'])} countries on the composite "
+            f"index (score {s['composite']:.0f}/100, {s['tier']} tier; 1st = highest risk)."
         )
         region = countries.set_index("iso3").loc[iso3, "region"]
         peers = countries[countries["region"] == region]["iso3"]
@@ -348,19 +348,19 @@ def country_brief(
         if len(peer_scores) > 1:
             peer_rank = int((peer_scores > s["composite"]).sum()) + 1
             lines.append(
-                f"Within **{region}** it is {_ordinal(peer_rank)} of {len(peer_scores)} "
+                f"Within {region} it is {_ordinal(peer_rank)} of {len(peer_scores)} "
                 f"(regional median {peer_scores.median():.0f})."
             )
     else:
-        lines.append(f"There is not enough data to compute a composite score for **{name}**.")
+        lines.append(f"There is not enough data to compute a composite score for {name}.")
 
     pillar_scores = {p.short: s[p.key] for p in PILLARS if pd.notna(s[p.key])}
     if len(pillar_scores) >= 2:
         worst = max(pillar_scores, key=pillar_scores.get)
         best = min(pillar_scores, key=pillar_scores.get)
         lines.append(
-            f"Highest-risk pillar: **{worst}** ({pillar_scores[worst]:.0f}); "
-            f"lowest-risk pillar: **{best}** ({pillar_scores[best]:.0f})."
+            f"Highest-risk pillar: {worst} ({pillar_scores[worst]:.0f}); "
+            f"lowest-risk pillar: {best} ({pillar_scores[best]:.0f})."
         )
 
     trend = wgi_trend(series, iso3, "pv")
@@ -384,20 +384,20 @@ def country_brief(
     bd_year = v.get("battle_deaths_100k__year")
     if pd.notna(raw_bd) and pd.notna(bd_year):
         if raw_bd > 0:
-            lines.append(f"UCDP recorded **{raw_bd:,.0f} battle-related deaths** in {int(bd_year)}.")
+            lines.append(f"UCDP recorded {raw_bd:,.0f} battle-related deaths in {int(bd_year)}.")
         else:
             lines.append(f"No battle-related deaths from state-based conflict were recorded in {int(bd_year)}.")
 
     share = v.get("displaced_share")
     if pd.notna(share) and share >= 0.5:
         lines.append(
-            f"About **{v['displaced_total']:,.0f} people** ({share:.1f}% of the population) from {name} were "
+            f"About {v['displaced_total']:,.0f} people ({share:.1f}% of the population) from {name} were "
             f"forcibly displaced in {int(v['displaced_share__year'])} (UNHCR)."
         )
 
     cov = s.get("coverage")
     if pd.notna(cov) and cov < 75:
-        lines.append(f"Only {cov:.0f}% of indicators are available — treat the score with caution.")
+        lines.append(f"Only {cov:.0f}% of indicators are available, so treat the score with caution.")
     return lines
 
 

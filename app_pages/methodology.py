@@ -11,16 +11,16 @@ st.markdown(
     """
 Seismographic follows the standard recipe for composite indicators set out in the
 [OECD/JRC *Handbook on Constructing Composite Indicators*](https://www.oecd.org/en/publications/handbook-on-constructing-composite-indicators-methodology-and-user-guide_9789264043466-en.html):
-choose indicators that answer a clear question, **normalise** them to a common scale, **aggregate** them into
-pillars and a composite with explicit **weights**, and test how sensitive the result is to those choices.
-Every step is shown below so a reader can disagree with a specific choice instead of a black box.
+choose indicators that answer a clear question, normalise them to a common scale, aggregate them into
+pillars and a composite with explicit weights, and test how sensitive the result is to those choices.
+Every step is shown below, so you can disagree with a specific choice.
 """
 )
 
 st.header("1 · The question")
 st.markdown(
     "> *How exposed is this country to political, governance, economic and social shocks that could harm people, "
-    "organisations and investments operating there — compared with other countries?*\n\n"
+    "organisations and investments operating there, compared with other countries?*\n\n"
     "Four pillars break that question down:"
 )
 st.table(  # a static table: long text wraps instead of being cut off
@@ -51,49 +51,52 @@ st.dataframe(pd.DataFrame(ind_rows), hide_index=True, height=640)
 ui.cite("index", "oecd_jrc")
 st.markdown(
     f"""
-**Timing.** WGI scores are the latest annual release (perception data collected during the previous year).
-IMF figures are the **current-year estimate** from the latest World Economic Outlook, which makes the economic
+WGI scores come from the latest annual release (perception data collected during the previous year).
+IMF figures are the current-year estimate from the latest World Economic Outlook, which makes the economic
 pillar the most forward-looking part of the index. World Bank figures use the most recent year available within
 a look-back window (shown in the *Indicators* tab of each profile). Battle deaths use the latest UCDP year;
 displacement uses the latest UNHCR annual statistics.
 
-**Sources.** [World Bank WGI]({config.URL_WGI}) (2025 methodology revision:
+Sources: [World Bank WGI]({config.URL_WGI}) (2025 methodology revision:
 [technical note]({config.URL_WGI_2025})) · [World Development Indicators]({config.URL_WDI}) ·
 [IMF World Economic Outlook]({config.URL_IMF_WEO}) · [UNHCR Refugee Data Finder]({config.URL_UNHCR}) ·
 [Uppsala Conflict Data Program]({config.URL_UCDP}) · news from the [GDELT Project]({config.URL_GDELT}).
-All are retrieved live through their public APIs.
+The app downloads all of them live through their public APIs.
 """
 )
 
 st.header("3 · Normalisation")
 st.markdown(
     f"""
-Indicators come in different units (percent, deaths, months), so each is converted into a **0–100 risk score**:
+Indicators come in different units (percent, deaths, months), so each becomes a 0–100 risk score.
 
-* **Percentile rank** (most indicators). The riskiest economy in the sample scores 100, the safest 0, and the
-  rest are spread evenly between them. Percentiles are robust to outliers — one country with 200% inflation
-  does not squash everyone else — but they discard the *size* of gaps between countries.
-* **Log scale** (battle deaths per 100k, displacement share). Most countries have zero conflict deaths, so a
-  percentile rank would bunch them together in the middle. Instead the score is `log(1 + x)` divided by the
-  value at the {config.LOG_CAP_QUANTILE:.0%} percentile of non-zero cases, capped at 100. Zero means zero, and
-  scores rise steeply from the first deaths, then flatten.
+Most indicators use a percentile rank. The riskiest country in the sample scores 100, the safest 0, and the
+rest are spread evenly between them. Percentiles resist outliers: one country with 200% inflation does not
+squash everyone else. They do drop the size of the gaps between countries.
 
-Direction is handled at this step: for "lower is riskier" indicators (growth, reserves, governance scores) the
-ranking is reversed, so 100 always means *most risk*.
+Battle deaths per 100k and the displacement share use a log scale. Most countries have no conflict deaths, so a
+percentile rank would bunch them together in the middle. The score is `log(1 + x)` divided by the value at the
+{config.LOG_CAP_QUANTILE:.0%} percentile of non-zero cases, capped at 100. Zero means zero, and scores rise
+steeply from the first deaths, then flatten.
+
+Direction is set at this step too. For indicators where lower is riskier (growth, reserves, governance scores)
+the ranking is reversed, so 100 always means the most risk.
 """
 )
 
 st.header("4 · Aggregation and weights")
 st.markdown(
     f"""
-* **Pillar score** = the simple average of its indicator scores. A pillar needs at least
-  {config.PILLAR_MIN_SHARE:.0%} of its indicators; otherwise it is left blank rather than guessed.
-* **Composite score** = the weighted average of the pillar scores, with weights rescaled over the pillars that are
-  available. A country needs at least {config.COMPOSITE_MIN_PILLARS} of 4 pillars to be ranked.
-* **Data coverage** (shown on every profile) is the share of the {len(config.SCORED_INDICATORS)} indicators available.
-* An arithmetic mean lets a strength in one pillar offset a weakness in another. That suits a broad screening
-  tool; a system focused on crisis risk might prefer a geometric mean, which penalises one very weak pillar more
-  (the EU's INFORM Risk Index does this).
+A pillar score is the simple average of its indicator scores. A pillar needs at least
+{config.PILLAR_MIN_SHARE:.0%} of its indicators; with fewer, it stays blank and nothing is guessed.
+
+The composite score is the weighted average of the pillar scores, with the weights rescaled over the pillars a
+country has. A country needs at least {config.COMPOSITE_MIN_PILLARS} of the 4 pillars to be ranked. Data coverage,
+shown on every profile, is the share of the {len(config.SCORED_INDICATORS)} indicators available.
+
+An arithmetic mean lets a strength in one pillar offset a weakness in another. That suits a broad screening
+tool. A system built around crisis risk might use a geometric mean, which penalises one very weak pillar more;
+the EU's INFORM Risk Index does this.
 """
 )
 
@@ -104,14 +107,14 @@ st.table(
 )
 st.caption(
     "Averaging many indicator scores pulls composites toward the middle of the scale, so the outer tiers are "
-    "reserved for countries that sit at the extremes on most dimensions at once. ‘Low’ means low *relative to "
-    "other countries*; it does not mean risk-free."
+    "reserved for countries that sit at the extremes on most dimensions at once. 'Low' means low relative to "
+    "other countries; it does not mean risk-free."
 )
 
 st.header("6 · Red flags")
 st.markdown(
     "The composite is relative, so it cannot say whether a situation is bad in absolute terms. Red flags fill that gap "
-    "with fixed thresholds drawn from common practice — for example UCDP's 25 battle-death threshold for an active armed "
+    "with fixed thresholds drawn from common practice, for example UCDP's 25 battle-death threshold for an active armed "
     "conflict and 1,000 for war, and the 3-months-of-imports rule of thumb for reserve adequacy."
 )
 st.dataframe(
@@ -134,16 +137,16 @@ st.page_link(ui.SOURCES_PAGE, label="Every source and threshold reference", icon
 
 st.header("7 · Robustness")
 st.markdown(
-    "Every country profile has a **sensitivity check** that recomputes the rank with equal weights and with each "
-    "pillar dropped in turn. If a country's rank swings widely, the result depends on a modelling choice and should be "
-    "presented with that caveat. WGI changes are tested against the WGI 90% confidence intervals, so the app can say "
+    "Every country profile has a sensitivity check that recomputes the rank with equal weights and with each "
+    "pillar dropped in turn. If a country's rank swings widely, the result depends on a modelling choice, and any "
+    "report on it should say so. WGI changes are tested against the WGI 90% confidence intervals, so the app can say "
     "whether a change is statistically clear or within the margin of error."
 )
 
 st.header("8 · Track record")
 st.markdown(
-    "Does a high score mean anything? A simple test: for every year since "
-    f"{config.HISTORY_START}, take the countries **not** in armed conflict and see where conflict broke out the next "
+    "This test checks whether a high score means anything. For every year since "
+    f"{config.HISTORY_START}, take the countries that were not in armed conflict and see where conflict broke out the next "
     "year (25 or more battle deaths, the UCDP threshold). If the index works, those countries should already have "
     "scored high."
 )
@@ -186,10 +189,10 @@ else:
 
 st.header("9 · Benchmark: the Fragile States Index")
 st.markdown(
-    "A second check: compare the scores with a respected independent index that measures something similar. The "
+    "A second check compares the scores with an independent index that measures something similar. The "
     "[Fragile States Index](https://fragilestatesindex.org/) from The Fund for Peace rates states on 12 indicators "
-    "using expert review. Broad agreement is reassuring; the countries where the two disagree show what each one "
-    "sees that the other does not."
+    "using expert review. Where the two broadly agree, that is reassuring. The countries where they disagree show "
+    "what each index picks up and the other misses."
 )
 with ui.guard("The benchmark"):
     fsi, _ = data.load_fsi()
@@ -234,42 +237,42 @@ with ui.guard("The benchmark"):
 st.header("10 · Limitations")
 st.markdown(
     """
-* **Backward-looking data.** Governance data describe last year; conflict and displacement data lag by up to a year.
-  Fast-moving events (a coup last month) will not show in the score — this is why the news pulse, the events
-  watchlist and the analyst assessment exist.
-* **Perception-based governance data.** The WGI aggregate expert and survey perceptions, with real margins of error.
-  The WGI authors publish the six dimensions separately and do not combine them; combining them into a pillar here is
-  a deliberate, documented choice.
-* **Relative scoring.** Percentiles show position, not distance. A global shock that worsens every country can leave
-  the ranking unchanged.
-* **Missing data.** Small states and countries in conflict often have the least data — exactly where risk is highest.
-  Check the coverage figure before drawing conclusions.
-* **Equal weights within pillars, judgment-based weights across them.** Other choices are defensible; the
-  sensitivity check shows how much they matter.
-* **Not a forecast.** The index summarises structural conditions. Turning it into a probability of a specific event
-  requires the analyst work the assessments are for.
+* The data look backwards. Governance data describe last year, and conflict and displacement data lag by up to
+  a year. A coup last month will not show in the score; the news pulse, the events watchlist and the analyst
+  assessment are there for that.
+* Governance data are perceptions. The WGI aggregate expert and survey perceptions, with real margins of error.
+  Their authors publish the six dimensions separately and do not combine them. This index combines them into one
+  pillar on purpose, and says so here.
+* Scores are relative. Percentiles show a country's position and drop the distance between countries, so a global
+  shock that worsens every country can leave the ranking unchanged.
+* Data are thinnest where risk is highest. Small states and countries in conflict often have the least data, so
+  check the coverage figure before drawing conclusions.
+* The weights are a judgment. Indicators count equally within a pillar and the pillar weights are a choice. Other
+  choices are defensible, and the sensitivity check on each profile shows how much they change the result.
+* It is not a forecast. The index describes structural conditions. Turning it into the probability of a specific
+  event takes the analyst work the assessments are for.
 """
 )
 
 st.header("11 · How professional models compare")
 st.markdown(
     """
-* **ICRG (PRS Group)** — one of the longest-running commercial country-risk ratings; scores political, financial and
-  economic risk separately and combines them, with political risk carrying the most points.
-* **INFORM Risk Index (European Commission JRC)** — an open humanitarian-risk model built from hazard & exposure,
-  vulnerability and lack of coping capacity, aggregated with geometric means. Its documentation is a model of
-  transparency: [methodology](https://drmkc.jrc.ec.europa.eu/inform-index/INFORM-Risk/Methodology).
-* **OECD Country Risk Classification** — export-credit agencies' 0–7 rating of the risk that a country cannot meet
-  external debt payments, combining a quantitative model with expert judgment:
+* ICRG (PRS Group) is one of the longest-running commercial country-risk ratings. It scores political, financial
+  and economic risk separately and then combines them, with political risk carrying the most points.
+* The INFORM Risk Index (European Commission JRC) is an open humanitarian-risk model built from hazard and
+  exposure, vulnerability and lack of coping capacity, aggregated with geometric means. Its documentation sets a
+  high bar for openness: [methodology](https://drmkc.jrc.ec.europa.eu/inform-index/INFORM-Risk/Methodology).
+* The OECD Country Risk Classification is the export-credit agencies' 0–7 rating of the risk that a country cannot
+  meet its external debt payments. It combines a quantitative model with expert judgment:
   [current list](https://www.oecd.org/en/topics/country-risk-classification).
-* **Commercial intelligence firms** (Control Risks, Eurasia Group, Verisk Maplecroft, EIU and others) combine data
-  models with networks of country analysts — the same split between model and judgment that this project uses.
+* Commercial intelligence firms (Control Risks, Eurasia Group, Verisk Maplecroft, EIU and others) combine data
+  models with networks of country analysts, the same split between model and judgment that this project uses.
 """
 )
 
 st.header("12 · Reproducibility")
 st.markdown(
     "Every indicator, source, normalisation, weight and threshold is set out on this page, and all the data come "
-    "from the public sources linked above — so anyone can recompute the scores."
+    "from the public sources linked above, so anyone can recompute the scores."
 )
 ui.footer()

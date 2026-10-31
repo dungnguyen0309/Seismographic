@@ -67,7 +67,7 @@ def status(keys: list[str]) -> str:
     live = sum(1 for m in loaded if not m["from_snapshot"] and not m["error"])
     state = "live" if live == len(loaded) else ("saved snapshot" if live == 0 else f"{live} of {len(loaded)} live")
     updated = f"source updated {', '.join(dates)}" if dates else "update date not published"
-    return (f'<div style="font-size:0.74rem;color:#5fb98a;margin-top:6px">● In this copy: {html.escape(updated)} · '
+    return (f'<div style="font-size:0.74rem;color:#5fb98a;margin-top:6px">● Loaded now: {html.escape(updated)} · '
             f'{state}</div>')
 
 
@@ -75,15 +75,15 @@ def status(keys: list[str]) -> str:
 READING = {
     "Open data used or worth adding": [
         ("Worldwide Governance Indicators (World Bank)", "https://www.worldbank.org/en/publication/worldwide-governance-indicators",
-         "Six governance dimensions for about 200 economies since 1996, revised in 2025 onto a 0–100 scale. Used in this app."),
+         "Six governance dimensions for about 200 countries since 1996, revised in 2025 onto a 0–100 scale. Used in this app."),
         ("World Development Indicators (World Bank)", "https://datatopics.worldbank.org/world-development-indicators/",
          "1,400+ development series with a free API. Source of conflict, homicide, reserves and labour data here."),
-        ("IMF World Economic Outlook — DataMapper", "https://www.imf.org/external/datamapper",
+        ("IMF World Economic Outlook DataMapper", "https://www.imf.org/external/datamapper",
          "Growth, inflation, debt and balance-of-payments estimates with five-year projections. Used in this app."),
         ("UNHCR Refugee Data Finder", "https://www.unhcr.org/refugee-statistics/",
          "Refugees, asylum seekers and IDPs by origin and destination, with a free API. Used in this app."),
         ("Uppsala Conflict Data Program (UCDP)", "https://ucdp.uu.se/",
-         "The academic standard for armed-conflict data. Its API requires a free access token — a good upgrade for event-level maps."),
+         "The academic standard for armed-conflict data. Its API needs a free access token and would allow event-level maps."),
         ("ACLED", "https://acleddata.com/",
          "Near-real-time data on political violence and protest events. Requires registration; check its terms before publishing derived data."),
         ("GDELT Project", "https://www.gdeltproject.org/",
@@ -91,7 +91,7 @@ READING = {
         ("V-Dem", "https://v-dem.net/",
          "The most detailed dataset on democracy and regime characteristics, free for download."),
         ("Fragile States Index (Fund for Peace)", "https://fragilestatesindex.org/",
-         "Annual fragility index across 12 indicators — a useful benchmark to validate your scores against."),
+         "Annual fragility index across 12 indicators, useful as a benchmark for these scores."),
         ("Bertelsmann Transformation Index", "https://bti-project.org/",
          "Expert country reports on political and economic transformation in 137 countries."),
         ("Quality of Government Data Finder", "https://datafinder.qog.gu.se/",
@@ -99,22 +99,22 @@ READING = {
         ("OpenSanctions", "https://www.opensanctions.org/",
          "Consolidated sanctions lists and politically exposed persons. Free for non-commercial use."),
         ("IFES ElectionGuide", "https://www.electionguide.org/elections/type/upcoming/",
-         "Calendar of upcoming national elections and referendums — feed for the watchlist."),
+         "Calendar of upcoming national elections and referendums, and the source for the watchlist."),
     ],
     "Free outlooks from professional risk firms and institutions": [
-        ("Eurasia Group — Top Risks", "https://www.eurasiagroup.net/issues/top-risks-2026",
+        ("Eurasia Group: Top Risks", "https://www.eurasiagroup.net/issues/top-risks-2026",
          "The best-known annual list of geopolitical risks. Read it every January."),
-        ("Control Risks — RiskMap", "https://www.controlrisks.com/riskmap/maps",
+        ("Control Risks: RiskMap", "https://www.controlrisks.com/riskmap/maps",
          "Annual forecast and interactive map of political, security and operational risk."),
-        ("World Economic Forum — Global Risks Report", "https://www.weforum.org/publications/global-risks-report-2026/",
+        ("World Economic Forum: Global Risks Report", "https://www.weforum.org/publications/global-risks-report-2026/",
          "Annual survey of experts on the most severe global risks over short and long horizons."),
-        ("Crisis Group — CrisisWatch", "https://www.crisisgroup.org/crisiswatch",
+        ("Crisis Group: CrisisWatch", "https://www.crisisgroup.org/crisiswatch",
          "Monthly tracker of conflicts worldwide, flagging deteriorations, improvements and risk alerts. Ideal for the watchlist."),
         ("OECD Country Risk Classification", "https://www.oecd.org/en/topics/country-risk-classification",
          "Export-credit risk categories (0–7), updated several times a year. A benchmark for the economic pillar."),
-        ("Allianz Trade — Country Risk Atlas", "https://www.allianz-trade.com/en_global/news-insights/news/allianz-trade-country-risk-atlas-2026.html",
+        ("Allianz Trade: Country Risk Atlas", "https://www.allianz-trade.com/en_global/news-insights/news/allianz-trade-country-risk-atlas-2026.html",
          "Country risk ratings combining political, economic and business-environment factors."),
-        ("Coface — Country risk map", "https://coface.com/news-economy-and-insights/business-risk-dashboard/country-risk-map",
+        ("Coface: Country risk map", "https://coface.com/news-economy-and-insights/business-risk-dashboard/country-risk-map",
          "Credit-insurer country assessments, updated quarterly."),
         ("INFORM Risk Index (EU JRC)", "https://drmkc.jrc.ec.europa.eu/inform-index",
          "Open humanitarian-risk model; its methodology documentation is a template for transparency."),
@@ -126,17 +126,17 @@ READING = {
          "How the governance scores and their confidence intervals are produced."),
         ("ICD 203: Analytic Standards (ODNI)", "https://www.dni.gov/files/documents/ICD/ICD-203.pdf",
          "The US intelligence community's standards, including the estimative-language scale used in the assessment builder."),
-        ("Psychology of Intelligence Analysis — Richards Heuer (CIA, free)", "https://www.cia.gov/resources/csi/static/Pyschology-of-Intelligence-Analysis.pdf",
+        ("Psychology of Intelligence Analysis, by Richards Heuer (CIA, free)", "https://www.cia.gov/resources/csi/static/Pyschology-of-Intelligence-Analysis.pdf",
          "Cognitive biases in analysis and the origin of Analysis of Competing Hypotheses."),
     ],
     "Books": [
-        ("Political Risk — Condoleezza Rice & Amy Zegart (2018)", None,
+        ("Political Risk, by Condoleezza Rice & Amy Zegart (2018)", None,
          "How organisations identify, assess and mitigate political risk; accessible and case-driven."),
-        ("The Fat Tail — Ian Bremmer & Preston Keat (2009)", None,
+        ("The Fat Tail, by Ian Bremmer & Preston Keat (2009)", None,
          "The founder of Eurasia Group on why political risk is under-priced and how to analyse it."),
-        ("Superforecasting — Philip Tetlock & Dan Gardner (2015)", None,
+        ("Superforecasting, by Philip Tetlock & Dan Gardner (2015)", None,
          "What makes forecasts accurate; the basis for putting probabilities on your key judgments."),
-        ("Structured Analytic Techniques for Intelligence Analysis — Heuer & Pherson", None,
+        ("Structured Analytic Techniques for Intelligence Analysis, by Heuer & Pherson", None,
          "The toolkit: key assumptions check, ACH, indicators, scenarios, red-teaming."),
     ],
     "Practise and build a track record": [
@@ -251,13 +251,13 @@ with t_refs:
     countries_state = "saved snapshot" if core.get("countries_from_snapshot") else "live"
     for group, keys in config.SOURCE_GROUPS.items():
         st.subheader(group)
-        grid([card(k, f'<div style="font-size:0.74rem;color:#5fb98a;margin-top:6px">● In this copy: {countries_state}'
+        grid([card(k, f'<div style="font-size:0.74rem;color:#5fb98a;margin-top:6px">● Loaded now: {countries_state}'
                       '</div>' if k == "wb_countries" else "") for k in keys])
 
     # --- Video channels -----------------------------------------------------------------------------------------
     st.header("Video channels")
-    st.caption("Live TV and video reports come straight from each organisation's official YouTube channel. Ownership "
-               "matters when you weigh what you watch: state-owned and state-funded channels can reflect their "
+    st.caption("Live TV and video reports come straight from each organisation's official YouTube channel. Check who owns "
+               "a channel when you weigh what you watch: state-owned and state-funded channels can reflect their "
                "government's view.")
     ORGS = {  # think tanks, institutions and NGOs: (based in, type)
         "Council on Foreign Relations": ("United States", "Non-profit think tank"),
@@ -298,17 +298,17 @@ with t_reading:
         st.header(section)
         for title, url, note in items:
             heading = f"[{title}]({url})" if url else title
-            st.markdown(f"**{heading}** — {note}")
+            st.markdown(f"{heading}. {note}")
     st.header("Ideas to extend this project")
     st.markdown("\n".join([
-        "1. **Write quarterly assessments** for 5–10 countries in one region and track how your ratings compare with "
+        "1. Write quarterly assessments for 5–10 countries in one region and track how your ratings compare with "
         "what happened.",
-        "2. **Benchmark the index** against the Fragile States Index or OECD classification: where do they disagree, "
+        "2. Benchmark the index against the Fragile States Index or OECD classification: where do they disagree, "
         "and why?",
-        "3. **Add a conflict-events map** with a free UCDP access token or an ACLED account.",
-        "4. **Back-test**: compute the index for earlier years and check whether high scores preceded coups, defaults "
+        "3. Add a conflict-events map with a free UCDP access token or an ACLED account.",
+        "4. Back-test: compute the index for earlier years and check whether high scores preceded coups, defaults "
         "or mass protest.",
-        "5. **Add a sanctions pillar** from OpenSanctions or official lists for a compliance angle.",
+        "5. Add a sanctions pillar from OpenSanctions or official lists for a compliance angle.",
     ]))
 
 with t_cite:

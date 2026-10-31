@@ -176,7 +176,7 @@ with tab_outlook:
             preds = outlook.predictions.merge(table[["iso3", "flag", "name", "tier", "composite"]], on="iso3", how="left")
             peaceful = preds.dropna(subset=["probability"]).sort_values("probability", ascending=False)
             st.markdown(
-                f"The chance that armed conflict (25+ battle deaths) **breaks out in {nxt}** in each country that is at "
+                f"The chance that armed conflict (25+ battle deaths) breaks out in {nxt} in each country that is at "
                 f"peace in the latest conflict data ({outlook.data_year}). A statistical model learned the pattern from "
                 f"every year since {config.HISTORY_START}, and was tested on years it had not seen."
             )

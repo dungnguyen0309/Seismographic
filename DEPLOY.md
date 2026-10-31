@@ -84,13 +84,13 @@ Every change you commit on GitHub appears in the live app a few minutes later.
 | The Action is skipped | The `HF_SPACE` variable is not set (step 2). |
 | The Space shows "Build error" or "Runtime error" | Open the Space's **Logs** tab to see why. |
 | A yellow banner says a source is unavailable | One of the APIs is down; scores use the other indicators. Click **↻ Refresh data** in the sidebar later. |
-| News says it is unavailable | Every news source (Bing, Google, GDELT) refused at once — rare. It retries by itself within 10 minutes. |
+| News says it is unavailable | Every news source (Bing, Google, GDELT) refused at once (rare). It retries by itself within 10 minutes. |
 | An assessment doesn't appear | Check the file name is the three-letter code (`NGA.md`), it is inside `assessments/`, and the top block starts and ends with `---`. |
 
 ## Putting it on your CV
 
-> **Seismographic** — Designed and launched an open-source political-risk dashboard scoring around 200 economies
-> on 17 indicators across four pillars, using live World Bank, IMF, UNHCR and UCDP data; authored quarterly
-> risk assessments with probabilistic forecasts. *(link)*
+> **Seismographic**: designed and launched an open-source political-risk dashboard scoring around 200 economies
+> on 17 indicators across four pillars, using live World Bank, IMF, UNHCR and UCDP data; wrote quarterly
+> risk assessments with probabilistic forecasts. https://seismographic.vercel.app
 
 Pin the repository on your GitHub profile and add the app link to the *Projects* or *Featured* section on LinkedIn.

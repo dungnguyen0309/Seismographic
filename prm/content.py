@@ -93,7 +93,7 @@ def csv_row(values: dict) -> str:
 def build_assessment_markdown(f: dict) -> str:
     """Render the assessment builder form into the standard Markdown file."""
     judgments = "\n".join(
-        f"{i}. {j['text'].strip()} — **{j['term']}** (~{j['probability']}%)"
+        f"{i}. {j['text'].strip()} ({j['term']}, ~{j['probability']}%)"
         for i, j in enumerate(f.get("judgments", []), start=1)
         if j.get("text", "").strip()
     ) or "1. "

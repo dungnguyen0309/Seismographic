@@ -142,12 +142,12 @@ with t_summary:
             if mine is not None and isinstance(mine["status"], str):
                 st.header("Conflict outlook")
                 if mine["status"] == "In armed conflict":
-                    st.markdown(f"**In armed conflict** in the latest data ({outlook.data_year}).")
+                    st.markdown(f"In armed conflict in the latest data ({outlook.data_year}).")
                 else:
                     level = ui.sev_mark("serious" if mine["relative"] >= 3 else "warning", spoken=False) \
                         if mine["relative"] >= 1 else ""
-                    st.markdown(f"{level}**{mine['probability']:.1%}** chance that armed conflict breaks out in "
-                                f"{outlook.index_year + 1} — {mine['relative']:.1f}× the average for a country at peace.",
+                    st.markdown(f"{level}A {mine['probability']:.1%} chance that armed conflict breaks out in "
+                                f"{outlook.index_year + 1}: {mine['relative']:.1f}× the average for a country at peace.",
                                 unsafe_allow_html=True)
                 st.page_link("app_pages/conflict.py", label="How this is estimated (Conflict outlook)",
                              icon=":material/insights:", query_params={"tab": "outlook"})
@@ -157,7 +157,7 @@ with t_summary:
                               "label": f"Political stability deteriorating ({trend['change']:+.1f} points since {trend['start_year']})"})
             if flags:
                 for f in sorted(flags, key=lambda f: config.SEVERITY_ORDER[f["severity"]]):
-                    st.markdown(f"{ui.sev_mark(f['severity'], spoken=False)}**{SEVERITY_LABEL[f['severity']]}** — "
+                    st.markdown(f"{ui.sev_mark(f['severity'], spoken=False)}{SEVERITY_LABEL[f['severity']]}: "
                                 f"{html.escape(f['label'])}", unsafe_allow_html=True)
             else:
                 st.markdown("No absolute warning thresholds crossed.")
@@ -175,7 +175,7 @@ with t_summary:
         st.plotly_chart(charts.pillar_bars(s, peers[[p.key for p in PILLARS]].median()), config={"displayModeBar": False})
         ui.cite("index")
 
-        with st.expander("How robust is this score? (sensitivity to the weights)"):
+        with st.expander("Sensitivity to the weights"):
             sens = data.get_sensitivity(core, year, iso3, ui.weights_tuple(), core["version"])
             st.dataframe(
                 sens, hide_index=True,
@@ -217,7 +217,7 @@ with t_peers:
         position = ranked.index[ranked["iso3"] == iso3]
         if len(position):
             st.markdown(
-                f"**{name}** is **{position[0] + 1} of {len(ranked)}** in this group "
+                f"{name} is {position[0] + 1} of {len(ranked)} in this group "
                 f"(1 = highest risk; group median {ranked['composite'].median():.0f})."
             )
         st.plotly_chart(charts.peer_strip(s, peer_df[peer_df["iso3"] != iso3], name), config={"displayModeBar": False})
@@ -350,10 +350,10 @@ def _reset_whatif() -> None:
 
 @st.fragment
 def what_if_simulator() -> None:
-    st.header("What if…?")
+    st.header("What-if simulator")
     st.caption(
-        f"Change {name}'s indicators and watch the index react. Every country is re-scored, exactly as the real index "
-        "would be — so you can see which levers move the score and how far a crisis or a reform would shift the rank."
+        f"Change {name}'s indicators to see how its score, tier and rank respond. Every country is re-scored, as in "
+        "the real index."
     )
     specs = _whatif_controls()
     with st.container(horizontal=True, wrap=True, key="whatif_presets"):  # full names; they wrap instead of truncating
@@ -419,9 +419,9 @@ def what_if_simulator() -> None:
         if new_flags or cleared:
             st.markdown("**Red flags in this scenario**")
             for f in new_flags:
-                st.markdown(f"{ui.sev_mark(f['severity'])}**New:** {html.escape(f['label'])}", unsafe_allow_html=True)
+                st.markdown(f"{ui.sev_mark(f['severity'])}New: {html.escape(f['label'])}", unsafe_allow_html=True)
             for label in sorted(cleared):
-                st.markdown(f"**Cleared:** {label}")
+                st.markdown(f"Cleared: {label}")
         if moved:
             st.caption("Changed: " + ", ".join(moved) + ".")
         else:
@@ -460,7 +460,7 @@ with t_indicators:
             },
         )
         st.caption(
-            "Risk score = position relative to all other economies (0–100). Battle deaths and displacement use a log "
+            "Risk score = position relative to all other countries (0–100). Battle deaths and displacement use a log "
             "scale so that countries without conflict score 0. See the Methodology page."
         )
         ui.cite("index")
@@ -527,7 +527,7 @@ with t_news:
         news_name = config.NEWS_NAMES.get(iso3, name)
         st.header("Risk-related news, last 7 days")
         st.caption(
-            f"Live headlines matching “{news_name}” plus risk keywords (protest, election, coup, sanctions, clashes…), "
+            f"Live headlines matching '{news_name}' plus risk keywords (protest, election, coup, sanctions, clashes…), "
             "newest first, from Bing News and Google News (photos where the feed has one), with GDELT as a backup."
         )
         ui.news_list(news_name, limit=20, iso2=row["iso2"])
@@ -586,8 +586,8 @@ with t_analyst:
             if model_tier in TIER_ORDER and analyst_tier in TIER_ORDER and model_tier != analyst_tier:
                 gap = TIER_ORDER.index(analyst_tier) - TIER_ORDER.index(model_tier)
                 st.info(
-                    f"The analyst rates {name} **{abs(gap)} tier{'s' if abs(gap) > 1 else ''} "
-                    f"{'higher' if gap > 0 else 'lower'}** than the model ({model_tier}). "
+                    f"The analyst rates {name} {abs(gap)} tier{'s' if abs(gap) > 1 else ''} "
+                    f"{'higher' if gap > 0 else 'lower'} than the model ({model_tier}). "
                     "The reasoning is under *Why my rating differs from the model*."
                 )
             st.caption(f"By {m.get('author') or 'the analyst'} · horizon {m.get('horizon') or '—'} · file assessments/{assessment['file']}")
@@ -597,7 +597,7 @@ with t_analyst:
             st.info(f"No analyst assessment for {name} yet.")
             st.markdown(
                 "An assessment adds key judgments with probabilities, scenarios and the indicators that would change "
-                "your mind. Write one in the **Assessment builder** and add the file to the project's `assessments/` "
+                "your mind. Write one in the Assessment builder and add the file to the project's `assessments/` "
                 "folder."
             )
             st.page_link("app_pages/builder.py", label="Open the assessment builder", icon=":material/edit_note:")

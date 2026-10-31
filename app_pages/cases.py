@@ -15,7 +15,7 @@ iso2 = dict(zip(core["countries"]["iso3"], core["countries"]["iso2"]))
 ui.hero("Case studies")
 st.markdown(
     "Eight shocks since 2020 (coups, wars, an invasion, a default and an uprising) and what the index said about each "
-    "country **the year before**. The verdict follows a fixed rule, shown under each case, so you can check it."
+    "country the year before. The verdict follows a fixed rule, shown under each case, so you can check it."
 )
 
 readings = {}
@@ -66,7 +66,7 @@ name = names.get(case.iso3, case.iso3)
 
 ui.country_heading(f"{name}: {case.title}", iso2.get(case.iso3), level=2)
 when = pd.Timestamp(case.date)
-st.markdown(f"**{when:%d %B %Y}** · {html.escape(case.kind)} · {html.escape(case.what)} "
+st.markdown(f"{when:%d %B %Y} · {html.escape(case.kind)} · {html.escape(case.what)} "
             f"[Background ↗]({case.source})")
 
 if not r.get("verdict"):

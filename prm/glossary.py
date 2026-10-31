@@ -14,15 +14,15 @@ TERMS: dict[str, list[tuple[str, str]]] = {
     "Scores & ratings": [
         ("Composite score", "The headline risk score, from 0 to 100: a weighted average of the four pillar scores. "
                             "0 = the lowest risk in the sample, 100 = the highest."),
-        ("Risk score (0–100)", "Any indicator or pillar put on a common 0–100 scale, where 100 = the riskiest economy "
+        ("Risk score (0–100)", "Any indicator or pillar put on a common 0–100 scale, where 100 = the riskiest country "
                                "in the sample that year."),
         ("Relative scoring", "Scores compare countries with each other in the same year. They are not probabilities, "
-                             "and a low score means 'safer than most', not 'safe'."),
+                             "and a low score means 'safer than most countries', which can still be dangerous."),
         ("Percentile rank", "How most indicators become risk scores: a country's position among all countries, from "
                             "safest (0) to riskiest (100)."),
         ("Log scale", "Used for battle deaths and displacement, which are zero for most countries: 'none' scores 0 and "
                       "the score rises steeply from the first deaths or displacements, then flattens."),
-        ("Global rank", "A country's position among all scored economies; 1 = the highest risk."),
+        ("Global rank", "A country's position among all scored countries; 1 = the highest risk."),
         ("Tier", "Five bands of the composite score: Low (0–20), Moderate (20–40), Elevated (40–60), High (60–80) and "
                  "Severe (80–100)."),
         ("Pillar", "One of four groups of indicators: Political Stability & Violence, Governance & Institutions, "
@@ -32,16 +32,16 @@ TERMS: dict[str, list[tuple[str, str]]] = {
                     "25%, Social 15%; you can change them in the sidebar."),
         ("Data coverage", "The share of the 17 indicators available for a country. Below 75%, treat its score with "
                           "extra caution."),
-        ("Regional median", "The middle score among countries in the same region — a benchmark for comparison."),
+        ("Regional median", "The middle score among countries in the same region, used as a benchmark."),
         ("Peer group", "The countries a profile is compared with: the same region, the same income group, or all."),
         ("1-yr change (▲ ▼ ■)", "The composite now minus last year's: ▲ riskier by a point or more, ▼ safer by a "
-                                "point or more, ■ steady."),
+                                "point or more, ■ less than a point either way."),
         ("Risk over time", "The index recomputed for every year since 2015, each time with only the data available "
                            "for that year."),
         ("Main driver", "The pillar that moved most in the same direction as the composite since last year."),
         ("Sensitivity check", "Recomputes a country's score with equal weights, or with one pillar left out, to show "
                               "how much the result depends on modelling choices."),
-        ("What-if simulator", "Change a country's indicators — or pick a scenario such as a currency crisis — and see "
+        ("What-if simulator", "Change a country's indicators, or pick a scenario such as a currency crisis, and see "
                               "how its score, tier and rank would move."),
         ("Track record", "A test of the index: of the countries at peace in a year, did those where armed conflict "
                          "broke out the next year already score high? Shown on the Methodology page."),
@@ -78,11 +78,11 @@ TERMS: dict[str, list[tuple[str, str]]] = {
     ],
     "Warnings": [
         ("Red flag", "An absolute warning threshold, such as inflation of 20% or more. Unlike the relative score, it "
-                     "matters wherever the country ranks."),
+                     "applies wherever the country ranks."),
         ("Critical / Serious / Watch", "Red-flag severities, from most to least severe: Critical (e.g. war, inflation ≥ 50%), Serious "
                                        "(e.g. active conflict, inflation ≥ 20%), Watch (e.g. debt ≥ 90% of GDP)."),
-        ("Close to a red line", "An indicator within reach of a threshold — for example inflation between 15% and "
-                                "20% — shown on the In real life tab."),
+        ("Close to a red line", "An indicator within reach of a threshold, for example inflation between 15% and "
+                                "20%. Shown on the In real life tab."),
         ("Political stability deteriorating", "A Watch flag raised when the WGI political-stability score falls by "
                                               f"{config.WGI_TREND_THRESHOLD:g}+ points over "
                                               f"{config.WGI_TREND_YEARS} years."),
@@ -117,7 +117,7 @@ TERMS: dict[str, list[tuple[str, str]]] = {
                                                        "not applied for asylum (a UNHCR category since 2022)."),
         ("Refugee flow / corridor", "The number of people from one origin country living in one host country."),
         ("Host country", "A country where refugees and asylum seekers from elsewhere live."),
-        ("Homicide rate", "Intentional killings per 100,000 people a year — a measure of criminal violence."),
+        ("Homicide rate", "Intentional killings per 100,000 people a year, a measure of criminal violence."),
         ("Protest coverage", "The share of world news coverage that mentions a country together with protests, riots, "
                              "strikes or unrest (GDELT): a fast signal of unrest getting attention."),
     ],
@@ -151,19 +151,19 @@ TERMS: dict[str, list[tuple[str, str]]] = {
         ("Rule of Law", "Confidence in contracts, property rights, the police and the courts."),
         ("Control of Corruption", "How far public power is used for private gain, including state capture."),
         ("WGI score", "World Bank governance scores on a 0–100 scale (2025 methodology); higher = better governance."),
-        ("90% confidence interval", "The range the true WGI score very probably lies in. If two years' ranges "
-                                    "overlap, the change may be noise rather than real."),
+        ("90% confidence interval", "The range the true WGI score lies in with 90% probability. If two years' ranges "
+                                    "overlap, the change may be noise."),
         ("Statistically clear", "A change in a WGI score larger than its margin of error (the intervals don't "
                                 "overlap)."),
     ],
     "Sources & abbreviations": [
         ("WGI", "Worldwide Governance Indicators (World Bank)."),
         ("WDI", "World Development Indicators (World Bank)."),
-        ("IMF WEO", "International Monetary Fund World Economic Outlook — growth, inflation, debt and balance-of-"
+        ("IMF WEO", "International Monetary Fund World Economic Outlook: growth, inflation, debt and balance-of-"
                     "payments estimates and projections."),
-        ("UNHCR", "The UN Refugee Agency — displacement and refugee statistics."),
-        ("UCDP", "Uppsala Conflict Data Program — the academic standard for armed-conflict data."),
-        ("GDELT", "Global Database of Events, Language and Tone — global news monitoring; used as a backup news "
+        ("UNHCR", "The UN Refugee Agency: displacement and refugee statistics."),
+        ("UCDP", "Uppsala Conflict Data Program, the academic standard for armed-conflict data."),
+        ("GDELT", "Global Database of Events, Language and Tone: global news monitoring, used as a backup news "
                   "source and for media tone."),
         ("IFES ElectionGuide", "Calendar of national elections and referendums; the source of the watchlist dates."),
         ("OCHA", "UN Office for the Coordination of Humanitarian Affairs."),
@@ -177,7 +177,7 @@ TERMS: dict[str, list[tuple[str, str]]] = {
     "Maps, globe & charts": [
         ("Risk colours", "Dim to bright = lower to higher risk. Countries in dim dark grey are outside your filters; "
                          "lighter grey means not enough data."),
-        ("Pillar colours", "Stability = blue, Governance = orange, Economy = green, Social = amber — on maps, bars and "
+        ("Pillar colours", "Stability = blue, Governance = orange, Economy = green, Social = amber, on maps, bars and "
                            "tables."),
         ("Map of change", "Blue = safer than last year, grey = little change, red = riskier; brighter and taller = "
                           "a bigger move."),
@@ -191,7 +191,7 @@ TERMS: dict[str, list[tuple[str, str]]] = {
         ("Zooming the globe", "Ctrl + scroll (⌘ on a Mac), a trackpad pinch or the + − buttons; a plain scroll moves the "
                               "page. On a touch screen, tap the globe first, and Done hands swiping back to the page."),
         ("Bubble size", "In the risk matrix and growth-vs-inflation chart, bubbles are sized by population."),
-        ("Dashed line", "An IMF projection rather than reported data."),
+        ("Dashed line", "A figure the IMF projects; the country has not reported it yet."),
         ("Shaded band", "A 90% confidence interval (governance charts) or the middle half of countries (IMF outlook)."),
     ],
 }
@@ -213,7 +213,7 @@ CATEGORIES: dict[str, Category] = {
                                  ("oecd_jrc", "wb_groups")),
     INDICATORS_CATEGORY: Category("", "#c3c2b7", "Every data series in the score, grouped by pillar, with a link to "
                                                    "the data itself.", tuple(config.INDEX_SOURCES)),
-    "Warnings": Category("", "#f0575c", "Absolute red lines that matter wherever a country ranks.",
+    "Warnings": Category("", "#f0575c", "Absolute red lines that apply wherever a country ranks.",
                          ("ucdp_def", "rr_inflation", "rr_debt", "freund", "imf_ara")),
     "Analyst assessments": Category("", "#2fb7a5", "The vocabulary of professional risk and intelligence writing.",
                                     ("icd203", "cia_tradecraft", "heuer")),

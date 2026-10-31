@@ -78,8 +78,8 @@ if not events.empty:
         ui.cite("ifes")
 else:
     st.info(
-        "Your watchlist is empty. Add events to the project's `data/events.csv` — "
-        "use the helper below to create each line."
+        "Your watchlist is empty. Add events to the project's `data/events.csv`; "
+        "the helper below writes each line for you."
     )
 
 # --- Helper to write a new CSV line -----------------------------------------------------
@@ -92,7 +92,7 @@ with st.expander("Add an event (creates a line to paste into data/events.csv)", 
         c3, c4 = st.columns(2)
         category = c3.selectbox("Category", content.EVENT_CATEGORIES)
         significance = c4.selectbox("Significance", content.SIGNIFICANCE, index=1)
-        notes = st.text_input("Why it matters (one line)")
+        notes = st.text_input("Why it could move risk (one line)")
         source = st.text_input("Source URL", placeholder="https://…")
         submitted = st.form_submit_button("Create CSV line")
     if submitted:
@@ -103,11 +103,11 @@ with st.expander("Add an event (creates a line to paste into data/events.csv)", 
                 "date": when.isoformat(), "iso3": iso3, "country": names.get(iso3, iso3), "event": event.strip(),
                 "category": category, "significance": significance, "source_url": source.strip(), "notes": notes.strip(),
             })
-            st.markdown("Copy this line and add it at the bottom of the project's **data/events.csv**:")
+            st.markdown("Copy this line and add it at the bottom of the project's `data/events.csv`:")
             st.code(line, language="text")
 
 st.markdown(
-    "**Where to find events:** [IFES ElectionGuide](https://www.electionguide.org/elections/type/upcoming/) "
+    "Where to find events: [IFES ElectionGuide](https://www.electionguide.org/elections/type/upcoming/) "
     "(election calendar) · [Crisis Group CrisisWatch](https://www.crisisgroup.org/crisiswatch) (monthly conflict "
     "tracker with an outlook) · IMF programme review dates and Article IV schedules · government budget calendars."
 )

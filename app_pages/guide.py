@@ -12,8 +12,8 @@ countries = core["countries"]
 options, names = ui.country_options(countries)
 events = content.load_events()
 
-ui.hero("Guide", "What the scores, tiers, pillars and red flags look like in real life, and practical steps for "
-                 "businesses, NGOs, travellers and researchers.")
+ui.hero("Guide", "What the scores, tiers, pillars and red flags look like in real life, and what businesses, "
+                 "NGOs, travellers and researchers commonly do about them.")
 
 # --- 1. Any country, in plain language ------------------------------------------------------------
 st.header("1 · Read any country in plain language")
@@ -48,13 +48,13 @@ for i, p in enumerate(config.PILLARS):
     meaning = interpret.PILLAR_MEANING[p.key]
     with cols[i % 2], st.container(border=True):
         st.markdown(ui.pillar_chip(p.key), unsafe_allow_html=True)
-        st.markdown(f"**A high score looks like:** {meaning['ground']}")
-        st.markdown(f"**Felt first by:** {meaning['felt_by']}")
+        st.markdown(f"A high score looks like this: {meaning['ground']}")
+        st.markdown(f"Felt first by: {meaning['felt_by']}")
         st.caption("Measured with: " + ", ".join(i.short for i in config.indicators_for(p.key)) + ".")
 
 # --- 4. Red flags ---------------------------------------------------------------------------------------
 st.header("4 · Warning thresholds, translated")
-st.caption("Unlike the relative score, these are absolute lines: crossing one matters wherever the country ranks.")
+st.caption("Unlike the relative score, these are absolute lines: crossing one is a warning wherever the country ranks.")
 ops = {">=": lambda a, b: a >= b, "<": lambda a, b: a < b, "<=": lambda a, b: a <= b}
 flag_rows = []
 for key, op, threshold, severity, label in config.RED_FLAGS:
@@ -79,7 +79,7 @@ workflows = {
         ("Shortlist", "Rank candidate countries on the Global overview; set the pillar weights in the sidebar to "
                       "match your exposure (e.g. more weight on Economy for trade, Governance for long-term assets).",
          "app_pages/overview.py"),
-        ("Check the trend", "Look for countries getting riskier on *Score changes* — a mid-tier country sliding fast "
+        ("Check the trend", "Look for countries getting riskier on *Score changes*: a mid-tier country sliding fast "
                             "can be a bigger worry than a stable high-tier one.", "app_pages/changes.py"),
         ("Understand the drivers", "Open each profile's *In real life* tab, then *Peers* to compare with neighbours.",
          ui.COUNTRY_PAGE),
@@ -98,7 +98,7 @@ workflows = {
     ],
     "Preparing a trip, posting or study abroad": [
         ("Get the picture", "Read the country's *In real life* tab and its latest news.", ui.COUNTRY_PAGE),
-        ("Check official advice", "Always confirm with your government's current travel advice — it moves faster "
+        ("Check official advice", "Confirm with your government's current travel advice, which changes faster "
                                   "than this data.", None),
         ("Mind the calendar", "Avoid travelling around high-significance events in the watchlist.",
          "app_pages/watchlist.py"),
@@ -113,27 +113,30 @@ workflows = {
          "app_pages/builder.py"),
     ],
 }
+PAGE_NAMES = {"app_pages/overview.py": "Global overview", "app_pages/changes.py": "Score changes",
+              ui.COUNTRY_PAGE: "Country profile", "app_pages/watchlist.py": "Events watchlist",
+              "app_pages/conflict.py": "Conflict & displacement", "app_pages/economy.py": "Economic stress",
+              "app_pages/regions.py": "Regions", "app_pages/builder.py": "Assessment builder"}
 for title, steps in workflows.items():
     with st.expander(title):
         for n, (step, text, page) in enumerate(steps, start=1):
-            st.markdown(f"**{n}. {step}.** {text}")
+            st.markdown(f"{n}. {text}")
             if page:
-                st.page_link(page, label="Go there", icon=":material/arrow_forward:")
+                st.page_link(page, label=f"Open {PAGE_NAMES[page]}", icon=":material/arrow_forward:")
 
 # --- 6. Limits --------------------------------------------------------------------------------------------
 st.header("6 · When not to rely on it")
 st.markdown(
     """
-* **Fast-moving events.** Annual data cannot see last week's coup or last night's protest — read the news pulse,
-  official advice and local sources.
-* **Scores are relative.** A *Low* score means safer than most countries, and such a country can still be
-  dangerous; a global shock can leave rankings unchanged while every country gets worse. The red flags cover the
-  absolute side.
-* **National averages.** A country score hides regions: a conflict in one province may not touch the capital, and
-  the reverse.
-* **Missing data.** Countries with little data are often the riskiest — check the coverage figure on each profile.
-* **General information.** This guide describes what such conditions usually mean and how people commonly
-  respond. It is educational and is not investment, legal or security advice.
+* Annual data cannot see last week's coup or last night's protest. Read the news pulse, official advice and
+  local sources as well.
+* Scores are relative. A Low score means safer than most countries, and such a country can still be dangerous. A
+  global shock can leave rankings unchanged while every country gets worse; the red flags cover that side.
+* A country score is a national average and hides regions: a conflict in one province may not touch the capital,
+  and the reverse.
+* Countries with little data are often the riskiest. Check the coverage figure on each profile.
+* This guide describes what such conditions usually mean and how people commonly respond. It is educational and
+  is not investment, legal or security advice.
 """
 )
 ui.footer()

@@ -2,18 +2,17 @@
 
 # Seismographic
 
-**Picking up political tremors before they become earthquakes.** A transparent country-risk index built from open
-data, with an analyst's judgment on top.
+A country risk index built from open data, with room for an analyst's judgment.
 
-🔗 **Live app:** https://YOUR-APP-NAME.streamlit.app  *(replace after deploying)*
+Live app: https://seismographic.vercel.app
 
 Seismographic scores around 200 economies on political, governance, economic and social risk using live data from the
 World Bank, IMF, UNHCR and the Uppsala Conflict Data Program. It follows the structure professional country-risk
-models use — indicators → pillars → a weighted composite — and shows every step, so a reader can see *why* a
-country scores the way it does and challenge the assumptions.
+models use (indicators, then pillars, then a weighted composite) and shows every step, so a reader can see why a
+country scores the way it does and question the assumptions.
 
-On top of the model sit the parts a model cannot do: **red flags** on absolute thresholds, a **live news pulse**,
-an **events watchlist**, and **written analyst assessments** with probabilistic key judgments and scenarios.
+On top of the model sit the parts a model cannot do: red flags on absolute thresholds, live news, an events
+watchlist, and written analyst assessments with probabilistic key judgments and scenarios.
 
 <p align="center"><img src="docs/screenshots/overview.png" alt="Global overview: the 3D globe with conflict rings, refugee flows and live news" width="100%"></p>
 
@@ -29,62 +28,63 @@ an **events watchlist**, and **written analyst assessments** with probabilistic 
 
 | Section | Page | What it shows |
 |---|---|---|
-| Monitor | **Global overview** | Interactive 3D globe — rotate, zoom, click any country (small states are dots) to see its index and **its latest news**, replay the index year by year since 2015, pulsing rings where armed conflict is active, animated refugee-flow arcs — or a flat map; the countries you **follow** at the top; headline numbers with year-on-year changes; then tabs for hotspots to watch, the biggest moves (including political stability), the sortable ranking with flags and 1-year change arrows, and the risk matrix with the tier mix by region |
-|  | **Country profile** | Composite score and rank (with trend and change vs last year), a **☆ Follow** button (remembered in the browser, no account), automatic data brief, the **conflict outlook** for next year, red flags, pillar scores vs regional median, a **seismogram** of its risk since 2015 (tier changes, conflicts and wars marked on the trace), sensitivity check, a **what-if simulator** (move indicator sliders or pick a scenario such as *currency crisis* or *armed conflict* and watch the score, tier and rank update), every indicator with its year and source, WGI trends with confidence intervals, IMF macro charts with projections, live risk-related headlines, protest coverage over three months, the **countries with the most similar risk profile**, links to the country's pages at the World Bank, IMF, ReliefWeb and FAO, a **one-page PDF brief** to download, and the analyst assessment |
-|  | **Compare countries** | Up to six countries — add them from any profile with *Add to compare* or from the *similar to* suggestions; the address is a **shareable link** to the comparison: pillar radar, governance over time, indicator table, economic trajectories |
+| Monitor | **Global overview** | An interactive 3D globe (rotate, zoom, click any country to see its index and its latest news; small states are dots) that can replay the index year by year since 2015, with pulsing rings where armed conflict is active and animated refugee-flow arcs, or a flat map instead; the countries you follow at the top; headline numbers with year-on-year changes; then tabs for hotspots to watch, the biggest moves (including political stability), the sortable ranking with flags and 1-year change arrows, and the risk matrix with the tier mix by region |
+|  | **Country profile** | Composite score and rank (with trend and change vs last year), a ☆ Follow button (remembered in the browser, no account), automatic data brief, the conflict outlook for next year, red flags, pillar scores vs regional median, a seismogram of its risk since 2015 (tier changes, conflicts and wars marked on the trace), sensitivity check, a what-if simulator (move indicator sliders or pick a scenario such as *currency crisis* or *armed conflict* and watch the score, tier and rank update), every indicator with its year and source, WGI trends with confidence intervals, IMF macro charts with projections, live risk-related headlines, protest coverage over three months, the countries with the most similar risk profile, links to the country's pages at the World Bank, IMF, ReliefWeb and FAO, a one-page PDF brief to download, and the analyst assessment |
+|  | **Compare countries** | Up to six countries, added from any profile with *Add to compare* or from the *similar to* suggestions; the address is a shareable link to the comparison. It shows a pillar radar, governance over time, indicator table, economic trajectories |
 |  | **Score changes** | This year vs last: biggest risers and fallers, tier changes, the pillar that drove each move, red flags newly crossed or cleared |
 |  | **Live video** | 25 round-the-clock live news channels from five regions (Europe, the Americas, the Middle East, Africa and Asia-Pacific), each labelled with where it is based and who owns it, plus the latest video reports, think-tank analysis (CFR, Crisis Group, Carnegie, Brookings, Atlantic Council, CSIS) and briefings from institutions and NGOs (UN, IMF, World Bank, ICRC, Human Rights Watch), filterable by country; each profile also shows the videos about that country |
 | Briefings | **Regions** | One region at a time: headline numbers with trends, zoomed map, tier mix since 2015, risers and fallers, ranking, upcoming events and regional news |
-|  | **Conflict & displacement** | Battle deaths worldwide and by conflict, a table of active wars and conflicts, displacement over time, largest origin and host countries, the 25 largest refugee corridors, and the **Outlook**: the chance of new armed conflict next year in every country at peace, from a small statistical model tested out of time |
+|  | **Conflict & displacement** | Battle deaths worldwide and by conflict, a table of active wars and conflicts, displacement over time, largest origin and host countries, the 25 largest refugee corridors, and the Outlook: the chance of new armed conflict next year in every country at peace, from a small statistical model tested out of time |
 |  | **Economic stress** | A heatmap of inflation, growth, debt, deficits, current account and reserves, a growth-vs-inflation (stagflation) chart, the IMF outlook, and countries crossing several warning thresholds |
 |  | **Events watchlist** | Elections, deadlines and other dated events on a timeline |
 |  | **Case studies** | Eight shocks since 2020 (the coups in Myanmar and Niger, the wars in Tigray and Sudan, the fall of Kabul, Russia's invasion of Ukraine, Sri Lanka's default and Bangladesh's uprising) and what the index said about each country the year before, with a verdict from a fixed, published rule and room for analyst commentary |
 | Tools | **Indicator explorer** | Any of the 17 indicators on the 3D globe, with its distribution and the riskiest and safest 10 countries |
 |  | **Stress test** | Hit many countries at once with one economic shock (a 2009-style recession, a 2020-style pandemic, a 2022-style price surge, higher-for-longer rates, or your own) and see who crosses a risk tier or a red flag, on the globe and in a table; filter by region and income group, share the link, download the results |
 |  | **Assessment builder** | A form that turns your analysis into a structured assessment file (BLUF, key judgments with ICD 203 estimative language, drivers, scenarios, signposts) |
-|  | **Data downloads** | Every table behind the index (the index, all 17 indicators with years and scores, red flags, history since 2015, the conflict outlook) as CSV, one Excel workbook or JSON, with a data dictionary; where the app runs as an ASGI app, a read-only **JSON API** too |
-| Reference | **Introduction** | What the tool is, how the score is built (indicators → risk scores → pillars → composite and tiers), the four pillars and their weights, a quick start and the caveats |
-|  | **Guide** | What the numbers mean in real life: a plain-language reading of any country, what each tier, pillar and warning threshold looks like on the ground, practical steps for business, NGOs, travel and research, and the tool's limits. Each country profile also has an *In real life* tab with the same reading |
-|  | **Methodology** | Every indicator, normalisation, weight, threshold and limitation, plus two tests of the model: its **track record** before new armed conflicts and a **benchmark** against the Fragile States Index |
+|  | **Data downloads** | Every table behind the index (the index, all 17 indicators with years and scores, red flags, history since 2015, the conflict outlook) as CSV, one Excel workbook or JSON, with a data dictionary; where the app runs as an ASGI app, a read-only JSON API too |
+| Reference | **Introduction** | What the tool is, how the score is built (indicators, risk scores, pillars, then the composite and tiers), the four pillars and their weights, a quick start and the caveats |
+|  | **Guide** | What the numbers mean in real life: a plain-language reading of any country, what each tier, pillar and warning threshold looks like on the ground, what to do for business, NGOs, travel and research, and the tool's limits. Each country profile also has an *In real life* tab with the same reading |
+|  | **Methodology** | Every indicator, normalisation, weight, threshold and limitation, plus two tests of the model: its track record before new armed conflicts and a benchmark against the Fragile States Index |
 |  | **Glossary & legend** | 123 terms in nine colour-coded categories, each with its icon and the sources behind it, searchable; every term links to the organisation that defines or publishes it; plus a visual legend for tiers, pillars, colour scales and globe layers |
 |  | **Sources** | Every dataset, definition and feed behind the tool, with links, update dates and the status of the data loaded now; the source of every warning threshold; independent indices to cross-check the scores against; who owns each video channel; and how to cite the tool; plus further reading: data sources worth adding, professional outlooks, tradecraft guides and books |
 
-Most pages open on their own **3D globe**: the overview (with a live news column and hotspots to watch), regions
+Most pages open on their own 3D globe: the overview (with a live news column and hotspots to watch), regions
 (turned to the region), conflict & displacement (conflict rings and refugee arcs), economic stress, a
 diverging *map of change* on *Score changes*, the compared countries on *Compare*, upcoming events on the
 watchlist, and each country's own refugee links on its profile. Every chart, map and table names its sources
 underneath, with links.
 
-A **console bar** along the bottom of every page keeps the tracked country one tap away (flag, score, tier,
+A console bar along the bottom of every page keeps the tracked country one tap away (flag, score, tier,
 change and a small seismogram of its risk since 2015) next to tabs for Home, Compare, Live and Guide and a
 *Find* sheet that searches every country and every page (press / or Ctrl+K).
 
 ## Method in brief
 
-* **17 indicators in 4 pillars**: Political Stability & Violence (35%), Governance & Institutions (25%),
+* 17 indicators in 4 pillars: Political Stability & Violence (35%), Governance & Institutions (25%),
   Macroeconomic & Financial (25%), Social & Humanitarian Pressure (15%). Weights are adjustable in the app, and custom weights travel in shared links.
-* **Normalisation**: percentile ranks (0 = lowest risk in the sample, 100 = highest); battle deaths and
+* Normalisation uses percentile ranks (0 = lowest risk in the sample, 100 = highest); battle deaths and
   displacement use a capped log scale so that "no conflict" scores zero.
-* **Aggregation**: arithmetic mean within pillars, weighted mean across pillars, with minimum-data rules.
-* **Robustness**: sensitivity check on every profile; WGI changes tested against 90% confidence intervals.
-* **Red flags**: absolute thresholds (e.g. UCDP's 25 battle-death threshold for armed conflict, reserves below
-  three months of imports) to complement the relative index.
-* **Conflict outlook**: a penalised logistic regression (numpy, no black box) on the four pillars, low-level
+* Pillars are the plain mean of their indicators and the composite is the weighted mean of the pillars, with
+  minimum-data rules.
+* Every profile has a sensitivity check, and WGI changes are tested against 90% confidence intervals.
+* Red flags use absolute thresholds (e.g. UCDP's 25 battle-death threshold for armed conflict, reserves below
+  three months of imports) next to the relative index.
+* The conflict outlook is a penalised logistic regression (numpy, no black box) on the four pillars, low-level
   violence and conflict in the past five years gives each country at peace a chance of new armed conflict next year.
-* **Stress test**: shocked countries are scored against today's distribution, so a shock that hits every country
+* The stress test scores shocked countries against today's distribution, so a shock that hits every country
   still shows (re-ranking everyone against each other would hide it).
 
 ### Does it work?
 
-* **Track record.** Of the 37 armed conflicts that broke out between 2015 and 2024 in countries that were at peace
+* Track record: of the 37 armed conflicts that broke out between 2015 and 2024 in countries that were at peace
   the year before, 62% started in countries already in the riskiest fifth on the stability pillar, and 95% in the
   riskiest two fifths (AUC 0.83, where 0.5 is a coin flip).
-* **Benchmark.** Against the Fragile States Index (2023), the two rankings correlate at 0.86 and agree on 15 of
+* Benchmark: against the Fragile States Index (2023), the two rankings correlate at 0.86 and agree on 15 of
   the 20 riskiest countries; the Methodology page lists where they disagree and why.
-* **Conflict outlook, tested out of time.** Each year from 2019 to 2023 was predicted by a model fitted only on
+* Conflict outlook, tested out of time: each year from 2019 to 2023 was predicted by a model fitted only on
   earlier years: accuracy (AUC) 0.91, Brier skill +0.12 against the average rate, and the fifth given the highest
   chances averaged 10.7% predicted against 10.5% observed (764 cases, 19 new conflicts).
-* **Case studies.** Of eight major shocks since 2020, the index flagged three outright the year before and partly
+* Case studies: of eight major shocks since 2020, the index flagged three outright the year before and partly
   flagged the other five.
 
 These figures are from the data snapshot of October 2026 and move a little as the data are revised. The scores are
@@ -142,24 +142,24 @@ tests/                    tests for the model and every page
 
 ## Automation
 
-* **Tests** run on every push: the scoring model, the analysis tools, the PDF brief and every page and country
+* Tests run on every push: the scoring model, the analysis tools, the PDF brief and every page and country
   tab (GitHub Actions, *Tests*).
-* **Monthly data snapshot** on the 3rd of each month, including the index history ready-made so the first visit is
+* A data snapshot is saved on the 3rd of each month, including the index history ready-made so the first visit is
   fast (*Refresh data snapshot*). A download that covers far fewer countries than the saved copy is rejected, and
   the new snapshot is only committed if the full test suite passes on it.
 
 ### When something fails
 
-* **A source is down or answers oddly:** live data that cannot be scored, or covers too few countries, is never
+* If a source is down or answers oddly, live data that cannot be scored, or covers too few countries, is never
   shown; the app keeps the last good copy and tries again every 15 minutes. News, video, media tone and the FSI
   benchmark retry after 5 minutes instead of staying "unavailable".
-* **A section breaks:** news, video, globes and benchmarks fail on their own with a one-line note; a page that
-  breaks shows a friendly message with *Try again* instead of a stack trace (details go to the server log).
-* **No WebGL or no CDN:** the 3D globe says why it cannot draw (with *Try again* if a download failed), and the rest
+* If news, video, a globe or a benchmark breaks, it fails on its own with a one-line note; a page that
+  breaks shows a plain message with *Try again* instead of a stack trace (details go to the server log).
+* With no WebGL or no CDN, the 3D globe says why it cannot draw (with *Try again* if a download failed), and the rest
   of the page works.
-* **Checked:** every country on every profile tab, and every page with extreme weights, malformed links and each
-  region filter, all with the network switched off.
-* **Weekly watchlist check** every Monday: if fewer than eight events fall in the next six months, it opens a
+* Checked with the network switched off: every country on every profile tab, and every page with extreme
+  weights, malformed links and each region filter.
+* A watchlist check runs every Monday: if fewer than eight events fall in the next six months, it opens a
   reminder issue, and closes it once the list is topped up (*Watchlist check*).
 
 ## Run it yourself
@@ -185,7 +185,7 @@ GET /api/v1/dictionary          what every field means
 ```
 
 `streamlit run` (and so Streamlit Community Cloud) has no custom routes, so there the API is absent and the
-Download data page hides it.
+Data downloads page hides it.
 
 Publishing on Streamlit Community Cloud (or, without the "Hosted with Streamlit" badge, on Hugging Face Spaces or, experimentally, Vercel) is
 described step by step in [DEPLOY.md](DEPLOY.md). The `Dockerfile` also runs it on Render, Fly.io or any Docker host.
@@ -194,12 +194,12 @@ described step by step in [DEPLOY.md](DEPLOY.md). The `Dockerfile` also runs it 
 
 The index is relative and largely backward-looking: governance data describe the previous year and conflict data
 lag by up to a year. Governance indicators are perception-based and carry margins of error. Countries with the
-least data are often those with the most risk. The score is a structured starting point for analysis, not a
-forecast — which is why the assessments exist.
+least data are often those with the most risk. The score is a structured starting point for analysis. It does
+not forecast events, which is why the written assessments exist.
 
 ## Author
 
-**Tuan Dung Nguyen** — International Relations student.
+Tuan Dung Nguyen, International Relations student.
 
 Research design, indicator selection and all country assessments are my own.
 

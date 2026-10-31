@@ -30,7 +30,7 @@ TIER_MEANING = {
     ),
     "Moderate": (
         "Broadly functional, with specific weak spots.",
-        "Most things work most of the time, but there are soft spots — a stretched budget, patchy governance "
+        "Most things work most of the time, but there are soft spots: a stretched budget, patchy governance "
         "or pockets of unrest. Disruptions happen, and are usually contained and short.",
     ),
     "Elevated": (
@@ -55,7 +55,7 @@ PILLAR_MEANING = {
     "stability": {
         "ground": "Political violence, unrest and armed conflict: protests that shut roads and shops, attacks, "
                   "curfews and, at the extreme, war.",
-        "felt_by": "Everyone physically there — residents, staff, travellers — and anything with a fixed location.",
+        "felt_by": "Everyone who is there (residents, staff and travellers) and anything with a fixed location.",
     },
     "governance": {
         "ground": "Institutions you can't rely on: slow or biased courts, demands for bribes, rules that change "
@@ -65,12 +65,12 @@ PILLAR_MEANING = {
     "economic": {
         "ground": "Exposure to an economic crisis: prices rising fast, a falling currency, shortages of dollars, "
                   "tax rises or spending cuts, and payments that arrive late or not at all.",
-        "felt_by": "Anyone earning, saving, borrowing or trading in the local currency — and importers above all.",
+        "felt_by": "Anyone who earns, saves, borrows or trades in the local currency, importers most of all.",
     },
     "social": {
         "ground": "Pressures that can turn into instability: jobless young people, cost-of-living anger and mass "
                   "displacement.",
-        "felt_by": "Communities, employers and governments — and often an early sign of unrest to come.",
+        "felt_by": "Communities, employers and governments. These pressures often signal unrest to come.",
     },
 }
 
@@ -104,42 +104,42 @@ FLAG_MEANING = {
         "staff with security plans, and insurers treat the area as a war zone.",
     ),
     "inflation": (
-        "Prices are rising fast, so wages, savings and fixed-price contracts lose value month by month — a "
-        "classic trigger of cost-of-living protests and strikes.",
-        "Contracts are indexed to inflation or priced in hard currency; salaries and cash transfers are "
-        "reviewed often; stock is bought earlier before prices rise.",
+        "Prices are rising fast, so wages, savings and fixed-price contracts lose value month by month. Fast "
+        "price rises often set off cost-of-living protests and strikes.",
+        "Businesses index contracts to inflation or price them in hard currency, review salaries and cash "
+        "transfers often, and buy stock before prices rise.",
     ),
     "gdp_growth": (
         "The economy is shrinking: weaker demand, layoffs and falling tax revenue, which can sour the political "
         "mood and squeeze the government's budget.",
-        "Sales forecasts are cut and credit risk on local customers is reviewed; layoffs and wage disputes are "
-        "anticipated.",
+        "Firms cut sales forecasts, review the credit risk of local customers and prepare for layoffs and wage "
+        "disputes.",
     ),
     "gov_debt": (
         "Public debt is high, leaving little room to respond to a shock. Tax rises, spending cuts or an IMF "
-        "programme become more likely — and in the worst case a debt restructuring.",
-        "Exposure to government bonds and public-sector clients is checked; budget announcements and IMF talks "
-        "are watched as risk events.",
+        "programme become more likely, and in the worst case a debt restructuring.",
+        "Investors check their exposure to government bonds and public-sector clients, and treat budget "
+        "announcements and IMF talks as risk events.",
     ),
     "fiscal_balance": (
         "The government spends far more than it collects. That usually ends in tax rises, spending cuts, money "
         "printing or late payments to suppliers.",
-        "Payment terms with government clients are tightened; tax changes are planned for.",
+        "Suppliers tighten payment terms with government clients and plan for tax changes.",
     ),
     "current_account": (
         "The country relies on foreign money to pay for its imports, which leaves the currency vulnerable if "
         "investors pull back.",
-        "Currency exposure is hedged or reduced; supply chains that depend on imports are reviewed.",
+        "Firms hedge or reduce their currency exposure and review supply chains that depend on imports.",
     ),
     "reserves_months": (
-        "The central bank has little foreign currency left — under three months of imports. This often comes "
-        "before import restrictions, dollar shortages, capital controls or a devaluation.",
+        "The central bank has little foreign currency left: less than three months of imports. Import "
+        "restrictions, dollar shortages, capital controls or a devaluation often follow.",
         "Firms keep extra stock of imported inputs, convert local earnings to hard currency promptly, and check "
         "the rules on moving money out of the country.",
     ),
     "youth_unemployment": (
-        "A quarter or more of young people who want work can't find it — a well-documented driver of protest "
-        "movements and emigration.",
+        "A quarter or more of young people who want work can't find it. Youth unemployment is a "
+        "well-documented driver of protest movements and emigration.",
         "Employers invest in local hiring and training; analysts watch campuses, social media and fuel or food "
         "price decisions as protest triggers.",
     ),
@@ -147,10 +147,10 @@ FLAG_MEANING = {
         "At least one person in twenty has been forced from their home. Needs for shelter, food and health care "
         "are large, and neighbouring countries carry heavy pressure.",
         "Humanitarian agencies scale up through UN-led coordination; donors and host governments plan for "
-        "long-term displacement, not just emergency relief.",
+        "long-term displacement as well as emergency relief.",
     ),
     "homicide": (
-        "Violent crime is very high — twenty or more murders per 100,000 people a year — affecting residents, "
+        "Violent crime is high, at twenty or more murders per 100,000 people a year, and it affects residents, "
         "staff and visitors.",
         "Organisations adopt crime-specific security measures: vetted transport, secure accommodation, "
         "restrictions on night travel.",
@@ -173,15 +173,15 @@ NEAR_TEXT = {
     "youth_unemployment": "Youth unemployment is {v:.0f}%, approaching the 25% warning line.",
     "displaced_share": "{v:.1f}% of the population is displaced, approaching the 5% warning line.",
     "homicide": "The homicide rate is {v:.0f} per 100,000, approaching the warning line of 20.",
-    "battle_deaths_raw": "{v:,.0f} battle deaths were recorded — below the 25 that defines an active conflict, "
-                         "but not zero.",
+    "battle_deaths_raw": "UCDP recorded {v:,.0f} battle deaths: below the 25 that define an active conflict, "
+                         "but more than none.",
 }
 
 CAVEATS = [
-    "Scores are relative: they say where a country sits compared with others, not the probability of any event.",
-    "The data look backwards — governance scores describe last year and conflict data lag by up to a year — so "
-    "always check current news and official travel advice.",
-    "This is general, educational guidance, not investment, legal or security advice.",
+    "Scores are relative: they show where a country sits among the others and give no probability of any event.",
+    "The data look backwards: governance scores describe last year and conflict data lag by up to a year. Check "
+    "current news and official travel advice.",
+    "This is general, educational guidance. It is not investment, legal or security advice.",
 ]
 
 
@@ -288,7 +288,7 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
         elif delta <= -1:
             direction.append(f"Edging safer: {delta:+.1f} points since {year - 1}{moved}.")
         else:
-            direction.append(f"Broadly steady since {year - 1} ({delta:+.1f} points).")
+            direction.append(f"Roughly flat since {year - 1} ({delta:+.1f} points).")
     ch = hist[(hist["iso3"] == iso3)].dropna(subset=["composite"]).sort_values("year")
     if len(ch) >= 3:
         first = ch.iloc[0]
@@ -304,7 +304,7 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
     today = pd.Timestamp.today().normalize()
     upcoming = events[(events["iso3"] == iso3) & (events["date"] >= today)
                       & (events["date"] <= today + pd.Timedelta(days=365))].sort_values("date")
-    event_lines = [f"{e.event} — {e.date:%d %b %Y} (in {(e.date - today).days} days, {e.significance} significance)"
+    event_lines = [f"{e.event}, {e.date:%d %b %Y} (in {(e.date - today).days} days, {e.significance} significance)"
                    for e in upcoming.itertuples(index=False)]
     next_event = upcoming.iloc[0] if len(upcoming) else None
 
@@ -316,18 +316,18 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
     budget = flagged & {"gov_debt", "fiscal_balance"}
     displaced = v.get("displaced_share")
     calm = s["composite"] < 30 and not flags
-    when = (f"“{next_event['event']}” ({next_event['date']:%d %b %Y})" if next_event is not None else None)
+    when = (f"'{next_event['event']}' ({next_event['date']:%d %b %Y})" if next_event is not None else None)
 
-    business = ["Use the score as a screen, not a verdict: compare with peers (Peers tab) and read the drivers "
-                "before deciding anything."]
+    business = ["Use the score to decide where to look closer: compare with peers (Peers tab) and read the "
+                "drivers before deciding anything."]
     if hi["economic"] or money:
         business.append("Protect against currency and payment risk: price in hard currency or index to inflation, "
                         "shorten payment terms, consider hedging, and check the rules on moving money out.")
     if "reserves_months" in flagged:
-        business.append("Thin reserves often come before import limits or devaluation — hold extra stock of imported "
+        business.append("Thin reserves often come before import limits or a devaluation: hold extra stock of imported "
                         "inputs and convert local earnings promptly.")
     if budget:
-        business.append("Expect tax rises, spending cuts or late government payments — check exposure to "
+        business.append("Expect tax rises, spending cuts or late government payments: check your exposure to "
                         "public-sector clients and contracts.")
     if hi["governance"]:
         business.append("Raise due-diligence standards: vet partners and owners, enforce anti-bribery compliance, "
@@ -336,13 +336,13 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
         business.append("Plan for disruption: business-continuity and evacuation plans, security for staff and "
                         "sites, and insurance that covers political violence.")
     if hi["social"]:
-        business.append("Labour and community relations matter: watch cost-of-living protests and strikes; local "
+        business.append("Look after labour and community relations: watch cost-of-living protests and strikes; local "
                         "hiring and engagement reduce friction.")
     if when:
         business.append(f"Treat {when} as a decision window: avoid locking in large, hard-to-reverse commitments "
                         "just before it.")
     if calm:
-        business.append("A relatively stable profile: standard due diligence is usually enough — keep an eye on "
+        business.append("A relatively stable profile: standard due diligence is usually enough. Watch "
                         "*Score changes* for early shifts.")
 
     ngo = []
@@ -360,18 +360,17 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
         ngo.append("Access and safety come first: negotiate access, apply humanitarian principles, and keep a "
                    "security risk-management plan and duty of care for staff.")
     if "inflation" in flagged:
-        ngo.append("Fast-rising prices erode the value of cash and voucher assistance — index transfers to local "
+        ngo.append("Fast-rising prices erode the value of cash and voucher assistance: index transfers to local "
                    "prices and monitor markets.")
     if hi["governance"]:
-        ngo.append("Expect bureaucratic hurdles and diversion risk — strengthen financial controls, partner "
+        ngo.append("Expect bureaucratic hurdles and diversion risk: strengthen financial controls, partner "
                    "vetting and accountability to affected people.")
     if when:
-        ngo.append(f"Movement and access may tighten around {when} — adjust field schedules and communications.")
+        ngo.append(f"Movement and access may tighten around {when}: adjust field schedules and communications.")
     if not ngo or calm:
-        ngo.append("A development rather than an emergency context: focus on long-term programming, resilience "
-                   "and local partnerships.")
+        ngo.append("A development setting: focus on long-term programmes and local partners.")
 
-    travel = [f"Check your government's official travel advice for {name} before going — it is updated far faster "
+    travel = [f"Check your government's official travel advice for {name} before you go. It changes far faster "
               "than annual data."]
     if conflict:
         travel.append("There is active armed conflict: many governments advise against all or non-essential travel "
@@ -381,7 +380,7 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
                       "profile and share your itinerary.")
     if hi["social"] or when:
         travel.append("Stay away from demonstrations" + (f", especially around {when}" if when else "")
-                      + " — protests can turn violent quickly.")
+                      + ". Protests can turn violent quickly.")
     if money:
         travel.append("Bring more than one way to pay: cash shortages, card problems and fast-changing prices are "
                       "possible.")
@@ -392,16 +391,16 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
     top = [d["label"] for d in drivers[:2]]
     if top:
         research.append(f"Start with the drivers: {' and '.join(top)} {'carry' if len(top) > 1 else 'carries'} the "
-                        "most risk — explain why.")
+                        "most risk. Explain why.")
     elif pillars:
-        research.append(f"No pillar is high risk; ask what keeps {name} stable and what could change that — the "
-                        f"relatively weakest area is {pillars[0].label}.")
+        research.append(f"No pillar is high risk. Ask what keeps {name} stable and what could change that; its "
+                        f"weakest area is {pillars[0].label}.")
     if region_pos:
         research.append(f"Put it in context: {name} ranks {_ordinal(region_pos)} of {len(peers)} in {row['region']} "
-                        "— the Peers tab shows who is close.")
+                        "and the Peers tab shows who is close.")
     research.append("Check whether changes are real: governance moves inside the WGI confidence intervals may be "
                     "noise (Governance trends tab).")
-    research.append("Test what matters: the What-if simulator shows which indicators would move the score most.")
+    research.append("Test the drivers: the What-if simulator shows which indicators would move the score most.")
     research.append("Write it up: the Assessment builder turns this into a structured brief with probabilities.")
 
     caveats = list(CAVEATS)
@@ -415,14 +414,14 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
 
 def reading_markdown(r: Reading) -> str:
     """The reading as a Markdown brief (for download)."""
-    out = [f"# {r.name} — what the data means in real life", "", r.headline, "", "## On the ground", "", r.ground, ""]
+    out = [f"# {r.name}: what the data means in real life", "", r.headline, "", "## On the ground", "", r.ground, ""]
     for d in r.drivers:
-        out.append(f"- **{d['label']} ({d['score']:.0f}/100):** {d['ground']} *Felt by:* {d['felt_by']}"
+        out.append(f"- {d['label']} ({d['score']:.0f}/100). {d['ground']} Felt by: {d['felt_by']}"
                    + (f" Evidence: {'; '.join(d['evidence'])}." if d["evidence"] else ""))
     if r.warnings:
         out += ["", "## Warning signs right now", ""]
         for w in r.warnings:
-            out.append(f"- **{w['label']}.** {w['meaning']} *Typical response:* {w['response']}")
+            out.append(f"- {w['label']}. {w['meaning']} Typical response: {w['response']}")
     if r.near:
         out += ["", "## Close to a red line", ""] + [f"- {n}" for n in r.near]
     if r.direction:
@@ -431,6 +430,6 @@ def reading_markdown(r: Reading) -> str:
         out += ["", "## Coming up", ""] + [f"- {e}" for e in r.events]
     for key, label in AUDIENCES.items():
         if r.actions.get(key):
-            out += ["", f"## What to do — {label[2:]}", ""] + [f"- {a}" for a in r.actions[key]]
+            out += ["", f"## What to do: {label}", ""] + [f"- {a}" for a in r.actions[key]]
     out += ["", "---", ""] + [f"*{c}*" for c in r.caveats]
     return "\n".join(out) + "\n"

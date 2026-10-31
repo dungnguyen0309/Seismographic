@@ -103,6 +103,11 @@ def test_pdf_brief(core, values):
     pdf = report.country_pdf(reading, table.set_index("iso3").loc["NGA"], hist[hist["iso3"] == "NGA"],
                              scoring.red_flags(values.loc["NGA"]), year)
     assert pdf.startswith(b"%PDF") and len(pdf) > 2000
+    # every audience heading keeps its whole name (they once lost their first letters or word)
+    markdown = interpret.reading_markdown(reading)
+    for key, label in interpret.AUDIENCES.items():
+        if reading.actions.get(key):
+            assert f"## What to do: {label}\n" in markdown
 
 
 def test_every_glossary_category_is_styled():

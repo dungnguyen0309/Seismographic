@@ -142,9 +142,9 @@ with left:
     st.markdown("**Symbols**")
     st.markdown(
         f"- {ui.sev_mark('critical', False)}Critical · {ui.sev_mark('serious', False)}Serious · "
-        f"{ui.sev_mark('warning', False)}Watch — red-flag severity\n"
+        f"{ui.sev_mark('warning', False)}Watch: red-flag severity\n"
         "- ⚑ a red flag crossed\n"
-        "- ▲ riskier · ▼ safer · ■ steady — change since last year (1 point or more)\n"
+        "- ▲ riskier · ▼ safer · ■ little change: the move since last year (1 point is the line)\n"
         "- ✓ a written analyst assessment exists\n"
         "- ☆ follow · ★ following (kept in your browser)\n"
         "- ▶ play (replay the years on the globe, or play a video)",

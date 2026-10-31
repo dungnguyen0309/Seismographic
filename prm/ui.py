@@ -154,7 +154,7 @@ def sidebar() -> None:
         with st.expander("Index weights", expanded=False):
             st.caption(
                 "How much each pillar counts in the composite score. "
-                "Weights are rescaled to 100%, so only their proportions matter."
+                "Weights are rescaled to 100%, so only the proportions count."
             )
             for p in PILLARS:
                 st.slider(p.label, min_value=0, max_value=100, step=5, key=WEIGHT_KEYS[p.key], help=p.question)
@@ -971,7 +971,7 @@ def cite(*keys: str, note: str | None = None) -> None:
     "index" stands for the five datasets the risk index is built from."""
     expanded = [k for key in keys for k in (config.INDEX_SOURCES if key == "index" else [key])]
     links = [f"[{source_label(k)}]({config.SOURCES[k].url})" for k in dict.fromkeys(expanded)]
-    st.caption("Sources: " + " · ".join(links) + (f" — {note}" if note else ""))
+    st.caption("Sources: " + " · ".join(links) + (f". {note}" if note else ""))
 
 
 @st.fragment
@@ -1209,7 +1209,7 @@ def data_status(core: dict) -> None:
 def footer() -> None:
     st.divider()
     st.caption(
-        f"**{config.APP_TITLE}** — {config.APP_DESCRIPTION} Data: World Bank Worldwide Governance Indicators & World "
+        f"{config.APP_TITLE}: {config.APP_DESCRIPTION} Data: World Bank Worldwide Governance Indicators & World "
         "Development Indicators · IMF World Economic Outlook · UNHCR · UCDP (via World Bank) · Bing News, Google News "
         "and GDELT. Scores are relative and model-based, and they do not forecast specific events. "
         f"Built by {config.AUTHOR}."

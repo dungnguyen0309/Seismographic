@@ -193,7 +193,7 @@ def country_pdf(reading: interpret.Reading, row: pd.Series, rows: pd.DataFrame, 
             items = reading.actions.get(key) or []
             if items:
                 pdf.set_font("Helvetica", "B", 8.5)
-                pdf.cell(0, 4.6, _t(label.split(" ", 1)[-1]), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.cell(0, 4.6, _t(label), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
                 _bullets(pdf, items, limit=2)
 
     # Sources

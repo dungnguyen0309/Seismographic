@@ -328,21 +328,21 @@ PILLARS: list[Pillar] = [
         "Governance & Institutions",
         "Governance",
         25,
-        "Can institutions be relied on — courts, regulators, contracts, clean administration?",
+        "Can people rely on institutions: courts, regulators, contracts, clean administration?",
     ),
     Pillar(
         "economic",
         "Macroeconomic & Financial",
         "Economy",
         25,
-        "Is the economy exposed to a crisis — inflation, debt distress, balance-of-payments stress?",
+        "Is the economy exposed to a crisis: inflation, debt distress, balance-of-payments stress?",
     ),
     Pillar(
         "social",
         "Social & Humanitarian Pressure",
         "Social",
         15,
-        "Are there social pressures that can turn into instability — joblessness, displacement?",
+        "Are there social pressures that can turn into instability, such as joblessness or displacement?",
     ),
 ]
 PILLAR_BY_KEY = {p.key: p for p in PILLARS}
