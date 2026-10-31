@@ -1,5 +1,5 @@
 {
-  "created": "2026-10-14",
+  "created": "2026-10-31",
   "series": {
     "battle_deaths": {
       "provider": "WB",
@@ -7,7 +7,7 @@
       "last_updated": "2026-10-08",
       "edition": null,
       "rows": 1171,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "current_account": {
       "provider": "IMF",
@@ -15,7 +15,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10555,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "displaced": {
       "provider": "UNHCR",
@@ -23,7 +23,7 @@
       "last_updated": "2025",
       "edition": null,
       "rows": 2613,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "fiscal_balance": {
       "provider": "IMF",
@@ -31,7 +31,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 8813,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "gdp_growth": {
       "provider": "IMF",
@@ -39,7 +39,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10921,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "gdppc": {
       "provider": "IMF",
@@ -47,7 +47,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10834,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "gov_debt": {
       "provider": "IMF",
@@ -55,7 +55,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 8098,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "homicide": {
       "provider": "WB",
@@ -63,7 +63,7 @@
       "last_updated": "2026-10-08",
       "edition": null,
       "rows": 3801,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "inflation": {
       "provider": "IMF",
@@ -71,7 +71,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10809,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "pop": {
       "provider": "WB",
@@ -79,7 +79,7 @@
       "last_updated": "2026-10-08",
       "edition": null,
       "rows": 7830,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "pop_imf": {
       "provider": "IMF",
@@ -87,7 +87,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10973,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "reserves_months": {
       "provider": "WB",
@@ -95,7 +95,7 @@
       "last_updated": "2026-10-08",
       "edition": null,
       "rows": 5941,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "unemployment": {
       "provider": "WB",
@@ -103,7 +103,7 @@
       "last_updated": "2026-10-08",
       "edition": null,
       "rows": 6916,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "unemployment_imf": {
       "provider": "IMF",
@@ -111,7 +111,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 5161,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_cc": {
       "provider": "WB",
@@ -119,7 +119,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5435,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_cc_lb": {
       "provider": "WB",
@@ -127,7 +127,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5435,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_cc_ub": {
       "provider": "WB",
@@ -135,7 +135,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5435,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_ge": {
       "provider": "WB",
@@ -143,7 +143,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5400,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_ge_lb": {
       "provider": "WB",
@@ -151,7 +151,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5400,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_ge_ub": {
       "provider": "WB",
@@ -159,7 +159,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5400,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_pv": {
       "provider": "WB",
@@ -167,7 +167,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5489,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_pv_lb": {
       "provider": "WB",
@@ -175,7 +175,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5489,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_pv_ub": {
       "provider": "WB",
@@ -183,7 +183,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5489,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_rl": {
       "provider": "WB",
@@ -191,7 +191,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5530,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_rl_lb": {
       "provider": "WB",
@@ -199,7 +199,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5530,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_rl_ub": {
       "provider": "WB",
@@ -207,7 +207,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5530,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_rq": {
       "provider": "WB",
@@ -215,7 +215,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5401,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_rq_lb": {
       "provider": "WB",
@@ -223,7 +223,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5401,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_rq_ub": {
       "provider": "WB",
@@ -231,7 +231,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5401,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_va": {
       "provider": "WB",
@@ -239,7 +239,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5515,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_va_lb": {
       "provider": "WB",
@@ -247,7 +247,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5515,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "wgi_va_ub": {
       "provider": "WB",
@@ -255,7 +255,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5515,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     },
     "youth_unemployment": {
       "provider": "WB",
@@ -263,7 +263,7 @@
       "last_updated": "2026-10-08",
       "edition": null,
       "rows": 6916,
-      "saved": "2026-10-14"
+      "saved": "2026-10-31"
     }
   }
 }
