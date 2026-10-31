@@ -31,7 +31,6 @@ COUNTRIES_DETAILED_URL = (  # 1:50m, ~0.9 MB compressed: swapped in once loaded
 EARTH_IMAGE_URL = "https://cdn.jsdelivr.net/npm/three-globe@2.45.2/example/img/earth-night.jpg"
 EARTH_BUMP_URL = "https://cdn.jsdelivr.net/npm/three-globe@2.45.2/example/img/earth-topology.png"
 HEIGHT = 640
-MOBILE_HEIGHT = 520
 OUT_OF_VIEW_COLOR = "#1b1b1a"  # countries outside the current region / income filter
 TOP_FLOWS = 40  # largest refugee flows drawn when no country is selected
 CONFLICT_THRESHOLD = 25  # UCDP: 25 battle deaths a year = active armed conflict

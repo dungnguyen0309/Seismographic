@@ -110,6 +110,16 @@ def test_pdf_brief(core, values):
             assert f"## What to do: {label}\n" in markdown
 
 
+def test_brief_names_the_year_of_old_imf_figures(core, values):
+    # the IMF stops publishing current figures for a few countries; their last year must not pass as this one
+    year = data.analysis_year()
+    old = values.copy()
+    old.loc["NGA", ["gdp_growth__year", "inflation__year"]] = year - 1
+    lines = scoring.country_brief("NGA", "Nigeria", old, scoring.compute_scores(old), core["series"], core["countries"], year)
+    imf = next(line for line in lines if "IMF" in line)
+    assert f"for {year - 1}" in imf and str(year) not in imf
+
+
 def test_every_glossary_category_is_styled():
     terms = glossary.all_terms()
     assert set(terms) <= set(glossary.CATEGORIES)

@@ -126,11 +126,10 @@ def decode_weights(text) -> dict[str, int] | None:
 
 def custom_weights_label() -> str:
     """'Stability 50% · Governance 20% · …' when the weights differ from the defaults, otherwise ''."""
-    w = weights()
-    if all(w[p.key] == p.default_weight for p in PILLARS) or sum(w.values()) <= 0:
+    w = dict(weights_tuple())
+    if w == {p.key: float(p.default_weight) for p in PILLARS}:
         return ""
-    total = sum(w.values())
-    return " · ".join(f"{p.short} {w[p.key] / total:.0%}" for p in PILLARS)
+    return " · ".join(f"{p.short} {w[p.key] / 100:.0%}" for p in PILLARS)
 
 
 def _sync_weights_link() -> None:
@@ -179,10 +178,13 @@ def weights() -> dict[str, float]:
 
 
 def weights_tuple() -> tuple[tuple[str, float], ...]:
+    """The weights as shares of 100: only proportions count, so 70/50/50/30 is the default 35/25/25/15 (same
+    scores, the ready-made history, no "your weights" note)."""
     w = weights()
-    if sum(w.values()) <= 0:
-        w = {p.key: float(p.default_weight) for p in PILLARS}
-    return tuple((p.key, w[p.key]) for p in PILLARS)
+    total = sum(w.values())
+    if total <= 0:
+        w, total = {p.key: float(p.default_weight) for p in PILLARS}, sum(p.default_weight for p in PILLARS)
+    return tuple((p.key, w[p.key] * 100 / total) for p in PILLARS)
 
 
 # ---------------------------------------------------------------------------
@@ -466,7 +468,6 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
   line-height: 1.1 !important; }
 .sg-country-meta { color: var(--sg-muted); font-size: 0.84rem; margin-top: 6px; line-height: 1.45; }
 .sg-country-score { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; flex: 0 1 auto; }
-@media (max-width: 400px) { .sg-cs-spark { display: none; } }  /* 320px phones: no sideways scroll */
 .sg-cs-num { font-size: 3rem; font-weight: 700; line-height: 1; color: var(--c); }
 .sg-cs-num span { font-size: 0.95rem; color: var(--sg-faint); font-weight: 400; margin-left: 2px; }
 .sg-cs-side { display: flex; flex-direction: column; gap: 5px; font-size: 0.8rem; color: var(--sg-soft); }

@@ -48,7 +48,7 @@ score_delta = None if prev is None or pd.isna(s["composite"]) or pd.isna(prev["c
 gdppc = v.get("gdppc")
 meta = [str(row["region"]), str(row["income"]), f"{ui.fmt_population(v.get('population'))} people"]
 if pd.notna(gdppc):
-    meta.append(f"${gdppc:,.0f} per person (IMF, {year})")
+    meta.append(f"${gdppc:,.0f} per person (IMF, {int(v['gdppc__year'])})")
 if s["coverage"] < 75:
     meta.append(f"data coverage {s['coverage']:.0f}%: read with care")
 ui.country_header(name, row,

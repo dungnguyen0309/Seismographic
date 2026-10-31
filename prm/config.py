@@ -27,7 +27,6 @@ URL_WDI = "https://datatopics.worldbank.org/world-development-indicators/"
 URL_WB_API = "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392"
 URL_IMF_WEO = "https://www.imf.org/external/datamapper"
 URL_UNHCR = "https://www.unhcr.org/refugee-statistics/"
-URL_UNHCR_API = "https://api.unhcr.org/docs/refugee-statistics.html"
 URL_UCDP = "https://ucdp.uu.se/"
 URL_GDELT = "https://www.gdeltproject.org/"
 # Latest edition offered as a download on fragilestatesindex.org/excel (benchmark only, fetched when needed)

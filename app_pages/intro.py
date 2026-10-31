@@ -9,8 +9,7 @@ from prm.config import PILLARS, TIERS
 
 core, year, values, scores = ui.load()
 n_scored = int(scores["composite"].notna().sum())
-weights = ui.weights()
-total_weight = sum(weights.values()) or 1
+weights = dict(ui.weights_tuple())  # shares of 100, as the scores use them
 
 CARD = "background:var(--sg-raised);border:1px solid var(--sg-line);border-radius:10px;padding:14px 16px"
 
@@ -65,11 +64,12 @@ st.markdown(
 
 # --- The four pillars ---------------------------------------------------------------------------------------
 st.header("The four pillars")
-st.caption("The weights are the defaults; you can change them under *Index weights* in the sidebar.")
+st.caption("These are your weights from *Index weights* in the sidebar." if ui.custom_weights_label() else
+           "The weights are the defaults; you can change them under *Index weights* in the sidebar.")
 cards = []
 for p in PILLARS:
     color = config.PILLAR_COLORS[p.key]
-    share = weights[p.key] / total_weight
+    share = weights[p.key] / 100
     inds = ", ".join(i.short for i in config.indicators_for(p.key))
     cards.append(
         f'<div style="{CARD}">'

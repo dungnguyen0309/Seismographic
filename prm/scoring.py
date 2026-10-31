@@ -96,8 +96,9 @@ def build_values(series: dict[str, pd.DataFrame], countries: pd.DataFrame, year:
 
     # Context (not scored)
     out["population"] = _population(series, index, year)
-    gdppc, _ = pick_latest(series.get("gdppc"), year, 2)
+    gdppc, gdppc_year = pick_latest(series.get("gdppc"), year, 2)
     out["gdppc"] = gdppc.reindex(index)
+    out["gdppc__year"] = gdppc_year.reindex(index)
     return out
 
 
@@ -375,7 +376,13 @@ def country_brief(
     growth, infl = v.get("gdp_growth"), v.get("inflation")
     nxt = _next_year_value(series, "gdp_growth", iso3, year + 1)
     if pd.notna(growth) and pd.notna(infl):
-        text = f"The IMF projects real GDP growth of {growth:.1f}% and inflation of {infl:.1f}% for {year}"
+        gy, iy = int(v["gdp_growth__year"]), int(v["inflation__year"])
+        if gy == iy == year:
+            text = f"The IMF projects real GDP growth of {growth:.1f}% and inflation of {infl:.1f}% for {year}"
+        else:  # the IMF has stopped publishing current figures for a few countries (e.g. Afghanistan, Lebanon)
+            text = (f"The latest IMF figures, for {gy}, show real GDP growth of {growth:.1f}% and inflation of {infl:.1f}%"
+                    if gy == iy else f"The latest IMF figures show real GDP growth of {growth:.1f}% ({gy}) "
+                    f"and inflation of {infl:.1f}% ({iy})")
         if nxt is not None:
             text += f", with growth of {nxt:.1f}% in {year + 1}"
         lines.append(text + ".")

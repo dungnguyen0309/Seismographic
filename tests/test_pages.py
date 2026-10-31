@@ -95,6 +95,11 @@ def test_weights_travel_in_the_link(app):
     assert not errors(app), errors(app)
     assert app.session_state["w_stability"] == 50 and app.session_state["w_social"] == 10
     assert any("Scores use your pillar weights" in c.value for c in app.caption)
+    for p in PILLARS:  # the defaults doubled: the same proportions, so no note and no ?w= in the link
+        app.session_state[ui.WEIGHT_KEYS[p.key]] = p.default_weight * 2
+    app.run()
+    assert not any("Scores use your pillar weights" in c.value for c in app.caption)
+    assert "w" not in app.query_params
     for p in PILLARS:  # back to the defaults for the other tests
         app.session_state[ui.WEIGHT_KEYS[p.key]] = p.default_weight
     app.run()

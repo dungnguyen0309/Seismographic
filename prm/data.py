@@ -458,10 +458,3 @@ def load_fsi() -> tuple[pd.DataFrame | None, str | None]:
 def load_countries() -> pd.DataFrame:
     """Just the country list — powers the sidebar search on every page."""
     return load_core()["countries"]
-
-
-def country_series(series: dict[str, pd.DataFrame], key: str, iso3: str) -> pd.DataFrame:
-    df = series.get(key)
-    if df is None or df.empty:
-        return pd.DataFrame(columns=["year", "value"])
-    return df[df["iso3"] == iso3][["year", "value"]].sort_values("year")
