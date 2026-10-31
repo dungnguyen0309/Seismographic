@@ -1,7 +1,7 @@
 """Save a copy of every data series to data/snapshot/ so the app still works if an API is down.
 
 Run it yourself with:   python scripts/refresh_snapshot.py
-or let the GitHub Action in .github/workflows/refresh-data.yml run it once a month.
+or let the GitHub Action in .github/workflows/refresh-data.yml run it once a week.
 """
 
 from __future__ import annotations

@@ -170,9 +170,10 @@ TERMS: dict[str, list[tuple[str, str]]] = {
         ("ISO3", "Three-letter country codes, e.g. NGA for Nigeria."),
         ("GDP", "Gross domestic product: the value of everything an economy produces in a year."),
         ("Natural Earth", "Public-domain map data; the source of the country outlines on the globe."),
-        ("Snapshot", "A saved copy of all the data (refreshed monthly) so pages open instantly and keep working if "
-                     "a source is down."),
-        ("Live data", "Figures downloaded from the sources in the background; kept for 12 hours."),
+        ("Snapshot", "A saved copy of all the data (refreshed every week) so pages open instantly and keep working "
+                     "if a source is down."),
+        ("Live data", "Figures downloaded straight from the sources when the snapshot is over 10 days old, or with "
+                      "Refresh data; kept for 12 hours."),
     ],
     "Maps, globe & charts": [
         ("Risk colours", "Dim to bright = lower to higher risk. Countries in dim dark grey are outside your filters; "

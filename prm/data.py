@@ -1,10 +1,10 @@
 """Data loading for the Streamlit app: instant start from the saved snapshot, live data in the background.
 
-Downloading every API takes 40-60 seconds, and a free Streamlit app that has gone to sleep starts
-cold. So pages render immediately from the snapshot CSVs in data/snapshot/ (refreshed monthly by
-scripts/refresh_snapshot.py / the GitHub Action) while one background thread, shared by every
-visitor, downloads the live figures. When they arrive, open pages re-run themselves (see
-ui.load). Live data is kept for 12 hours; a series whose API is down keeps its snapshot copy.
+Downloading every API takes 40-60 seconds, and a hosted app starts cold often. So pages render from the snapshot
+CSVs in data/snapshot/ (saved every week by scripts/refresh_snapshot.py / the GitHub Action). The sources publish
+a few times a year, so a snapshot under SNAPSHOT_FRESH_DAYS old is used as it is. An older one is shown while one
+background thread, shared by every visitor, downloads the live figures; when they arrive, open pages re-run
+themselves (see ui.load). Live data is kept for 12 hours; a series whose API is down keeps its snapshot copy.
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ SNAPSHOT_DIR = ROOT / "data" / "snapshot"
 CACHE_TTL = 60 * 60 * 12
 LIVE_START_DELAY = 4  # seconds
 MIN_COVERAGE = 0.6  # a fresh download must cover at least this share of the countries in the saved copy
+SNAPSHOT_FRESH_DAYS = 10  # the snapshot is saved every Monday; this leaves room for one failed run
 
 
 def _read_snapshot(name: str) -> pd.DataFrame | None:
@@ -246,13 +247,24 @@ def _snapshot_core() -> dict | None:
     }
 
 
+def _is_fresh(snapshot: dict) -> bool:
+    try:
+        saved = dt.date.fromisoformat(snapshot.get("snapshot_date") or "")
+    except ValueError:
+        return False
+    return (dt.date.today() - saved).days <= SNAPSHOT_FRESH_DAYS
+
+
 def load_core() -> dict:
-    """Live data if it has been downloaded, otherwise the snapshot (a live download starts in the background)."""
+    """Live data if it has been downloaded (the Refresh button), otherwise the snapshot. A live download starts in
+    the background only when the snapshot is older than SNAPSHOT_FRESH_DAYS."""
     store = _live_store()
+    snapshot = _snapshot_core()
+    if store["core"] is None and snapshot is not None and _is_fresh(snapshot):
+        return snapshot
     _ensure_download(store)
     if store["core"] is not None:
         return store["core"]
-    snapshot = _snapshot_core()
     if snapshot is not None:
         return snapshot
     # No snapshot at all (e.g. a fresh checkout): wait for the download

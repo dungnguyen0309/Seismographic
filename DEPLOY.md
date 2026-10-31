@@ -56,10 +56,10 @@ these limits.
 
 The `Dockerfile` in the repository also runs the app on Render, Fly.io or any other Docker host.
 
-## Monthly data backup
+## Weekly data backup
 
-The **Refresh data snapshot** action saves a copy of all data on the 3rd of every month, so pages open instantly
-and keep working if a source is down. The Space republishes after each refresh. If a run fails at "Commit the
+The **Refresh data snapshot** action saves a copy of all data every Monday, so pages open instantly (the app
+skips the live download while the copy is under 10 days old) and keep working if a source is down. The Space republishes after each refresh. If a run fails at "Commit the
 snapshot", go to **Settings → Actions → General → Workflow permissions**, pick **Read and write permissions**,
 save, and run it again.
 

@@ -1,10 +1,11 @@
-# Saves a monthly copy of all data to data/snapshot/ so the app keeps working if an API goes down.
-# Runs automatically on the 3rd of every month; you can also run it from the Actions tab ("Run workflow").
+# Saves a weekly copy of all data to data/snapshot/. The app opens on it straight away (no download while it is
+# under 10 days old) and keeps working if an API goes down.
+# Runs automatically every Monday; you can also run it from the Actions tab ("Run workflow").
 name: Refresh data snapshot
 
 on:
   schedule:
-    - cron: "17 6 3 * *"
+    - cron: "17 6 * * 1"
   workflow_dispatch:
 
 permissions:

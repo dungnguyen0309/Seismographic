@@ -106,9 +106,9 @@ indicator, weight and threshold is defined in [`prm/config.py`](prm/config.py).
 | [Fragile States Index](https://fragilestatesindex.org/) (The Fund for Peace) | Benchmark on the Methodology page (not used in the score; downloaded from the publisher when needed, not stored here) | Public download |
 | [IFES ElectionGuide](https://www.electionguide.org/) | Dates for the events watchlist | Website |
 
-Pages open instantly from the snapshot in `data/snapshot/` (refreshed monthly by a GitHub Action) while the
-live data downloads in the background; live data is then kept for 12 hours, and any source that is down keeps
-its snapshot copy. The risk-over-time view recomputes the index for every year since 2015 with the data
+Pages open instantly from the snapshot in `data/snapshot/`, which a GitHub Action saves every Monday. While it is
+under 10 days old the app uses it as it is. An older copy is shown while the live data downloads in the
+background; live data is then kept for 12 hours, and any source that is down keeps its snapshot copy. The risk-over-time view recomputes the index for every year since 2015 with the data
 available for that year. The 3D globe draws [Natural Earth](https://www.naturalearthdata.com/)
 country outlines (public domain) with [globe.gl](https://globe.gl/).
 
@@ -144,7 +144,7 @@ tests/                    tests for the model and every page
 
 * Tests run on every push: the scoring model, the analysis tools, the PDF brief and every page and country
   tab (GitHub Actions, *Tests*).
-* A data snapshot is saved on the 3rd of each month, including the index history ready-made so the first visit is
+* A data snapshot is saved every Monday, including the index history ready-made so the first visit is
   fast (*Refresh data snapshot*). A download that covers far fewer countries than the saved copy is rejected, and
   the new snapshot is only committed if the full test suite passes on it.
 

@@ -1,5 +1,6 @@
 """Stability: the app degrades gracefully when sources fail, data files are odd or a section breaks."""
 
+import datetime as dt
 import time
 
 import pandas as pd
@@ -111,6 +112,22 @@ def test_refresh_has_a_cooldown():
     finally:
         store.clear()
         store.update(saved)
+
+
+def test_a_recent_snapshot_opens_without_a_download(monkeypatch):
+    snapshot = {"source": "snapshot", "snapshot_date": dt.date.today().isoformat()}
+    started = []
+    monkeypatch.setattr(data, "_snapshot_core", lambda: snapshot)
+    monkeypatch.setattr(data, "_ensure_download", started.append)
+    store = data._live_store()
+    saved = store["core"]
+    store["core"] = None
+    try:
+        assert data.load_core() is snapshot and not started
+        snapshot["snapshot_date"] = (dt.date.today() - dt.timedelta(days=data.SNAPSHOT_FRESH_DAYS + 1)).isoformat()
+        assert data.load_core() is snapshot and started  # an old copy is shown while the live data downloads
+    finally:
+        store["core"] = saved
 
 
 def test_api_answers_json_when_the_data_fails(monkeypatch):

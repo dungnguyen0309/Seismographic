@@ -1,4 +1,4 @@
-# Publishes the app to its Hugging Face Space on every push to main and after each monthly data refresh.
+# Publishes the app to its Hugging Face Space on every push to main and after each weekly data refresh.
 # Needs, in the GitHub repo settings: a secret HF_TOKEN (a Hugging Face "write" token) and a variable
 # HF_SPACE (e.g. yourname/Seismographic). The Space is created the first time if it does not exist.
 name: Publish to Hugging Face
