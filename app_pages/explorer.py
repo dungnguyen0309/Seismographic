@@ -38,13 +38,14 @@ st.caption(ind.description)
 source = config.indicator_source(ind)
 
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Countries with data", len(known), border=True)
-k2.metric("Median", ind.fmt(known["value"].median()) if len(known) else "—", border=True, help=ind.unit)
+k1.metric("Countries with data", len(known), border=True, height="stretch")
+k2.metric("Median", ind.fmt(known["value"].median()) if len(known) else "—", border=True,
+          height="stretch", help=ind.unit)
 worst = known.nlargest(1, "risk")
 best = known.nsmallest(1, "risk")
-k3.metric("Riskiest", worst["name"].iloc[0] if len(worst) else "—", border=True,
+k3.metric("Riskiest", worst["name"].iloc[0] if len(worst) else "—", border=True, height="stretch",
           help=None if worst.empty else f"{ind.fmt(worst['value'].iloc[0])} {ind.unit}")
-k4.metric("Safest", best["name"].iloc[0] if len(best) else "—", border=True,
+k4.metric("Safest", best["name"].iloc[0] if len(best) else "—", border=True, height="stretch",
           help=None if best.empty else f"{ind.fmt(best['value'].iloc[0])} {ind.unit}")
 
 # --- Globe ------------------------------------------------------------------------------------------

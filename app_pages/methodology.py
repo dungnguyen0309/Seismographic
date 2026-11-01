@@ -160,12 +160,12 @@ if not track:
     st.info("Not enough conflict data to run the test right now.")
 else:
     t1, t2, t3, t4 = st.columns(4)
-    t1.metric("New conflicts tested", track["onsets"], border=True,
+    t1.metric("New conflicts tested", track["onsets"], border=True, height="stretch",
               help=f"Out of {track['cases']:,} country-years at peace, {track['years'][0]}–{track['years'][1]}.")
-    t2.metric("Already in the riskiest fifth", f"{track['top_fifth_share']:.0%}", border=True,
+    t2.metric("Already in the riskiest fifth", f"{track['top_fifth_share']:.0%}", border=True, height="stretch",
               help="Share of new conflicts in countries that scored in the riskiest fifth the year before.")
-    t3.metric("In the riskiest two fifths", f"{track['top_two_fifths_share']:.0%}", border=True)
-    t4.metric("Accuracy (AUC)", "—" if track["auc"] is None else f"{track['auc']:.2f}", border=True,
+    t3.metric("In the riskiest two fifths", f"{track['top_two_fifths_share']:.0%}", border=True, height="stretch")
+    t4.metric("Accuracy (AUC)", "—" if track["auc"] is None else f"{track['auc']:.2f}", border=True, height="stretch",
               help="The chance that a country where conflict started had scored higher than one where it did not. "
                    "0.5 = a coin flip, 1 = perfect.")
     st.plotly_chart(charts.onset_fifths(track["by_fifth"], track["base_rate"], config.PILLAR_COLORS["stability"]),
@@ -210,10 +210,12 @@ with ui.guard("The benchmark"):
         both["gap"] = both["our_pct"] - both["fsi_pct"]
         top_fsi, top_ours = set(both.nlargest(20, "fsi")["iso3"]), set(both.nlargest(20, "score")["iso3"])
         b1, b2, b3 = st.columns(3)
-        b1.metric("Countries compared", len(both), border=True)
+        b1.metric("Countries compared", len(both), border=True, height="stretch")
         b2.metric("Rank correlation", f"{both['fsi'].rank().corr(both['score'].rank()):.2f}", border=True,
+                  height="stretch",
                   help="Spearman correlation of the two rankings: 1 = identical order, 0 = unrelated.")
-        b3.metric("Same countries in the riskiest 20", f"{len(top_fsi & top_ours)} of 20", border=True)
+        b3.metric("Same countries in the riskiest 20", f"{len(top_fsi & top_ours)} of 20", border=True,
+                  height="stretch")
         st.plotly_chart(charts.benchmark_scatter(both, fsi_year), config={"displayModeBar": False})
         cols = {"name": "Country", "fsi": st.column_config.NumberColumn("FSI", format="%.1f"),
                 "score": st.column_config.NumberColumn("Seismographic", format="%.0f"),

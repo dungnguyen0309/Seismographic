@@ -23,7 +23,7 @@ if not events.empty:
     past = events[events["date"] < today]
 
     k1, k2, k3 = st.columns(3)
-    k1.metric("Upcoming events", len(upcoming), border=True)
+    k1.metric("Upcoming events", len(upcoming), border=True, height="stretch")
     k2.metric("Next 90 days", int((upcoming["date"] <= today + pd.Timedelta(days=90)).sum()), border=True)
     k3.metric("High significance", int((upcoming["significance"].str.title() == "High").sum()), border=True)
 

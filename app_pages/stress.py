@@ -82,13 +82,13 @@ result = data.get_stress(core, year, ui.weights_tuple(), tuple(sorted(shocks.ite
 summary = stress.summary(result)
 
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Countries hit", summary["countries"], border=True)
-k2.metric("Move up a tier", summary["tier_up"], border=True,
+k1.metric("Countries hit", summary["countries"], border=True, height="stretch")
+k2.metric("Move up a tier", summary["tier_up"], border=True, height="stretch",
           help=f"Severe tier: {summary['severe_before']} today → {summary['severe_after']} under stress")
-k3.metric("New red flags", summary["new_flags"], border=True,
+k3.metric("New red flags", summary["new_flags"], border=True, height="stretch",
           help=f"New or more severe, in {summary['with_new_flags']} countries")
 k4.metric("Average change", "—" if pd.isna(summary["mean_delta"]) else f"{summary['mean_delta']:+.1f}", border=True,
-          help="Composite score points, countries hit")
+          height="stretch", help="Composite score points, countries hit")
 
 # --- Globe -------------------------------------------------------------------------------------------------------
 frame = table.join(result, on="iso3")

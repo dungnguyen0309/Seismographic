@@ -60,13 +60,13 @@ flags = flags.merge(view[["iso3", "flag", "name"]], on="iso3", how="left")
 
 # --- Headline numbers ------------------------------------------------------------------------
 k1, k2, k3, k4, k5 = st.columns(5)
-k1.metric("Riskier", int((moved["delta_1y"] >= ui.TREND_THRESHOLD).sum()), border=True,
+k1.metric("Riskier", int((moved["delta_1y"] >= ui.TREND_THRESHOLD).sum()), border=True, height="stretch",
           help="Composite up by a point or more")
-k2.metric("Safer", int((moved["delta_1y"] <= -ui.TREND_THRESHOLD).sum()), border=True,
+k2.metric("Safer", int((moved["delta_1y"] <= -ui.TREND_THRESHOLD).sum()), border=True, height="stretch",
           help="Composite down by a point or more")
-k3.metric("Moved to a riskier tier", int((moved["tier_move"] > 0).sum()), border=True)
-k4.metric("Moved to a safer tier", int((moved["tier_move"] < 0).sum()), border=True)
-k5.metric("New red flags", int((flags["change"] == "New").sum()), border=True,
+k3.metric("Moved to a riskier tier", int((moved["tier_move"] > 0).sum()), border=True, height="stretch")
+k4.metric("Moved to a safer tier", int((moved["tier_move"] < 0).sum()), border=True, height="stretch")
+k5.metric("New red flags", int((flags["change"] == "New").sum()), border=True, height="stretch",
           help="Absolute warning thresholds crossed this year that were not crossed last year")
 
 # --- Map of change ----------------------------------------------------------------------------------

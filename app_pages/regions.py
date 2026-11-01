@@ -28,18 +28,19 @@ ui.hero(f"{region}", f"{len(scored)} countries scored · {year}")
 median_now = scored["composite"].median() if len(scored) else None
 n_high = int(scored["tier"].isin(["High", "Severe"]).sum())
 k1, k2, k3, k4, k5 = st.columns(5)
-k1.metric("Median score", "—" if median_now is None else f"{median_now:.0f}", border=True,
+k1.metric("Median score", "—" if median_now is None else f"{median_now:.0f}", border=True, height="stretch",
           delta=None if last is None or median_now is None else round(float(median_now - last["median"]), 1),
           delta_color="inverse", delta_description=f"vs {year - 1}")
-k2.metric("High or Severe risk", n_high, border=True,
+k2.metric("High or Severe risk", n_high, border=True, height="stretch",
           delta=None if last is None else int(n_high - last["high"]), delta_color="inverse",
           delta_description=f"vs {year - 1}")
-k3.metric("In armed conflict", int((scored["battle_deaths_raw"] >= 25).sum()), border=True,
+k3.metric("In armed conflict", int((scored["battle_deaths_raw"] >= 25).sum()), border=True, height="stretch",
           help="At least 25 battle-related deaths in the latest UCDP year")
 k4.metric("People displaced from the region", ui.fmt_population(rv["displaced_total"].sum()), border=True,
+          height="stretch",
           help="Refugees, asylum seekers, others in need of protection and IDPs originating from the region (UNHCR)")
 riskiest = scored.nsmallest(1, "rank")
-k5.metric("Highest risk", riskiest["name"].iloc[0] if len(riskiest) else "—", border=True,
+k5.metric("Highest risk", riskiest["name"].iloc[0] if len(riskiest) else "—", border=True, height="stretch",
           help="Highest composite score in the region")
 ui.cite("index", "unhcr")
 

@@ -551,11 +551,14 @@ def outlook_drivers(coefficients: pd.Series, labels: dict[str, str]) -> go.Figur
         x=odds.to_numpy(), y=[labels.get(k, k) for k in odds.index], orientation="h",
         marker=dict(color=[WORSE if v > 1 else BETTER for v in odds], line=dict(color=SURFACE, width=1)),
         text=[f"×{v:.2f}" for v in odds], textposition="outside", textfont=dict(color="#c3c2b7", **FONT),
-        hovertemplate="%{y}: odds ×%{x:.2f} per typical difference<extra></extra>",
+        cliponaxis=False, hovertemplate="%{y}: odds ×%{x:.2f} per typical difference<extra></extra>",
     ))
     fig.add_vline(x=1, line=dict(color=MUTED, dash="dash", width=1))
-    fig.update_xaxes(title="Change in the odds of new conflict (1 = no effect)", rangemode="tozero")
-    return _base(fig, height=300)
+    # two short title lines fit half a page (the heading above the chart names the outcome)
+    fig.update_xaxes(title="Change in the odds<br>(1 = no effect)", range=[0, float(odds.max()) * 1.08])
+    _base(fig, height=320)
+    fig.update_layout(margin=dict(r=52))  # room past the longest bar for its "×1.71" label at any width
+    return fig
 
 
 def calibration_bars(cal: pd.DataFrame) -> go.Figure:

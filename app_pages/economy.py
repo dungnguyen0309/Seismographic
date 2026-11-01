@@ -25,11 +25,12 @@ view = df if region == "All regions" else df[df["region"] == region]
 
 # --- Headline numbers -----------------------------------------------------------------------------
 k1, k2, k3, k4, k5 = st.columns(5)
-k1.metric("High inflation (≥ 20%)", int((view["inflation"] >= 20).sum()), border=True)
-k2.metric("Economy shrinking", int((view["gdp_growth"] < 0).sum()), border=True, help="Negative real GDP growth")
-k3.metric("Public debt ≥ 90% of GDP", int((view["gov_debt"] >= 90).sum()), border=True)
-k4.metric("Deficit ≥ 5% of GDP", int((view["fiscal_balance"] <= -5).sum()), border=True)
-k5.metric("Reserves < 3 months of imports", int((view["reserves_months"] < 3).sum()), border=True)
+k1.metric("High inflation (≥ 20%)", int((view["inflation"] >= 20).sum()), border=True, height="stretch")
+k2.metric("Economy shrinking", int((view["gdp_growth"] < 0).sum()), border=True,
+          height="stretch", help="Negative real GDP growth")
+k3.metric("Public debt ≥ 90% of GDP", int((view["gov_debt"] >= 90).sum()), border=True, height="stretch")
+k4.metric("Deficit ≥ 5% of GDP", int((view["fiscal_balance"] <= -5).sum()), border=True, height="stretch")
+k5.metric("Reserves < 3 months of imports", int((view["reserves_months"] < 3).sum()), border=True, height="stretch")
 ui.cite("imf", "wdi", "imf_ara")
 st.page_link("app_pages/stress.py", label="Stress test: apply one shock to many countries", icon=":material/bolt:")
 

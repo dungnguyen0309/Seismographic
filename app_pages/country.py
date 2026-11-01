@@ -403,9 +403,10 @@ def what_if_simulator() -> None:
         rank_delta = int(n["rank"] - s["rank"])
         r1, r2 = st.columns(2)  # two figures fit a half-width panel; the tier goes on its own line below
         r1.metric("Composite score", f"{n['composite']:.0f} / 100",
-                  delta=f"{score_delta:+.1f}" if round(score_delta, 1) else None, delta_color="inverse", border=True)
+                  delta=f"{score_delta:+.1f}" if round(score_delta, 1) else None, delta_color="inverse", border=True,
+                  height="stretch")
         r2.metric("Global rank", f"{int(n['rank'])} of {int(n['n_ranked'])}",
-                  delta=f"{rank_delta:+d} places" if rank_delta else None, border=True,
+                  delta=f"{rank_delta:+d} places" if rank_delta else None, border=True, height="stretch",
                   help="1 = highest risk, so a smaller number means riskier.")
         was = f" <span style='color:var(--sg-muted)'>was {s['tier']}</span>" if n["tier"] != s["tier"] else ""
         st.markdown(f"Risk tier&nbsp; {ui.tier_badge(n['tier'])}{was}", unsafe_allow_html=True)
@@ -514,12 +515,12 @@ with t_economy:
         ui.cite("imf", "wdi", "unhcr")
         e1, e2, e3 = st.columns(3)
         e1.metric("FX reserves (months of imports)", config.INDICATOR_BY_KEY["reserves_months"].fmt(v.get("reserves_months")),
-                  help="World Bank WDI. Below 3 months is a common warning line.", border=True)
+                  help="World Bank WDI. Below 3 months is a common warning line.", border=True, height="stretch")
         e2.metric("Youth unemployment", f"{config.INDICATOR_BY_KEY['youth_unemployment'].fmt(v.get('youth_unemployment'))}%",
-                  border=True)
+                  border=True, height="stretch")
         e3.metric("Displaced (% of population)", f"{config.INDICATOR_BY_KEY['displaced_share'].fmt(v.get('displaced_share'))}%",
                   help="Refugees, asylum seekers, others in need of protection and IDPs from this country (UNHCR).",
-                  border=True)
+                  border=True, height="stretch")
 
 # --- News pulse -------------------------------------------------------------------------
 with t_news:

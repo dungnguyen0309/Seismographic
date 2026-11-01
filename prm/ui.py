@@ -394,6 +394,9 @@ GLOBAL_CSS = """
 [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * { white-space: normal !important; overflow: visible !important;
   text-overflow: clip !important; word-break: normal !important; overflow-wrap: normal !important; hyphens: none; }
 [data-testid="stMetricLabel"] p { font-size: 0.8rem !important; color: var(--sg-muted); line-height: 1.3; }
+/* in a row of headline numbers every label keeps room for two lines and sits on the number, so the numbers line up
+   whether a label wraps or not (one with a (?) wraps sooner) */
+[data-testid="stColumn"] [data-testid="stMetricLabel"] { min-height: 2.25rem; align-items: end; }
 [data-testid="stMetricValue"] p { font-size: clamp(1.4rem, 2.4vw, 2.1rem); }
 /* sidebar: long page names wrap, the glossary link too */
 section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] p,
@@ -402,6 +405,14 @@ section[data-testid="stSidebar"] [data-testid="stPageLink"] p { white-space: nor
 section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] { min-height: 2rem; height: auto !important;
   align-items: center !important; padding-top: 3px !important; padding-bottom: 3px !important; }
 section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="stMarkdownContainer"] p { margin: 0 !important; }
+/* the label's wrappers keep Streamlit's 28px line box, which sat the shorter text line ~5px below the icon */
+section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] > span:last-child,
+section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="stMarkdownContainer"] { line-height: 1.3; }
+/* segmented controls are as tall as the selectboxes and buttons they sit beside, so a row of controls lines up */
+[data-testid="stButtonGroup"] button[data-variant="segmented_control"] { min-height: 2.5rem; }
+/* no one-word last lines in headings and intros */
+[data-testid="stMain"] :is(h1, h2, h3, h4), .sg-head-sub { text-wrap: balance; }
+[data-testid="stMain"] [data-testid="stMarkdownContainer"] p, [data-testid="stCaptionContainer"] p { text-wrap: pretty; }
 /* links and focus */
 [data-testid="stMain"] a { text-underline-offset: 3px; text-decoration-thickness: 1px; }
 :focus-visible { outline: 2px solid var(--sg-accent) !important; outline-offset: 2px; }
@@ -438,6 +449,7 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
 .sg-cmp-score { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 6px 0 4px; }
 .sg-cmp-score .sg-cs-num { font-size: 2.3rem; }
 .sg-cmp-meta { font-size: 0.8rem; color: var(--sg-muted); line-height: 1.45; }
+.sg-cmp-meta > span { white-space: nowrap; }  /* the line breaks between its parts, never inside one */
 /* red-flag severity: a small drawn dot before the text */
 .sg-sev { display: inline-block; width: 0.62em; height: 0.62em; border-radius: 50%; background: var(--c);
   margin-right: 0.5em; vertical-align: 0.02em; }

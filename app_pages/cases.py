@@ -80,10 +80,11 @@ else:
         unsafe_allow_html=True,
     )
     m1, m2, m3 = st.columns(3)
-    m1.metric(f"Score in {r['before']}", f"{r['score']:.0f} / 100", border=True, help=r["tier"])
-    m2.metric("Global rank", f"{r['rank']} of {r['n']}", border=True, help="1 = the riskiest economy that year")
+    m1.metric(f"Score in {r['before']}", f"{r['score']:.0f} / 100", border=True, height="stretch", help=r["tier"])
+    m2.metric("Global rank", f"{r['rank']} of {r['n']}", border=True,
+              height="stretch", help="1 = the riskiest economy that year")
     m3.metric(f"Change since {r['before'] - 3}", "—" if r["change"] is None else f"{r['change']:+.1f}",
-              border=True, help="Composite score, three years before the year before the event")
+              border=True, height="stretch", help="Composite score, three years before the year before the event")
 
     rows = hist[hist["iso3"] == case.iso3].sort_values("year")
     st.plotly_chart(charts.case_history(rows, case.date, case.title), config={"displayModeBar": False})

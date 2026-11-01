@@ -74,8 +74,9 @@ for col, iso3, colour in zip(cols, picked, COUNTRY_COLORS):
             tier_colour = config.TIER_COLORS.get(r["tier"], config.INK["faint"])
             st.markdown(f'<div class="sg-cmp-score"><span class="sg-cs-num" style="--c:{tier_colour}">{score}</span>'
                         f'{ui.tier_badge(r["tier"])}</div>'
-                        f'<div class="sg-cmp-meta">Rank {rank} · {int(r["flags"])} red flag'
-                        f'{"" if int(r["flags"]) == 1 else "s"} · {r.get("trend", "—")} in a year</div>',
+                        f'<div class="sg-cmp-meta"><span>Rank {rank}</span> · '
+                        f'<span>{int(r["flags"])} red flag{"" if int(r["flags"]) == 1 else "s"}</span> · '
+                        f'<span>{r.get("trend", "—")} in a year</span></div>',
                         unsafe_allow_html=True)
 
 st.header("On the globe")

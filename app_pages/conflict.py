@@ -28,22 +28,23 @@ prev_bd = bd[bd["year"] == bd_year - 1].set_index("iso3")["value"] if bd_year el
 deaths_by_year = bd.groupby("year")["value"].sum()
 displaced_by_year = dp.groupby("year")["value"].sum()
 k1, k2, k3, k4, k5 = st.columns(5)
-k1.metric("Active armed conflicts", int((latest_bd >= 25).sum()), border=True,
+k1.metric("Active armed conflicts", int((latest_bd >= 25).sum()), border=True, height="stretch",
           delta=None if prev_bd.empty else int((latest_bd >= 25).sum() - (prev_bd >= 25).sum()), delta_color="inverse",
           help=f"Countries with at least 25 battle-related deaths in {bd_year}: the Uppsala Conflict Data "
                "Program's threshold for state-based armed conflict (via the World Bank)")
-k2.metric("At war", int((latest_bd >= 1000).sum()), border=True,
+k2.metric("At war", int((latest_bd >= 1000).sum()), border=True, height="stretch",
           delta=None if prev_bd.empty else int((latest_bd >= 1000).sum() - (prev_bd >= 1000).sum()),
           delta_color="inverse", help=f"At least 1,000 battle-related deaths in {bd_year}")
-k3.metric(f"Battle deaths, {bd_year}", f"{latest_bd.sum():,.0f}", border=True,
+k3.metric(f"Battle deaths, {bd_year}", f"{latest_bd.sum():,.0f}", border=True, height="stretch",
           delta=None if prev_bd.empty else f"{(latest_bd.sum() / prev_bd.sum() - 1):+.0%}" if prev_bd.sum() else None,
           delta_color="inverse")
 k4.metric(f"Forcibly displaced, {dp_year}", ui.fmt_population(displaced_by_year.iloc[-1]) if len(displaced_by_year) else "—",
-          border=True,
+          border=True, height="stretch",
           delta=f"{(displaced_by_year.iloc[-1] / displaced_by_year.iloc[-2] - 1):+.0%}" if len(displaced_by_year) > 1 else None,
           delta_color="inverse", help="Refugees, asylum seekers, others in need of international protection and internally displaced "
                "people (UNHCR)")
 k5.metric("Refugees across borders", ui.fmt_population(flows["value"].sum()) if flows is not None else "—", border=True,
+          height="stretch",
           help="Refugees, asylum seekers and others in need of protection living outside their country (UNHCR)")
 ui.cite("ucdp", "ucdp_def", "unhcr")
 
@@ -181,16 +182,18 @@ with tab_outlook:
                 f"every year since {config.HISTORY_START}, and was tested on years it had not seen."
             )
             o1, o2, o3, o4 = st.columns(4)
-            o1.metric("Average chance", f"{outlook.base_rate:.1%}", border=True,
+            o1.metric("Average chance", f"{outlook.base_rate:.1%}", border=True, height="stretch",
                       help="How often armed conflict broke out the next year in a country at peace, since "
                            f"{config.HISTORY_START}.")
             top = peaceful.iloc[0] if len(peaceful) else None
             o2.metric("Highest chance", "—" if top is None else f"{top['probability']:.0%}", border=True,
-                      help=None if top is None else str(top["name"]))
+                      height="stretch", help=None if top is None else str(top["name"]))
             o3.metric("Tested accuracy", "—" if outlook.auc is None else f"{outlook.auc:.2f}", border=True,
+                      height="stretch",
                       help="On years the model had not seen: the chance a country where conflict broke out had a higher "
                            "prediction than one where it did not (the AUC). 0.5 = a coin flip, 1 = perfect.")
             o4.metric("Already in conflict", int((preds["status"] == "In armed conflict").sum()), border=True,
+                      height="stretch",
                       help=f"25+ battle deaths in {outlook.data_year}: not given a chance of a new outbreak.")
 
             st.header(f"Highest chance of new conflict in {nxt}")
