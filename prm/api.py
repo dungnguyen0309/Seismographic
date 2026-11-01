@@ -82,7 +82,7 @@ async def _country(request: Request) -> JSONResponse:
     iso3 = request.path_params["iso3"].upper()
     row = tables["index"][tables["index"]["iso3"] == iso3]
     if row.empty:
-        return _json({"error": "unknown country code", "iso3": iso3,
+        return _json({"error": "unknown country code", "iso3": iso3[:12],  # never echo a long path back in full
                       "hint": f"use a code from {PREFIX}/countries"}, status=404)
     pick = {name: frame[frame["iso3"] == iso3].drop(columns=["iso3", "name"], errors="ignore")
             for name, frame in tables.items() if name in ("indicators", "red_flags", "history", "conflict_outlook")}
