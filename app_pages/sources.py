@@ -28,7 +28,7 @@ stats = [
      "official video channels"),
 ]
 st.markdown(
-    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:4px 0 8px">'
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(130px,100%),1fr));gap:10px;margin:4px 0 8px">'
     + "".join(f'<div style="border:1px solid var(--sg-line);border-radius:10px;padding:10px 12px">'
               f'<div style="font-size:1.7rem;font-weight:700;line-height:1.1">{n}</div>'
               f'<div style="font-size:0.78rem;color:var(--sg-muted);margin-top:2px">{label}</div></div>' for n, label in stats)
@@ -53,7 +53,7 @@ def card(key: str, extra: str = "") -> str:
 
 
 def grid(cards: list[str], min_width: int = 270) -> None:
-    st.markdown(f'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax({min_width}px,1fr));'
+    st.markdown(f'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min({min_width}px,100%),1fr));'
                 f'gap:10px;margin:4px 0 14px">{"".join(cards)}</div>', unsafe_allow_html=True)
 
 

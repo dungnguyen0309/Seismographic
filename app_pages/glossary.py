@@ -71,7 +71,7 @@ def term_card(t: glossary.Term, color: str, query: str = "") -> str:
 
 
 def cards(items: list[glossary.Term], color: str, query: str = "") -> None:
-    st.markdown('<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px">'
+    st.markdown('<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(270px,100%),1fr));gap:10px">'
                 + "".join(term_card(t, color, query) for t in items) + "</div>", unsafe_allow_html=True)
 
 
@@ -115,7 +115,7 @@ tiles = [(LEGEND[2], LEGEND[0], LEGEND[1], LEGEND[3], None)] + [
     for cat, items in terms.items()
 ]
 st.markdown(
-    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px;margin:6px 0 4px">'
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(185px,100%),1fr));gap:10px;margin:6px 0 4px">'
     + "".join(
         f'<a href="#{slug(name)}" style="text-decoration:none;color:inherit">'
         f'<div style="height:100%;box-sizing:border-box;background:var(--sg-raised);border:1px solid var(--sg-line);'

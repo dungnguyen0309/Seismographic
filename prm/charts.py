@@ -9,6 +9,8 @@ colour (black).
 
 from __future__ import annotations
 
+import html
+
 import numpy as np
 import pandas as pd
 import plotly.colors as pcolors
@@ -39,7 +41,19 @@ BETTER = "#3987e5"
 HOVER = dict(bgcolor=INK["hover"], bordercolor=INK["line-strong"], font=dict(color=INK["strong"], **FONT))
 
 
+def _fit_title(text: str | None, limit: int = 24) -> str | None:
+    """A long axis title breaks before its unit in brackets, so it still fits a chart on a phone or fold cover screen
+    (Plotly never wraps a title, and one wider than the chart is cut off at both ends)."""
+    if text and len(text) > limit and " (" in text and "<br>" not in text:
+        head, _, tail = text.partition(" (")
+        return f"{head}<br>({tail}"
+    return text
+
+
 def _base(fig: go.Figure, height: int = 420, legend: bool = False) -> go.Figure:
+    fig.for_each_xaxis(lambda ax: ax.update(title_text=_fit_title(ax.title.text)) if ax.title.text else None)
+    # a y title runs up the chart, so only one longer than a short chart is tall needs to break
+    fig.for_each_yaxis(lambda ax: ax.update(title_text=_fit_title(ax.title.text, 36)) if ax.title.text else None)
     fig.update_layout(
         height=height,
         margin=dict(l=8, r=8, t=36, b=8),
@@ -495,7 +509,7 @@ def change_bars(df: pd.DataFrame, n: int = 10) -> go.Figure:
                       "<br><i>Click to open the profile</i><extra></extra>",
     ))
     fig.add_vline(x=0, line=dict(color=MUTED, width=1))
-    fig.update_xaxes(title="Change in composite score vs last year (points)")
+    fig.update_xaxes(title="Score change vs last year (points)")
     fig.update_yaxes(title=None, automargin=True)
     return _base(fig, height=max(320, 24 * len(d) + 90))
 
@@ -667,15 +681,18 @@ def econ_heatmap(df: pd.DataFrame) -> go.Figure:
     units = [config.INDICATOR_BY_KEY[k].unit for k in keys]
     labels = [label for _, label in ECON_COLUMNS]
     scale = config.map_colorscale("economic")
+    rows = [config.short_name(n) for n in df["name"]]  # the long names would push the grid off a narrow screen
+    hover = [[f"<b>{html.escape(str(name))}</b> · {labels[j]}<br>Value: {text[i][j]} {units[j]}<br>Risk score: "
+              + ("—" if np.isnan(z[i, j]) else f"{z[i, j]:.0f}/100") for j in range(len(keys))]
+             for i, name in enumerate(df["name"])]
     fig = go.Figure(go.Heatmap(
-        z=z, x=labels, y=df["name"], zmin=0, zmax=100, colorscale=scale, xgap=2, ygap=2, text=text,
-        customdata=np.array([[units[j] for j in range(len(keys))] for _ in range(len(df))]),
+        z=z, x=labels, y=rows, zmin=0, zmax=100, colorscale=scale, xgap=2, ygap=2, text=text, hovertext=hover,
         colorbar=dict(title=dict(text="Risk", side="right"), thickness=10, len=0.6, tickvals=[0, 50, 100]),
-        hovertemplate="<b>%{y}</b> · %{x}<br>Value: %{text} %{customdata}<br>Risk score: %{z:.0f}/100<extra></extra>",
+        hovertemplate="%{hovertext}<extra></extra>",
     ))
     # The values, each in dark or light text depending on how bright its cell is
     xs, ys, ts, cs = [], [], [], []
-    for i, name in enumerate(df["name"]):
+    for i, name in enumerate(rows):
         for j, label in enumerate(labels):
             xs.append(label); ys.append(name); ts.append(text[i][j])
             cs.append(MUTED if np.isnan(z[i, j]) else _text_on(pcolors.sample_colorscale(scale, [z[i, j] / 100])[0]))

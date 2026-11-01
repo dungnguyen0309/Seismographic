@@ -26,7 +26,7 @@ for case in cases.CASES:
 # --- Scorecard -----------------------------------------------------------------------------------------
 counts = {v: sum(1 for r in readings.values() if r.get("verdict") == v) for v in cases.VERDICTS}
 st.markdown(
-    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin:6px 0 10px">'
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(170px,100%),1fr));gap:10px;margin:6px 0 10px">'
     + "".join(f'<div style="border:1px solid var(--sg-line);border-radius:10px;padding:10px 12px">'
               f'<div style="font-size:1.7rem;font-weight:700;line-height:1.1">{counts[v]} of {len(cases.CASES)}</div>'
               f'<div style="font-size:0.8rem;color:{color};margin-top:2px">{v}</div></div>'

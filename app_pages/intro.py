@@ -15,7 +15,7 @@ CARD = "background:var(--sg-raised);border:1px solid var(--sg-line);border-radiu
 
 
 def grid(cards: list[str], min_width: int = 220) -> None:
-    st.markdown(f'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax({min_width}px,1fr));'
+    st.markdown(f'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min({min_width}px,100%),1fr));'
                 f'gap:10px;margin:6px 0 14px">{"".join(cards)}</div>', unsafe_allow_html=True)
 
 
@@ -73,7 +73,7 @@ for p in PILLARS:
     inds = ", ".join(i.short for i in config.indicators_for(p.key))
     cards.append(
         f'<div style="{CARD}">'
-        f'<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">'
+        f'<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 8px">'
         f'<span style="font-weight:700;color:{color}">{html.escape(p.label)}</span>'
         f'<span style="font-size:0.8rem;color:var(--sg-muted);white-space:nowrap">{share:.0%} of the score</span></div>'
         f'<div style="font-size:0.86rem;color:var(--sg-text);margin:6px 0;line-height:1.5">{html.escape(p.question)}</div>'

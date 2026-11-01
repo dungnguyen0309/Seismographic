@@ -673,6 +673,21 @@ REGION_SHORT = {"Middle East, North Africa, Afghanistan & Pakistan": "MENA, Afgh
                 "Latin America & Caribbean": "Latin America & Carib."}
 
 
+# Chart axes on a narrow screen: the long names, shortened (hover text keeps the full name)
+SHORT_NAMES = {
+    "Antigua and Barbuda": "Antigua & Barbuda", "Bosnia and Herzegovina": "Bosnia & Herz.",
+    "British Virgin Islands": "Br. Virgin Is.", "Central African Republic": "C. African Rep.",
+    "Northern Mariana Islands": "N. Mariana Is.", "Republic of the Congo": "Rep. of Congo",
+    "St Martin (French part)": "St Martin (Fr.)", "St Vincent and the Grenadines": "St Vincent & Gren.",
+    "São Tomé and Príncipe": "São Tomé & Pr.", "Trinidad and Tobago": "Trinidad & Tobago",
+    "Turks and Caicos Islands": "Turks & Caicos", "United Arab Emirates": "UAE",
+}
+
+
+def short_name(name: str) -> str:
+    return SHORT_NAMES.get(name, name)
+
+
 def region_short(name: str) -> str:
     return REGION_SHORT.get(name, name)
 

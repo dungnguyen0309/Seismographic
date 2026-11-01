@@ -302,6 +302,43 @@ DOCK_CSS = f"""
 """
 
 
+# Foldables and short screens.
+#  - Cover screens are narrow (280px on the first Galaxy Fold, 344px on a Z Fold), so the five tabs get ~50px each.
+#  - A phone on its side, or a Fold opened in landscape beside the menu, is short: the bar stays on one line there.
+#  - A dual-screen device (Surface Duo, a Fold or Flip half open) reports two viewport segments with a hinge between
+#    them, and nothing should sit on the hinge. Side by side: the menu fills the left screen and the page the right one.
+#    One above the other (tabletop): the page reads on the top screen and the bar moves to the lower screen.
+FOLD_CSS = f"""
+@container sgdock (max-width: 360px) {{
+  .st-key-sg_tabs a p, .st-key-sg_tabs button p {{ font-size: 0.62rem !important; letter-spacing: -0.03em; }}
+  .st-key-sg_tabs a, .st-key-sg_tabs button {{ height: 46px; padding-left: 0 !important; padding-right: 0 !important; }}
+  .st-key-sg_read {{ min-height: 40px; padding-top: 4px !important; padding-bottom: 4px !important; }}
+}}
+@media (max-height: 720px) and (orientation: landscape) {{
+  @container sgdock (min-width: 460px) and (max-width: 640px) {{
+    {_wrap("sg_read")} {{ flex: 1 1 150px !important; max-width: 440px; }}
+    {_wrap("sg_tabs")} {{ flex: 0 0 auto !important; }}
+    .st-key-sg_tabs > [data-testid="stLayoutWrapper"] {{ flex: 0 0 56px !important; }}
+    .st-key-sg_tabs a, .st-key-sg_tabs button {{ height: 46px; }}
+    .sg-spark {{ display: none; }}
+    .sg-read-meta {{ overflow: hidden; text-overflow: ellipsis; }}
+  }}
+}}
+@media (horizontal-viewport-segments: 2) {{
+  section[data-testid="stSidebar"][aria-expanded="true"] {{
+    width: env(viewport-segment-left 1 0) !important; min-width: 0 !important; max-width: none !important;
+    box-sizing: border-box; padding-right: calc(env(viewport-segment-left 1 0) - env(viewport-segment-right 0 0)); }}
+  .st-key-sg_dock, body:has(section[data-testid="stSidebar"][aria-expanded="true"]) .st-key-sg_dock {{
+    left: env(viewport-segment-left 1 0); }}
+}}
+@media (vertical-viewport-segments: 2) {{
+  [data-testid="stMain"] {{ max-height: env(viewport-segment-bottom 0 0); }}
+  [data-testid="stMainBlockContainer"] {{ padding-bottom: 2rem !important; }}
+  .st-key-sg_dock {{ top: env(viewport-segment-top 0 1); align-content: center; }}
+}}
+"""
+
+
 # Colour tokens (config.INK) as CSS variables, so styles name a role (--sg-muted), not a hex value
 TOKENS_CSS = ":root { " + " ".join(f"--sg-{name}: {value};" for name, value in config.INK.items()) + " }"
 GLOBAL_CSS = """
@@ -602,7 +639,7 @@ def page_setup(current_url_path: str, pages: dict) -> None:
     _follow_jump(pages)
     if current_url_path:  # any page but the overview: the overview stops pointing first-timers to the introduction
         st.session_state["_explored"] = True
-    st.html(f"<style>{TOKENS_CSS}{GLOBAL_CSS}{DOCK_CSS}</style>")
+    st.html(f"<style>{TOKENS_CSS}{GLOBAL_CSS}{DOCK_CSS}{FOLD_CSS}</style>")
     follow.sync()
     a11y.page_helper()
 
