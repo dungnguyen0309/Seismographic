@@ -70,9 +70,10 @@ ui.cite("index", "ucdp", "unhcr", "natural_earth")
 
 TABS = {"conflict": ":material/swords: Armed conflict", "displacement": ":material/luggage: Displacement & refugees",
         "outlook": ":material/insights: Outlook"}
-if st.query_params.get("tab") in TABS:  # e.g. ?tab=outlook, from the country profile and the Methodology page
-    st.session_state["conflict_tab"] = TABS[st.query_params["tab"]]
-    del st.query_params["tab"]
+if "tab" in st.query_params:  # e.g. ?tab=outlook, from the country profile and the Methodology page
+    if st.query_params["tab"] in TABS:
+        st.session_state["conflict_tab"] = TABS[st.query_params["tab"]]
+    del st.query_params["tab"]  # an unknown tab is dropped from the address too
 tab_conflict, tab_displacement, tab_outlook = st.tabs(list(TABS.values()), key="conflict_tab", on_change="rerun")
 
 # --- Armed conflict ------------------------------------------------------------------------------------------

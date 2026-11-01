@@ -81,3 +81,12 @@ def test_api_rejects_junk_without_echoing_it():
     assert r.status_code == 404 and r.headers["content-type"].startswith("application/json")
     assert client.get("/api/v1/countries?region=%00").json()["count"] == 0
     assert client.post("/api/v1/countries").status_code == 405
+
+
+def test_unknown_tab_in_a_link_is_dropped(app):
+    for page in ("app_pages/conflict.py", "app_pages/overview.py"):
+        app.switch_page(page)
+        app.query_params["tab"] = "<img src=x>"
+        app.run()
+        assert not app.exception, [str(e.value)[:200] for e in app.exception]
+        assert "tab" not in app.query_params

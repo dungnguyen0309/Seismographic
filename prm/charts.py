@@ -509,7 +509,7 @@ def change_bars(df: pd.DataFrame, n: int = 10) -> go.Figure:
                       "<br><i>Click to open the profile</i><extra></extra>",
     ))
     fig.add_vline(x=0, line=dict(color=MUTED, width=1))
-    fig.update_xaxes(title="Score change vs last year (points)")
+    fig.update_xaxes(title="Change vs last year (points)")  # the heading above names the score
     fig.update_yaxes(title=None, automargin=True)
     return _base(fig, height=max(320, 24 * len(d) + 90))
 

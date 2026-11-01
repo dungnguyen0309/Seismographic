@@ -108,9 +108,10 @@ TABS = {"summary": ":material/summarize: Summary", "real": ":material/explore: I
         "indicators": ":material/list_alt: Indicators", "governance": ":material/account_balance: Governance",
         "economy": ":material/monitoring: Economy", "news": ":material/newspaper: News",
         "assessment": ":material/edit_note: Assessment"}
-if st.query_params.get("tab") in TABS:  # e.g. ?country=KEN&tab=news
-    st.session_state["country_tab"] = TABS[st.query_params["tab"]]
-    del st.query_params["tab"]
+if "tab" in st.query_params:  # e.g. ?country=KEN&tab=news
+    if st.query_params["tab"] in TABS:
+        st.session_state["country_tab"] = TABS[st.query_params["tab"]]
+    del st.query_params["tab"]  # an unknown tab is dropped from the address too
 (t_summary, t_real, t_peers, t_map, t_whatif, t_indicators, t_governance, t_economy, t_news,
  t_analyst) = st.tabs(list(TABS.values()), key="country_tab", on_change="rerun")  # only the open tab is built
 

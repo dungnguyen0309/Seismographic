@@ -157,9 +157,10 @@ ui.cite("index", "natural_earth")
 # --- The rest, one tab at a time (only the open tab is computed) -----------------------------------------------
 TABS = {"hotspots": ":material/warning: Hotspots", "changes": ":material/trending_up: Changes",
         "ranking": ":material/format_list_numbered: Ranking", "matrix": ":material/scatter_plot: Risk matrix"}
-if st.query_params.get("tab") in TABS:  # e.g. ?tab=ranking
-    st.session_state["ov_tab"] = TABS[st.query_params["tab"]]
-    del st.query_params["tab"]
+if "tab" in st.query_params:  # e.g. ?tab=ranking
+    if st.query_params["tab"] in TABS:
+        st.session_state["ov_tab"] = TABS[st.query_params["tab"]]
+    del st.query_params["tab"]  # an unknown tab is dropped from the address too
 tab_hot, tab_changes, tab_rank, tab_matrix = st.tabs(list(TABS.values()), key="ov_tab", on_change="rerun")
 
 with tab_hot:
