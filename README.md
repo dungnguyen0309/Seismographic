@@ -14,7 +14,10 @@ country scores the way it does and question the assumptions.
 On top of the model sit the parts a model cannot do: red flags on absolute thresholds, live news, an events
 watchlist, and written analyst assessments with probabilistic key judgments and scenarios.
 
-<p align="center"><img src="docs/screenshots/overview.png" alt="Global overview: the 3D globe with conflict rings, refugee flows and live news" width="100%"></p>
+<picture>
+  <source media="(prefers-reduced-motion: reduce)" srcset="docs/screenshots/what-if.png">
+  <img src="docs/screenshots/what-if.gif" alt="The What-if simulator: raising Niger's inflation to 25% lifts its score from 58 to 63, moves it from Elevated to High and adds a red flag" width="100%">
+</picture>
 
 | Country profile | Case studies |
 |---|---|
