@@ -179,7 +179,7 @@ NEAR_TEXT = {
 
 CAVEATS = [
     "Scores are relative: they show where a country sits among the others and give no probability of any event.",
-    "The data look backwards: governance scores describe last year and conflict data lag by up to a year. Check "
+    "The data look backwards: governance scores describe last year and conflict data lag by up to two years. Check "
     "current news and official travel advice.",
     "This is general, educational guidance. It is not investment, legal or security advice.",
 ]
@@ -214,13 +214,19 @@ def _shown(ind: config.Indicator, raw) -> str:
     return f" ({ind.fmt(raw)}{'' if ind.unit.startswith('%') else ' '}{ind.unit})"
 
 
+def countdown(days: int) -> str:
+    return "today" if days == 0 else "tomorrow" if days == 1 else f"in {days} days"
+
+
 def _ordinal(n: int) -> str:
     return f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
 
 
 def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores: pd.DataFrame, hist: pd.DataFrame,
-                    events: pd.DataFrame, flows: pd.DataFrame | None, year: int) -> Reading:
-    """Translate one country's numbers into a plain-language reading with practical actions."""
+                    events: pd.DataFrame, flows: pd.DataFrame | None, year: int,
+                    series: dict[str, pd.DataFrame] | None = None) -> Reading:
+    """Translate one country's numbers into a plain-language reading with practical actions. With the raw series, a
+    falling political-stability score (the Watch flag on the profile) also rules out the calm advice."""
     row = table.set_index("iso3").loc[iso3]
     name = row["name"]
     v = values.loc[iso3] if iso3 in values.index else pd.Series(dtype=float)
@@ -304,7 +310,7 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
     today = pd.Timestamp.today().normalize()
     upcoming = events[(events["iso3"] == iso3) & (events["date"] >= today)
                       & (events["date"] <= today + pd.Timedelta(days=365))].sort_values("date")
-    event_lines = [f"{e.event}, {e.date:%d %b %Y} (in {(e.date - today).days} days, {e.significance} significance)"
+    event_lines = [f"{e.event}, {e.date:%d %b %Y} ({countdown((e.date - today).days)}, {e.significance} significance)"
                    for e in upcoming.itertuples(index=False)]
     next_event = upcoming.iloc[0] if len(upcoming) else None
 
@@ -315,7 +321,8 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
     money = flagged & {"inflation", "reserves_months", "current_account"}
     budget = flagged & {"gov_debt", "fiscal_balance"}
     displaced = v.get("displaced_share")
-    calm = s["composite"] < 30 and not flags
+    trend = scoring.wgi_trend(series, iso3, "pv") if series else None
+    calm = s["composite"] < 30 and not flags and not (trend and trend["change"] <= -config.WGI_TREND_THRESHOLD)
     when = (f"'{next_event['event']}' ({next_event['date']:%d %b %Y})" if next_event is not None else None)
 
     business = ["Use the score to decide where to look closer: compare with peers (Peers tab) and read the "
@@ -399,7 +406,7 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
         research.append(f"Put it in context: {name} ranks {_ordinal(region_pos)} of {len(peers)} in {row['region']} "
                         "and the Peers tab shows who is close.")
     research.append("Check whether changes are real: governance moves inside the WGI confidence intervals may be "
-                    "noise (Governance trends tab).")
+                    "noise (Governance tab).")
     research.append("Test the drivers: the What-if simulator shows which indicators would move the score most.")
     research.append("Write it up: the Assessment builder turns this into a structured brief with probabilities.")
 

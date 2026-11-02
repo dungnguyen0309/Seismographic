@@ -311,7 +311,7 @@ function norm(ctx, v) {
 function fmtValue(ctx, v) {
   const f = ctx.data.valueFormat;
   if (f === "signed") return (v > 0 ? "+" : "") + v.toFixed(1);
-  if (f === "days") return v <= 0 ? "today" : "in " + Math.round(v) + " days";
+  if (f === "days") return v <= 0 ? "today" : Math.round(v) === 1 ? "tomorrow" : "in " + Math.round(v) + " days";
   if (f === "score") return v.toFixed(0) + "/100";
   return v.toFixed(1);
 }
@@ -422,8 +422,8 @@ function hoverTo(ctx, iso3) {
   let dots = false;
   for (const code of [prev, iso3]) {
     if (!code) continue;
-    const f = ctx.featureByIso.get(code);
-    if (f) paintOne(ctx, f); else dots = true;
+    if (!ctx.featureByIso.has(code)) dots = true;
+    else for (const f of ctx.features) if (f.iso3 === code) paintOne(ctx, f);  // Somalia and Cyprus have two shapes
   }
   if (dots) paintPoints(ctx);
 }
@@ -597,9 +597,9 @@ function renderPanel(root, ctx) {
   } else {
     const tier = tierFor(ctx, score);
     const prev = yi > 0 ? c.composite[yi - 1] : null;
-    const d = prev == null ? null : score - prev;
+    const d = prev == null ? null : Math.round((score - prev) * 10) / 10;  // rounded as in the tables
     const delta = d == null ? "" : '<span class="rg-delta" style="color:' + (d >= 1 ? "#fd8078" : d <= -1 ? "#5ac698" : "#8f8e87") +
-      '">' + (d >= 1 ? "▲" : d <= -1 ? "▼" : "■") + " " + (d > 0 ? "+" : "") + d.toFixed(0) + " vs " + (year - 1) + "</span>";
+      '">' + (d >= 1 ? "▲" : d <= -1 ? "▼" : "■") + " " + (d > 0 ? "+" : "") + d.toFixed(1) + " vs " + (year - 1) + "</span>";
     html += '<div class="rg-sub">' + esc(c.region) + " · " + year + "</div>" +
       '<div class="rg-score"><span class="rg-big">' + score.toFixed(0) + '</span><span class="rg-of">/100</span>' +
       '<span class="rg-badge" style="background:' + tier.color + ";color:" + tier.text + '">' + esc(tier.label) + "</span></div>" +
@@ -978,7 +978,7 @@ def risk_globe(table: pd.DataFrame, hist: pd.DataFrame, flows: pd.DataFrame | No
     Returns (country to open, selected country): the first is set only when "Open full profile" is clicked.
     """
     years = sorted(int(y) for y in hist["year"].unique())
-    composite = _by_year(hist, "composite", years)
+    composite = _by_year(hist, "composite", years, 6)  # tiers, the yearly change and the shown 0-dp score all need it unrounded
     rank = _by_year(hist, "rank", years)
     deaths = _by_year(hist, "battle_deaths_raw", years)
     value = None if metric == "composite" or custom is not None else _by_year(hist, metric, years)

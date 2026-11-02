@@ -108,7 +108,7 @@ else:
     note = cases.commentary(case)
     if note:
         st.markdown("### Analyst commentary")
-        st.markdown(note)
+        st.markdown(ui.money(note))
 
 st.caption(
     "Read with care: the scores are rebuilt with data as published today, which includes later revisions, and "

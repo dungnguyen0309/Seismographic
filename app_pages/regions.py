@@ -1,6 +1,5 @@
 """Regions: one region at a time — scores, trend, risers and fallers, ranking, events and news."""
 
-import pandas as pd
 import streamlit as st
 
 from prm import charts, config, content, ui

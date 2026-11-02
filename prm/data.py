@@ -34,7 +34,7 @@ def _read_snapshot(name: str) -> pd.DataFrame | None:
     if not path.exists():
         return None
     try:
-        return pd.read_csv(path)
+        return pd.read_csv(path, keep_default_na=False, na_values=[""])  # Namibia's iso2 is "NA"
     except Exception:  # a corrupt snapshot should never crash the app
         return None
 
@@ -57,15 +57,6 @@ def _snapshot_meta() -> dict:
         except Exception:
             return {}
     return {}
-
-
-def _with_country_columns(countries: pd.DataFrame) -> pd.DataFrame:
-    """Older snapshots predate flags and capital coordinates."""
-    countries = countries.copy()
-    for col in ("iso2", "lat", "lng"):
-        if col not in countries.columns:
-            countries[col] = None
-    return countries
 
 
 def history_years() -> range:
@@ -119,7 +110,7 @@ def _fetch_live_core() -> dict:
             "edition": res.edition or (snap_info.get("edition") if from_snapshot else None),
             "error": error,
             "from_snapshot": from_snapshot,
-            "snapshot_date": snapshot_meta.get("created") if from_snapshot else None,
+            "snapshot_date": snap_info.get("saved", snapshot_meta.get("created")) if from_snapshot else None,
             "rows": int(len(data)),
         }
     saved_flows = _read_snapshot("flows")
@@ -129,11 +120,7 @@ def _fetch_live_core() -> dict:
             flows = saved_flows
     except sources.SourceError:
         flows = saved_flows
-    countries = _with_country_columns(countries)
-    try:  # built here, in the background, so pages switch to live data without a pause
-        history = build_default_history(series, countries)
-    except Exception:
-        history = None
+    history = build_default_history(series, countries)  # built in the background, so pages switch without a pause
     return {
         "countries": countries,
         "countries_from_snapshot": countries_from_snapshot,
@@ -143,6 +130,7 @@ def _fetch_live_core() -> dict:
         "history_default": history,
         "loaded_at": dt.datetime.now(dt.timezone.utc).strftime("%d %b %Y, %H:%M UTC"),
         "source": "live",
+        "year": analysis_year(),  # its history ends this year: on 1 January it is out of date
         "version": f"live-{time.time():.0f}",
     }
 
@@ -163,8 +151,6 @@ def health_problem(core: dict) -> str | None:
     scored = int(scores["composite"].notna().sum())
     if scored < MIN_SCORED:
         return f"the new data scores only {scored} economies"
-    if core.get("history_default") is None:
-        return "the index history could not be rebuilt from the new data"
     return None
 
 
@@ -201,7 +187,8 @@ def _download(store: dict) -> None:
 def _ensure_download(store: dict) -> None:
     with store["lock"]:
         now = time.time()
-        stale = store["core"] is None or now - store["fetched_at"] > CACHE_TTL
+        stale = (store["core"] is None or now - store["fetched_at"] > CACHE_TTL
+                 or store["core"].get("year") != analysis_year())
         running = store["thread"] is not None and store["thread"].is_alive()
         recently_failed = store["error"] is not None and now - store["attempted_at"] < RETRY_DOWNLOAD
         if stale and not running and not recently_failed:
@@ -211,8 +198,9 @@ def _ensure_download(store: dict) -> None:
 
 
 @st.cache_data(show_spinner=False)
-def _snapshot_core() -> dict | None:
-    """Everything from data/snapshot/, shaped like the live data."""
+def _snapshot_core(year: int | None = None) -> dict | None:
+    """Everything from data/snapshot/, shaped like the live data. Cached per index year, so on 1 January a running
+    server drops last year's saved history (and everything built on this version) instead of keeping it."""
     countries = _read_snapshot("countries")
     if countries is None:
         return None
@@ -230,11 +218,11 @@ def _snapshot_core() -> dict | None:
             "edition": info.get("edition"),
             "error": None if snap is not None else "not in the saved snapshot",
             "from_snapshot": snap is not None,
-            "snapshot_date": created,
+            "snapshot_date": info.get("saved", created),
             "rows": 0 if snap is None else int(len(snap)),
         }
     return {
-        "countries": _with_country_columns(countries),
+        "countries": countries,
         "countries_from_snapshot": True,
         "series": series,
         "meta": meta,
@@ -243,7 +231,7 @@ def _snapshot_core() -> dict | None:
         "loaded_at": f"saved snapshot of {created}",
         "source": "snapshot",
         "snapshot_date": created,
-        "version": f"snapshot-{created}",
+        "version": f"snapshot-{created}-{year or analysis_year()}",
     }
 
 
@@ -259,12 +247,15 @@ def load_core() -> dict:
     """Live data if it has been downloaded (the Refresh button), otherwise the snapshot. A live download starts in
     the background only when the snapshot is older than SNAPSHOT_FRESH_DAYS."""
     store = _live_store()
-    snapshot = _snapshot_core()
-    if store["core"] is None and snapshot is not None and _is_fresh(snapshot):
+    year = analysis_year()
+    snapshot = _snapshot_core(year)
+    live = store["core"] if store["core"] is not None and store["core"].get("year") == year else None
+    # after a failed download the warning promises retries, so the shortcut waits until one succeeds
+    if live is None and snapshot is not None and _is_fresh(snapshot) and store["error"] is None:
         return snapshot
     _ensure_download(store)
-    if store["core"] is not None:
-        return store["core"]
+    if live is not None:
+        return live
     if snapshot is not None:
         return snapshot
     # No snapshot at all (e.g. a fresh checkout): wait for the download
@@ -278,8 +269,10 @@ def load_core() -> dict:
 def live_status() -> dict:
     store = _live_store()
     thread = store["thread"]
+    core = store["core"]
+    current = core is not None and core.get("year") == analysis_year()  # as load_core sees it, or pages rerun forever
     return {
-        "version": store["core"]["version"] if store["core"] else None,
+        "version": core["version"] if current else None,
         "running": thread is not None and thread.is_alive(),
         "error": store["error"],
     }
@@ -356,7 +349,7 @@ def get_export(_core: dict, year: int, weights: tuple[tuple[str, float], ...], v
 def get_stress(_core: dict, year: int, weights: tuple[tuple[str, float], ...], shocks: tuple[tuple[str, float], ...],
                scope: tuple[str, ...] | None, version: str) -> pd.DataFrame:
     """The stress test (prm/stress.py) for one set of shocks and countries hit."""
-    return stress.run(get_values(_core, year, version), dict(weights), dict(shocks), set(scope) if scope else None)
+    return stress.run(get_values(_core, year, version), dict(weights), dict(shocks), set(scope) if scope is not None else None)
 
 
 @st.cache_data(ttl=CACHE_TTL, show_spinner=False, max_entries=16)
@@ -388,23 +381,25 @@ def get_history(_core: dict, weights: tuple[tuple[str, float], ...], version: st
 # expected or not, becomes a short message for the page: an odd answer from a feed must never crash a page.
 RETRY_AFTER = 300
 _failures: dict[tuple, tuple[float, str]] = {}
+_fetching: dict[tuple, threading.Lock] = {}  # one fetch per source at a time: others wait and share its result
 log = logging.getLogger("seismographic.data")
 
 
 def _guarded(key: tuple, fetch):
     """(result, None) or (None, error message), waiting RETRY_AFTER seconds before retrying a failed source."""
-    failed = _failures.get(key)
-    if failed and time.time() - failed[0] < RETRY_AFTER:
-        return None, failed[1]
-    try:
-        result = fetch()
-    except Exception as exc:
-        message = str(exc) if isinstance(exc, sources.SourceError) else f"unexpected answer ({type(exc).__name__})"
-        log.warning("%s failed: %s", key[0], str(exc)[:300])  # the details go to the server log, not the page
-        _failures[key] = (time.time(), message[:300])
-        return None, message[:300]
-    _failures.pop(key, None)
-    return result, None
+    with _fetching.setdefault(key, threading.Lock()):
+        failed = _failures.get(key)
+        if failed and time.time() - failed[0] < RETRY_AFTER:
+            return None, failed[1]
+        try:
+            result = fetch()
+        except Exception as exc:
+            message = str(exc) if isinstance(exc, sources.SourceError) else f"unexpected answer ({type(exc).__name__})"
+            log.warning("%s failed: %s", key[0], str(exc)[:300])  # the details go to the server log, not the page
+            _failures[key] = (time.time(), message[:300])
+            return None, message[:300]
+        _failures.pop(key, None)
+        return result, None
 
 
 @st.cache_data(ttl=60 * 10, show_spinner=False)

@@ -7,7 +7,7 @@ import streamlit as st
 
 from prm import config, glossary, ui
 
-LEGEND = ("", "#e8e6dc", "Legend", "Tiers, pillar colours, colour scales and symbols.")
+LEGEND = ("Legend", "#e8e6dc", "Tiers, pillar colours, colour scales and symbols.")
 
 
 def slug(name: str) -> str:
@@ -31,9 +31,9 @@ def highlight(text: str, query: str) -> str:
                    f'{html.escape(p)}</mark>' if i % 2 else html.escape(p) for i, p in enumerate(parts))
 
 
-def band(name: str, icon: str, color: str, blurb: str, count: int | None = None,
+def band(name: str, color: str, blurb: str, count: int | None = None,
          sources: tuple[str, ...] = (), compact: bool = False) -> None:
-    """A category header: icon, name, term count, what the category covers and the sources behind it."""
+    """A category header: name, term count, what the category covers and the sources behind it."""
     count_html = (f'<span style="font-size:0.75rem;color:{color};border:1px solid {color}88;border-radius:999px;'
                   f'padding:1px 9px;white-space:nowrap">{count} term{"s" if count != 1 else ""}</span>'
                   if count is not None else "")
@@ -104,14 +104,14 @@ if query:
         st.info("Nothing matches. Try a shorter word, or clear the search to browse the categories.")
     for cat, items in hits.items():
         meta = glossary.CATEGORIES[cat]
-        band(cat, meta.icon, meta.color, meta.blurb, len(items), compact=True)
+        band(cat, meta.color, meta.blurb, len(items), compact=True)
         category_terms(cat, items, meta.color, query)
     ui.footer()
     ui.end_page()
 
 # --- Contents -------------------------------------------------------------------------------------------------
-tiles = [(LEGEND[2], LEGEND[0], LEGEND[1], LEGEND[3], None)] + [
-    (cat, glossary.CATEGORIES[cat].icon, glossary.CATEGORIES[cat].color, glossary.CATEGORIES[cat].blurb, len(items))
+tiles = [(*LEGEND, None)] + [
+    (cat, glossary.CATEGORIES[cat].color, glossary.CATEGORIES[cat].blurb, len(items))
     for cat, items in terms.items()
 ]
 st.markdown(
@@ -125,14 +125,14 @@ st.markdown(
         f'<span style="font-size:0.75rem;color:var(--sg-muted);white-space:nowrap">{"" if n is None else f"{n} terms"}</span></div>'
         f'<div style="font-size:0.76rem;color:var(--sg-muted);margin-top:3px;line-height:1.4">{html.escape(blurb)}</div>'
         "</div></a>"
-        for name, icon, color, blurb, n in tiles
+        for name, color, blurb, n in tiles
     )
     + "</div>",
     unsafe_allow_html=True,
 )
 
 # --- Visual legend ------------------------------------------------------------------------------------
-band(LEGEND[2], LEGEND[0], LEGEND[1], LEGEND[3])
+band(*LEGEND)
 left, right = st.columns(2, gap="large")
 with left:
     st.markdown("**Risk tiers** (composite score)")
@@ -165,7 +165,7 @@ with right:
 # --- Terms, by category -----------------------------------------------------------------------------------------
 for category, items in terms.items():
     meta = glossary.CATEGORIES[category]
-    band(category, meta.icon, meta.color, meta.blurb, len(items), meta.sources)
+    band(category, meta.color, meta.blurb, len(items), meta.sources)
     category_terms(category, items, meta.color)
     if not meta.sources:
         st.page_link(ui.SOURCES_PAGE, label="All sources, with links and update dates",

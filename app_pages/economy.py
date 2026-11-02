@@ -37,7 +37,7 @@ st.page_link("app_pages/stress.py", label="Stress test: apply one shock to many 
 econ_flag_keys = {"inflation", "gdp_growth", "gov_debt", "fiscal_balance", "current_account", "reserves_months"}
 econ_flags = {
     iso3: [f for f in scoring.red_flags(values.loc[iso3]) if f["key"] in econ_flag_keys]
-    for iso3 in view["iso3"] if iso3 in values.index
+    for iso3 in view["iso3"]
 }
 
 # --- Globe ------------------------------------------------------------------------------------------------
@@ -85,7 +85,8 @@ with o_col:
     series = core["series"][series_key]
     series = series[series["iso3"].isin(view["iso3"])]
     st.plotly_chart(charts.imf_outlook(series, year, label, year - 12, year + 5), config={"displayModeBar": False})
-    st.caption(f"Median across the selected countries, with the middle half shaded. Dashed = IMF projections to {year + 5}.")
+    last = min(year + 5, int(series["year"].max())) if len(series) else year + 5  # Jan-Apr: the WEO ends a year earlier
+    st.caption(f"Median across the selected countries, with the middle half shaded. Dashed = IMF projections to {last}.")
     ui.cite("imf")
 
 # --- Warning lights -------------------------------------------------------------------------------------

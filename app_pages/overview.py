@@ -3,7 +3,7 @@
 import pandas as pd
 import streamlit as st
 
-from prm import charts, config, content, data, globe, scoring, ui
+from prm import charts, config, content, data, globe, interpret, scoring, ui
 from prm.config import PILLARS
 
 COMPOSITE_COLOR = config.TIER_COLORS["Elevated"]
@@ -148,7 +148,7 @@ if n_assessed:
               help="Countries with a written assessment in the assessments/ folder.")
 else:  # until assessments are written, the most severe warnings (most countries have some lesser flag)
     critical = sum(any(f["severity"] == "critical" for f in scoring.red_flags(values.loc[i]))
-                   for i in scored["iso3"] if i in values.index)
+                   for i in scored["iso3"])
     k5.metric("With a critical red flag", critical, border=True, height="stretch",
               help="War-level violence (1,000+ battle deaths in a year) or inflation of 50% or more. "
                    f"{int((scored['flags'] > 0).sum())} of {len(scored)} cross at least one lesser warning line.")
@@ -178,14 +178,12 @@ with tab_hot:
             reasons = []
             if pd.notna(r.delta_1y) and r.delta_1y >= 2:
                 reasons.append(f"▲ {r.delta_1y:+.1f} since {year - 1}")
-            if r.iso3 in values.index and r.iso3 in prev_values.index:
-                before = {f["label"] for f in scoring.red_flags(prev_values.loc[r.iso3])}
-                new = [f["label"] for f in scoring.red_flags(values.loc[r.iso3]) if f["label"] not in before]
-                if new:
-                    reasons.append("⚑ New: " + new[0] + (f" (+{len(new) - 1} more)" if len(new) > 1 else ""))
+            new = [f["label"] for f in scoring.flag_changes(prev_values.loc[r.iso3], values.loc[r.iso3])[0]]
+            if new:
+                reasons.append("⚑ New: " + new[0] + (f" (+{len(new) - 1} more)" if len(new) > 1 else ""))
             if r.iso3 in soon.index:
                 e = soon.loc[r.iso3]
-                reasons.append(f"{e['event']} in {(e['date'] - today).days} days")
+                reasons.append(f"{e['event']} {interpret.countdown((e['date'] - today).days)}")
             if reasons:
                 hotspots.append({"iso3": r.iso3, "flag": r.flag, "name": r.name, "composite": r.composite,
                                  "tier": r.tier, "signals": len(reasons), "why": " · ".join(reasons)})
@@ -276,7 +274,7 @@ with tab_rank:
         ui.open_selected(event, ranking, "overview_ranking")
         st.download_button(
             "Download ranking (CSV)",
-            ranking.drop(columns=["iso3", "flag"]).to_csv(index=False).encode("utf-8"),
+            ranking.drop(columns=["iso3", "flag"]).to_csv(index=False).encode("utf-8-sig"),
             file_name=f"seismographic_risk_index_{year}.csv",
             mime="text/csv",
         )

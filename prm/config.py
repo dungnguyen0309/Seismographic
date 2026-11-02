@@ -7,7 +7,7 @@ add its raw series to RAW_SERIES and an entry to INDICATORS.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 APP_TITLE = "Seismographic"
 APP_DESCRIPTION = (
@@ -363,7 +363,6 @@ class Indicator:
     fallback_series: str | None = None  # used where the main series has no value
     lookback: int = 5  # years to look back for the most recent value
     norm: str = "percentile"  # "percentile" or "log" (for zero-heavy indicators)
-    scored: bool = True
 
     def fmt(self, value) -> str:
         if value is None or value != value:  # NaN check
@@ -502,7 +501,7 @@ def indicator_url(ind: Indicator) -> str:
         return series_url(ind.series) or ind.source_url
     return {"battle_deaths_100k": "https://data.worldbank.org/indicator/VC.BTL.DETH",
             "displaced_share": URL_UNHCR}.get(ind.key, ind.source_url)
-SCORED_INDICATORS = [i for i in INDICATORS if i.scored]
+SCORED_INDICATORS = INDICATORS
 
 
 def indicators_for(pillar_key: str) -> list[Indicator]:

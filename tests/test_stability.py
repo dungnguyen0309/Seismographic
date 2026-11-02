@@ -103,6 +103,55 @@ def test_events_with_typos_are_normalised(tmp_path, monkeypatch):
     assert row["iso3"] == "KEN" and row["significance"] == "High" and row["category"] == "Other"
 
 
+def test_hand_edited_files_keep_their_good_rows(monkeypatch, tmp_path):
+    rows = [f"2026-12-{d:02d},KEN,Kenya,Event {d},Election,High,," for d in range(1, 11)]
+    path = tmp_path / "events.csv"
+    # an unclosed quote once swallowed every row after it; a time or UTC offset once moved an event to another day
+    path.write_text("\n".join(["date,iso3,country,event,category,significance,source_url,notes", *rows[:3],
+                               '2026-12-20,KEN,Kenya,"Unclosed,Election,High,,', *rows[3:],
+                               "2026-03-01T23:30:00-05:00,KEN,Kenya,Late vote,Election,High,,"]), encoding="utf-8-sig")
+    monkeypatch.setattr(content, "EVENTS_PATH", path)
+    events = content.load_events()
+    assert len(events) == 11
+    assert events.set_index("event").loc["Late vote", "date"] == pd.Timestamp("2026-03-01")
+    meta, _ = content.parse_front_matter('---\niso3: "KEN"  # Kenya\nauthor: "Ali #2"\nrating: High # was Low\n---\n')
+    assert meta == {"iso3": "KEN", "author": "Ali #2", "rating": "High"}
+
+
+def test_dollars_stay_dollars():
+    from prm import ui
+    assert ui.money(r"needs $2bn, has \$7bn") == r"needs \$2bn, has \$7bn"
+
+
+def test_every_brief_fits_on_one_page():
+    from prm import interpret, report, scoring, ui
+    core = data._snapshot_core()
+    year = data.analysis_year()
+    values = scoring.build_values(core["series"], core["countries"], year)
+    scores = scoring.compute_scores(values)
+    hist = core["history_default"]
+    if hist is None:
+        hist = data.build_default_history(core["series"], core["countries"])
+    table = ui.master_table(core, values, scores, hist).set_index("iso3")
+    events = content.load_events()
+    for iso3 in ["COL", "HTI", "IRQ", "SOM", "SDN", "UKR", "USA", "YEM"]:  # the longest briefs once ran onto page 2
+        reading = interpret.country_reading(iso3, table.reset_index(), values, scores, hist, events, core.get("flows"), year)
+        pdf = report.country_pdf(reading, table.loc[iso3], hist[hist["iso3"] == iso3], scoring.red_flags(values.loc[iso3]),
+                                 year, "Stability 50% · Governance 20% · Economy 20% · Social 10%")
+        assert pdf.count(b"/Type /Page") - pdf.count(b"/Type /Pages") == 1, iso3
+
+
+def test_last_years_live_data_is_not_reported_as_current():
+    store = data._live_store()
+    saved = dict(store)
+    try:  # on 1 January pages once reran forever, waiting for a "new" version that load_core never served
+        store.update(core={"version": "live-old", "year": data.analysis_year() - 1}, thread=None)
+        assert data.live_status()["version"] is None
+    finally:
+        store.clear()
+        store.update(saved)
+
+
 def test_refresh_has_a_cooldown():
     store = data._live_store()
     saved = dict(store)
@@ -117,7 +166,7 @@ def test_refresh_has_a_cooldown():
 def test_a_recent_snapshot_opens_without_a_download(monkeypatch):
     snapshot = {"source": "snapshot", "snapshot_date": dt.date.today().isoformat()}
     started = []
-    monkeypatch.setattr(data, "_snapshot_core", lambda: snapshot)
+    monkeypatch.setattr(data, "_snapshot_core", lambda year=None: snapshot)
     monkeypatch.setattr(data, "_ensure_download", started.append)
     store = data._live_store()
     saved = store["core"]
@@ -143,7 +192,8 @@ def test_api_answers_json_when_the_data_fails(monkeypatch):
     assert response.headers["cache-control"] == "no-store"
 
 
-@pytest.mark.parametrize("text", ["gdp_growth:abc", "inflation:1e400", ":::", "foo:3", "gov_debt:-999", ""])
+@pytest.mark.parametrize("text", ["gdp_growth:abc", "inflation:1e400", ":::", "foo:3", "gov_debt:-999", "",
+                                  "gdp_growth:1e308", "unemployment:-1e308"])
 def test_bad_stress_links_are_ignored_or_clamped(text):
     from prm import stress
     shocks = stress.decode(text)

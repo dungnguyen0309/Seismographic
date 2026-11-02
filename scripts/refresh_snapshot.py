@@ -21,14 +21,6 @@ from prm import config, data, sources  # noqa: E402
 OUT = ROOT / "data" / "snapshot"
 
 
-def _saved(name: str) -> pd.DataFrame | None:
-    path = OUT / f"{name}.csv"
-    try:
-        return pd.read_csv(path) if path.exists() else None
-    except Exception:
-        return None
-
-
 def _save(frame: pd.DataFrame, name: str) -> None:
     """Write to a temporary file first, so a crash mid-write never leaves a half-written snapshot."""
     tmp = OUT / f"{name}.csv.tmp"
@@ -39,12 +31,12 @@ def _save(frame: pd.DataFrame, name: str) -> None:
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     meta_path = OUT / "meta.json"
-    old_meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+    old_meta = data._snapshot_meta()
     meta = {"created": dt.date.today().isoformat(), "series": dict(old_meta.get("series", {}))}
 
     try:
         countries = sources.fetch_wb_countries()
-        if not data.plausible(countries, _saved("countries")):
+        if not data.plausible(countries, data._read_snapshot("countries")):
             raise sources.SourceError(f"only {len(countries)} countries")
         _save(countries, "countries")
         print(f"countries: {len(countries)}")
@@ -53,7 +45,7 @@ def main() -> int:
 
     try:
         flows = sources.fetch_unhcr_flows()
-        saved = _saved("flows")
+        saved = data._read_snapshot("flows")
         if saved is not None and len(flows) < data.MIN_COVERAGE * len(saved):
             raise sources.SourceError(f"only {len(flows)} origin-host pairs (saved copy: {len(saved)})")
         _save(flows, "flows")
@@ -68,7 +60,7 @@ def main() -> int:
             failed.append(key)
             print(f"{key}: FAILED — {res.error} (keeping previous file)")
             continue
-        if not data.plausible(res.data, _saved(key)):
+        if not data.plausible(res.data, data._read_snapshot(key)):
             failed.append(key)
             print(f"{key}: INCOMPLETE — {res.data['iso3'].nunique()} countries (keeping previous file)")
             continue
@@ -85,11 +77,8 @@ def main() -> int:
 
     # The index for every year with the default weights, so the app's first page opens without computing it
     try:
-        series = {key: pd.read_csv(OUT / f"{key}.csv") for key in config.RAW_SERIES if (OUT / f"{key}.csv").exists()}
-        countries = pd.read_csv(OUT / "countries.csv")
-        for col in ("iso2", "lat", "lng"):
-            if col not in countries.columns:
-                countries[col] = None
+        series = {key: df for key in config.RAW_SERIES if (df := data._read_snapshot(key)) is not None}
+        countries = data._read_snapshot("countries")
         history = data.build_default_history(series, countries)
         _save(history, "history")
         print(f"history: {len(history)} country-years")

@@ -46,15 +46,11 @@ moved["driver"] = moved.apply(_driver, axis=1)
 prev_values = data.get_values(core, prev_year, core["version"])
 flag_rows = []
 for iso3 in view["iso3"]:
-    if iso3 not in values.index or iso3 not in prev_values.index:
-        continue
-    now = {f["label"]: f["severity"] for f in scoring.red_flags(values.loc[iso3])}
-    before = {f["label"] for f in scoring.red_flags(prev_values.loc[iso3])}
-    for label, severity in now.items():
-        if label not in before:
-            flag_rows.append({"iso3": iso3, "change": "New", "severity": severity, "flag_label": label})
-    for label in before - set(now):
-        flag_rows.append({"iso3": iso3, "change": "Cleared", "severity": "", "flag_label": label})
+    worse, eased = scoring.flag_changes(prev_values.loc[iso3], values.loc[iso3])
+    for f in worse:
+        flag_rows.append({"iso3": iso3, "change": "New", "severity": f["severity"], "flag_label": f["label"]})
+    for f in eased:
+        flag_rows.append({"iso3": iso3, "change": "Cleared", "severity": "", "flag_label": f["label"]})
 flags = pd.DataFrame(flag_rows, columns=["iso3", "change", "severity", "flag_label"])
 flags = flags.merge(view[["iso3", "flag", "name"]], on="iso3", how="left")
 

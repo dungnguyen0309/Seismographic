@@ -58,6 +58,13 @@ class PageEnd(BaseException):
 _boundary = threading.local()  # one script run per thread: is a page running inside page_error_boundary?
 
 
+def money(text: str) -> str:
+    """Markdown with each '$' kept as a dollar sign (Streamlit reads '$2bn ... $7bn' as a formula); an already
+    escaped one stays as it is."""
+    # code spans and fences are left alone: a backslash there would show
+    return re.sub(r"(`+).+?\1|(?<!\\)\$", lambda m: m.group(0) if m.group(1) else r"\$", str(text), flags=re.S)
+
+
 def end_page():
     """Stop drawing this page, like st.stop(), but let the bottom bar (drawn after the page) still appear.
     st.stop() can't be used for that: once requested, every later Streamlit call stops too."""
@@ -157,9 +164,8 @@ def sidebar() -> None:
             )
             for p in PILLARS:
                 st.slider(p.label, min_value=0, max_value=100, step=5, key=WEIGHT_KEYS[p.key], help=p.question)
-            w = weights()
-            total = sum(w.values()) or 1
-            st.caption(" · ".join(f"{p.short} {w[p.key] / total:.0%}" for p in PILLARS))
+            w = dict(weights_tuple())  # what the scores use: all sliders at 0 means the defaults
+            st.caption(" · ".join(f"{p.short} {w[p.key] / 100:.0%}" for p in PILLARS))
             st.button("Reset weights", on_click=_reset_weights)
         st.button(
             "Refresh data", on_click=_refresh_data, icon=":material/refresh:",
@@ -535,7 +541,7 @@ def _readout(current_url_path: str) -> None:
     color = config.TIER_COLORS.get(tier, config.INK["faint"])
     years = (hist[hist["iso3"] == iso3].set_index("year")["composite"].sort_index().dropna() if not hist.empty
              else pd.Series(dtype=float))
-    delta = years.iloc[-1] - years.iloc[-2] if len(years) >= 2 else None
+    delta = round(years.iloc[-1] - years.iloc[-2], 1) if len(years) >= 2 else None
     if score is None or pd.isna(score):
         meta = "not enough data to score"
     else:
@@ -687,7 +693,7 @@ def assessments() -> dict[str, dict]:
     return content.load_assessments()
 
 
-def master_table(core: dict, values: pd.DataFrame, scores: pd.DataFrame, hist: pd.DataFrame | None = None) -> pd.DataFrame:
+def master_table(core: dict, values: pd.DataFrame, scores: pd.DataFrame, hist: pd.DataFrame) -> pd.DataFrame:
     """One row per country with names, groups, flags, scores and analyst info (+ change vs last year)."""
     from . import scoring  # local import keeps module import order simple
 
@@ -696,12 +702,12 @@ def master_table(core: dict, values: pd.DataFrame, scores: pd.DataFrame, hist: p
         values[["population", "gdppc", "battle_deaths_raw"]], how="left"
     )
     table["flag"] = table["iso2"].map(config.flag_url)
-    if hist is not None and not hist.empty:
+    if not hist.empty:
         last_year = int(hist["year"].max()) - 1
         prev = hist[hist["year"] == last_year].set_index("iso3")
         table["prev_composite"] = prev["composite"].reindex(table.index)
         table["prev_tier"] = prev["tier"].reindex(table.index)
-        table["delta_1y"] = table["composite"] - table["prev_composite"]
+        table["delta_1y"] = (table["composite"] - table["prev_composite"]).round(1)  # the shown 1-dp change picks the arrow
         table["trend"] = table["delta_1y"].map(trend_label)
     table["flags"] = scoring.flag_counts(values).reindex(table.index).fillna(0).astype(int)
     a = assessments()
@@ -925,8 +931,8 @@ def add_to_compare(iso3: str) -> None:
 def hero(title: str, subtitle: str = "") -> None:
     """The page title (the screen's one h1) and an optional line about the data under it."""
     st.markdown(
-        f'<div class="sg-head"><h1 class="sg-head-title">{title}</h1>'
-        + (f'<p class="sg-head-sub">{subtitle}</p>' if subtitle else "") + "</div>",
+        f'<div class="sg-head"><h1 class="sg-head-title">{html.escape(title)}</h1>'
+        + (f'<p class="sg-head-sub">{html.escape(subtitle)}</p>' if subtitle else "") + "</div>",
         unsafe_allow_html=True,
     )
 
@@ -990,8 +996,8 @@ def globe_panel(**kwargs) -> None:
 
 def open_selected(event, frame: pd.DataFrame, key: str) -> None:
     """A ticked row offers its country instead of leaving the page at once: the tick selects, the button opens."""
-    if not (event and event.selection.rows):
-        return
+    if not (event and event.selection.rows) or event.selection.rows[0] >= len(frame):
+        return  # a keyed table keeps its tick when a filter shrinks it
     row = frame.iloc[event.selection.rows[0]]
     name = str(row.get("name") or row["iso3"]).removeprefix("▶ ")
     if st.button(f"Open {name}", key=f"{key}_open", icon=":material/arrow_forward:"):
@@ -1058,8 +1064,7 @@ def upcoming_events(events: pd.DataFrame, limit: int = 8) -> None:
         return
     rows = []
     for e in upcoming.itertuples(index=False):
-        days = (e.date - today).days
-        when = "today" if days == 0 else "tomorrow" if days == 1 else f"in {days} days"
+        when = interpret.countdown((e.date - today).days)
         colour = {"High": "#fd8078", "Medium": "#e19f3f"}.get(str(e.significance).title(), "var(--sg-faint)")
         source = (f' · <a href="{html.escape(e.source_url)}" target="_blank" rel="noopener">source</a>'
                   if str(e.source_url).startswith("http") else "")
@@ -1120,13 +1125,13 @@ def _video_gallery(videos: pd.DataFrame, key: str, limit: int, columns: int) -> 
     if playing in set(shown["video_id"]):
         current = shown[shown["video_id"] == playing].iloc[0]
         st.video(f"https://www.youtube.com/watch?v={playing}")
-        st.caption(f"**{current['title']}** · {current['channel']} · {_time_ago(current['published'])}")
+        st.caption(money(f"**{current['title']}** · {current['channel']} · {_time_ago(current['published'])}"))
     cols = st.columns(columns)
     for i, v in shown.iterrows():
         with cols[i % columns], st.container(border=True, key=f"vidcard_{key}_{i}"):
             st.image(v["thumbnail"], width="stretch")
             url = f"https://www.youtube.com/watch?v={v['video_id']}"
-            st.markdown(f"**[{v['title'].replace('[', '(').replace(']', ')')}]({url})**")
+            st.markdown(money(f"**[{v['title'].replace('[', '(').replace(']', ')')}]({url})**"))
             views = f" · {v['views'] / 1000:,.0f}k views" if pd.notna(v.get("views")) and v["views"] >= 1000 else ""
             st.caption(f"{v['channel']} · {_time_ago(v['published'])}{views}")
             if st.button("Play here", key=f"{key}_{v['video_id']}", width="stretch", icon=":material/play_arrow:"):
@@ -1168,7 +1173,7 @@ def render_reading(r: interpret.Reading, key: str) -> None:
             st.markdown("\n".join(f"- {d}" for d in r.direction))
         st.markdown("#### Coming up")
         if r.events:
-            st.markdown("\n".join(f"- {e}" for e in r.events))
+            st.markdown(money("\n".join(f"- {e}" for e in r.events)))  # event names are hand-written
         else:
             st.caption("No events in the watchlist for the next 12 months.")
 
@@ -1176,7 +1181,7 @@ def render_reading(r: interpret.Reading, key: str) -> None:
     tabs = st.tabs(list(interpret.AUDIENCES.values()))
     for tab, audience in zip(tabs, interpret.AUDIENCES):
         with tab:
-            st.markdown("\n".join(f"- {a}" for a in r.actions.get(audience, [])))
+            st.markdown(money("\n".join(f"- {a}" for a in r.actions.get(audience, []))))
     st.download_button("Download reading (Markdown)", interpret.reading_markdown(r).encode("utf-8"),
                        file_name=f"{r.iso3}_real_life_reading.md", mime="text/markdown", key=f"{key}_download")
     st.caption(" ".join(r.caveats))

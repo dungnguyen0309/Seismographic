@@ -38,7 +38,7 @@ DICTIONARY: list[tuple[str, str, str]] = [
     ("index", "coverage", "Share of the indicators with data, %"),
     ("index", "red_flags", "Number of absolute warning thresholds crossed"),
     ("index", "change_1y", "Change in the composite score since last year, points"),
-    ("index", "population", "Population (World Bank)"),
+    ("index", "population", "Population (World Bank; IMF where the World Bank has none)"),
     ("index", "gdp_per_person", "GDP per person, current US$ (IMF)"),
     ("indicators", "indicator", "Indicator key (see the indicator list on the Methodology page)"),
     ("indicators", "label", "Indicator name"),
@@ -107,6 +107,9 @@ def red_flags_table(core: dict, values: pd.DataFrame) -> pd.DataFrame:
 def history_table(core: dict, hist: pd.DataFrame) -> pd.DataFrame:
     out = hist[["iso3", "year", "composite", *PILLAR_KEYS, "tier", "rank", "battle_deaths_raw"]]
     out = out.rename(columns={"battle_deaths_raw": "battle_deaths"})
+    bd = core["series"].get("battle_deaths")
+    if bd is not None and not bd.empty:  # the index carries the last UCDP count forward; the table says "that year"
+        out.loc[out["year"] > bd["year"].max(), "battle_deaths"] = np.nan
     out.insert(1, "name", out["iso3"].map(_names(core)["name"]))
     out["rank"] = out["rank"].astype("Int64")
     return out.sort_values(["iso3", "year"]).reset_index(drop=True)

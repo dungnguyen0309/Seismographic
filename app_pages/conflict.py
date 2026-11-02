@@ -187,7 +187,7 @@ with tab_outlook:
             top = peaceful.iloc[0] if len(peaceful) else None
             o2.metric("Highest chance", "—" if top is None else f"{top['probability']:.0%}", border=True,
                       help=None if top is None else str(top["name"]))
-            o3.metric("Tested accuracy", "—" if outlook.auc is None else f"{outlook.auc:.2f}", border=True,
+            o3.metric("Tested AUC", "—" if outlook.auc is None else f"{outlook.auc:.2f}", border=True,
                       help="On years the model had not seen: the chance a country where conflict broke out had a higher "
                            "prediction than one where it did not (the AUC). 0.5 = a coin flip, 1 = perfect.")
             o4.metric("Already in conflict", int((preds["status"] == "In armed conflict").sum()), border=True,

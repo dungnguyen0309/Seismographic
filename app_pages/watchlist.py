@@ -16,6 +16,9 @@ ui.hero("Events watchlist", "Elections, referendums, debt deadlines, summits, co
                              "events that could move a country's risk.")
 
 events = content.load_events()
+if undated := events.attrs.get("undated"):
+    st.warning(f"{undated} row{'s' if undated > 1 else ''} in data/events.csv {'have' if undated > 1 else 'has'} no "
+               f"date in the YYYY-MM-DD form, so the watchlist leaves {'them' if undated > 1 else 'it'} out.")
 if not events.empty:
     events["country"] = events.apply(lambda r: names.get(r["iso3"], r["country"] or r["iso3"]), axis=1)
     today = pd.Timestamp(dt.date.today())

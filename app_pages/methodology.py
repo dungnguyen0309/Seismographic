@@ -165,7 +165,7 @@ else:
     t2.metric("Already in the riskiest fifth", f"{track['top_fifth_share']:.0%}", border=True,
               help="Share of new conflicts in countries that scored in the riskiest fifth the year before.")
     t3.metric("In the riskiest two fifths", f"{track['top_two_fifths_share']:.0%}", border=True)
-    t4.metric("Accuracy (AUC)", "—" if track["auc"] is None else f"{track['auc']:.2f}", border=True,
+    t4.metric("AUC", "—" if track["auc"] is None else f"{track['auc']:.2f}", border=True,
               help="The chance that a country where conflict started had scored higher than one where it did not. "
                    "0.5 = a coin flip, 1 = perfect.")
     st.plotly_chart(charts.onset_fifths(track["by_fifth"], track["base_rate"], config.PILLAR_COLORS["stability"]),
@@ -238,7 +238,7 @@ st.header("10 · Limitations")
 st.markdown(
     """
 * The data look backwards. Governance data describe last year, and conflict and displacement data lag by up to
-  a year. A coup last month will not show in the score; the news pulse, the events watchlist and the analyst
+  two years. A coup last month will not show in the score; the news pulse, the events watchlist and the analyst
   assessment are there for that.
 * Governance data are perceptions. The WGI aggregate expert and survey perceptions, with real margins of error.
   Their authors publish the six dimensions separately and do not combine them. This index combines them into one

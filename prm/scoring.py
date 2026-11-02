@@ -255,14 +255,24 @@ def red_flags(row: pd.Series) -> list[dict]:
     return flags
 
 
+def flag_changes(before: pd.Series, after: pd.Series) -> tuple[list[dict], list[dict]]:
+    """Flags new or more severe in `after`, and flags of `before` that went or eased. Labels change with severity
+    (one flag per indicator), so compare by indicator and severity, not label."""
+    rank = config.SEVERITY_ORDER
+    was, now = {f["key"]: f for f in red_flags(before)}, {f["key"]: f for f in red_flags(after)}
+    worse = [f for k, f in now.items() if k not in was or rank[f["severity"]] < rank[was[k]["severity"]]]
+    eased = [f for k, f in was.items() if k not in now or rank[now[k]["severity"]] > rank[f["severity"]]]
+    return worse, eased
+
+
 def flag_counts(values: pd.DataFrame) -> pd.Series:
     """Number of red flags per country (for tables)."""
     return values.apply(lambda row: len(red_flags(row)), axis=1)
 
 
-def wgi_trend(series: dict[str, pd.DataFrame], iso3: str, dim: str = "pv", years: int | None = None) -> dict | None:
+def wgi_trend(series: dict[str, pd.DataFrame], iso3: str, dim: str = "pv") -> dict | None:
     """Change in a WGI score over the trend window for one country."""
-    years = years or config.WGI_TREND_YEARS
+    years = config.WGI_TREND_YEARS
     df = series.get(f"wgi_{dim}")
     if df is None or df.empty:
         return None
@@ -283,9 +293,9 @@ def wgi_trend(series: dict[str, pd.DataFrame], iso3: str, dim: str = "pv", years
     }
 
 
-def wgi_changes(series: dict[str, pd.DataFrame], countries: pd.DataFrame, dim: str = "pv", years: int | None = None) -> pd.DataFrame:
+def wgi_changes(series: dict[str, pd.DataFrame], countries: pd.DataFrame, dim: str = "pv") -> pd.DataFrame:
     """Change in a WGI dimension over the trend window for all countries (for the movers table)."""
-    years = years or config.WGI_TREND_YEARS
+    years = config.WGI_TREND_YEARS
     df = series.get(f"wgi_{dim}")
     if df is None or df.empty:
         return pd.DataFrame(columns=["iso3", "start", "end", "change", "start_year", "end_year"])

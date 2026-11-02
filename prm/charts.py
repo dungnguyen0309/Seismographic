@@ -685,28 +685,31 @@ def econ_heatmap(df: pd.DataFrame) -> go.Figure:
 
 
 def stagflation_scatter(df: pd.DataFrame, cap: float = 60.0) -> go.Figure:
-    """Growth vs inflation; bubble = population, colour = economic pillar risk. Inflation above `cap` is pinned."""
+    """Growth vs inflation; bubble = population, colour = economic pillar risk. Inflation above `cap` and growth beyond ±15%
+    are pinned to the edge."""
     d = df.dropna(subset=["gdp_growth", "inflation"]).copy()
     d["y"] = d["inflation"].clip(upper=cap)
+    d["x"] = d["gdp_growth"].clip(-15, 15)
     pop = d["population"].fillna(d["population"].median())
     d["size"] = (np.sqrt(pop.clip(lower=1e5)) / np.sqrt(pop.clip(lower=1e5).max()) * 34).clip(lower=7)
     fig = go.Figure(go.Scatter(
-        x=d["gdp_growth"], y=d["y"], mode="markers",
+        x=d["x"], y=d["y"], mode="markers",
         marker=dict(size=d["size"], color=d["economic"], colorscale=config.map_colorscale("economic"), cmin=0, cmax=100,
-                    symbol=["triangle-up" if v > cap else "circle" for v in d["inflation"]],
+                    symbol=["triangle-up" if i > cap else "triangle-right" if g > 15 else "triangle-left" if g < -15
+                            else "circle" for g, i in zip(d["gdp_growth"], d["inflation"])],
                     line=dict(color=SURFACE, width=1.5), opacity=0.92,
                     colorbar=dict(title=dict(text="Economy risk", side="right"), thickness=10, len=0.6)),
-        customdata=np.column_stack([d["name"], d["inflation"].round(1), d["iso3"]]),
-        hovertemplate="<b>%{customdata[0]}</b><br>Growth %{x:.1f}% · inflation %{customdata[1]}%"
+        customdata=np.column_stack([d["name"], d["inflation"].round(1), d["gdp_growth"].round(1), d["iso3"]]),
+        hovertemplate="<b>%{customdata[0]}</b><br>Growth %{customdata[2]}% · inflation %{customdata[1]}%"
                       "<br><i>Click to open the profile</i><extra></extra>",
     ))
-    fig.add_shape(type="rect", x0=-15, x1=0, y0=20, y1=cap + 3, fillcolor="rgba(230,103,103,0.10)", line_width=0,
+    fig.add_shape(type="rect", x0=-16, x1=0, y0=20, y1=cap + 3, fillcolor="rgba(230,103,103,0.10)", line_width=0,
                   layer="below")
-    fig.add_annotation(x=-14.5, y=cap + 2, text="Stagflation zone", showarrow=False, xanchor="left",
+    fig.add_annotation(x=-15.5, y=cap + 2, text="Stagflation zone", showarrow=False, xanchor="left",
                        font=dict(color="#fd8078", size=11))
     fig.add_vline(x=0, line=dict(color=MUTED, width=1, dash="dot"))
     fig.add_hline(y=20, line=dict(color=MUTED, width=1, dash="dot"))
-    fig.update_xaxes(title="Real GDP growth (%)", range=[-15, 15])
+    fig.update_xaxes(title="Real GDP growth (%, ◀ ▶ = beyond ±15)", range=[-16, 16])
     fig.update_yaxes(title=f"Inflation (%, ▲ = above {cap:.0f})", range=[-5, cap + 3])
     return _base(fig, height=460)
 

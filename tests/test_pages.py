@@ -120,6 +120,24 @@ def test_bottom_bar_on_a_page_that_stops_early(app):
     app.run()
 
 
+def test_builder_draft_survives_another_page(app):
+    # Streamlit drops a page's widgets when you leave it; the builder once lost a half-written assessment that way
+    app.switch_page("app_pages/builder.py")
+    app.run()
+    app.text_area(key="b_bluf").input("Risk rises as reserves fall.").run()
+    app.text_area(key="drv_economic").input("My own analysis.").run()
+    app.switch_page("app_pages/overview.py")
+    app.run()
+    app.switch_page("app_pages/builder.py")
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.text_area(key="b_bluf").value == "Risk rises as reserves fall."
+    assert not any("default value" in w.value for w in app.warning)
+    next(b for b in app.button if b.label == "Fill in the latest figures").click().run()
+    assert app.text_area(key="drv_economic").value == "My own analysis."  # filling in never overwrites analysis
+    assert app.text_area(key="drv_political").value  # an empty box gets the figures
+
+
 def test_shared_comparison_link(app):
     app.switch_page("app_pages/compare.py")
     if "compare_picked" in app.session_state:
@@ -144,6 +162,12 @@ def test_stress_test_link_and_scenarios(app):
     assert app.slider(key="stress_gdp_growth").value == -5.5 and app.slider(key="stress_inflation").value == 0
     app.multiselect(key="stress_regions").select("Sub-Saharan Africa").run()
     assert not errors(app), errors(app)
+    assert app.query_params["regions"] == "Sub-Saharan Africa"  # the link keeps who is hit
+    # a region and an income group with no country in common hit nobody (it once hit every country)
+    app.multiselect(key="stress_regions").set_value(["North America"]).run()
+    app.multiselect(key="stress_incomes").set_value(["Low income"]).run()
+    assert not errors(app), errors(app)
+    assert app.metric[0].value == "0"
 
 
 def test_outlook_link_opens_the_outlook_tab(app):

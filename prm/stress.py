@@ -136,5 +136,6 @@ def decode(text: str | None) -> dict[str, float]:
         except ValueError:
             continue
         if shock and np.isfinite(value):
-            out[shock.key] = float(np.clip(round(value / shock.step) * shock.step, shock.low, shock.high))
+            # clip first: dividing a huge value by a step under 1 overflows to inf, which round() cannot take
+            out[shock.key] = float(round(np.clip(value, shock.low, shock.high) / shock.step) * shock.step)
     return out

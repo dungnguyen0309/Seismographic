@@ -11,7 +11,7 @@ its predictions for that year are compared with what happened. Conflict data com
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -41,7 +41,6 @@ class Outlook:
     calibration: pd.DataFrame  # predicted vs observed by fifth
     data_year: int  # last year of conflict data
     index_year: int
-    notes: list[str] = field(default_factory=list)
 
 
 def _deaths(battle_deaths: pd.DataFrame) -> pd.DataFrame:
@@ -61,7 +60,7 @@ def panel(hist: pd.DataFrame, battle_deaths: pd.DataFrame) -> pd.DataFrame:
         d_year = min(year, last)  # the index runs past the conflict data: use the latest conflict year available
         now = deaths.get(d_year, pd.Series(dtype=float)).reindex(frame.index).fillna(0.0)
         past = [deaths.get(y, pd.Series(dtype=float)).reindex(frame.index).fillna(0.0) for y in range(d_year - 5, d_year)]
-        recent = (pd.concat(past, axis=1) >= CONFLICT).any(axis=1) if past else pd.Series(False, index=frame.index)
+        recent = (pd.concat(past, axis=1) >= CONFLICT).any(axis=1)
         out = frame.assign(year=int(year), violence=np.log1p(now.clip(upper=CONFLICT - 1)), recent_conflict=recent.astype(float),
                            at_peace=(now < CONFLICT).to_numpy())
         nxt = deaths.get(year + 1)
@@ -107,9 +106,9 @@ def _predict(w: np.ndarray, x: np.ndarray) -> np.ndarray:
     return 1 / (1 + np.exp(-np.clip(w[0] + x @ w[1:], -30, 30)))
 
 
-def _standardise(train: pd.DataFrame, other: pd.DataFrame) -> tuple[np.ndarray, np.ndarray, pd.Series, pd.Series]:
+def _standardise(train: pd.DataFrame, other: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     mean, std = train[FEATURES].mean(), train[FEATURES].std(ddof=0).replace(0, 1)
-    return ((train[FEATURES] - mean) / std).to_numpy(), ((other[FEATURES] - mean) / std).to_numpy(), mean, std
+    return ((train[FEATURES] - mean) / std).to_numpy(), ((other[FEATURES] - mean) / std).to_numpy()
 
 
 def outlook(hist: pd.DataFrame, battle_deaths: pd.DataFrame, index_year: int) -> Outlook | None:
@@ -130,7 +129,7 @@ def outlook(hist: pd.DataFrame, battle_deaths: pd.DataFrame, index_year: int) ->
         train, test = train_all[train_all["year"] < year], train_all[train_all["year"] == year]
         if train["onset"].sum() < 5 or test.empty:
             continue
-        xt, xs, _, _ = _standardise(train, test)
+        xt, xs = _standardise(train, test)
         w = _fit(xt, train["onset"].to_numpy())
         tests.append(test[["iso3", "year", "onset"]].assign(probability=_predict(w, xs), base=train["onset"].mean()))
     backtest = pd.concat(tests, ignore_index=True) if tests else pd.DataFrame(columns=["iso3", "year", "onset", "probability", "base"])
@@ -149,7 +148,7 @@ def outlook(hist: pd.DataFrame, battle_deaths: pd.DataFrame, index_year: int) ->
     latest = data[data["year"] == index_year]
     if latest.empty:
         latest = data[data["year"] == data["year"].max()]
-    xt, xs, _, std = _standardise(train_all, latest)
+    xt, xs = _standardise(train_all, latest)
     w = _fit(xt, train_all["onset"].to_numpy())
     prob = _predict(w, xs)
     base = float(train_all["onset"].mean())

@@ -83,6 +83,6 @@ for col, title, rows in ((left, "Riskiest 10", known.nlargest(10, "risk")), (rig
                                                         color=config.PILLAR_COLORS[ind.pillar]),
             },
         )
-        ui.open_selected(event, rows, "explorer_rows")
+        ui.open_selected(event, rows, f"exp_{title}")
 
 ui.footer()

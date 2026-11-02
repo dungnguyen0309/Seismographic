@@ -46,7 +46,7 @@ The repository is ready for Vercel: `asgi.py` runs the app as a standard Python 
 3. Leave the settings as they are (Framework Preset: *Other*) and click **Deploy**. Every push to `main` then
    deploys again by itself.
 
-This deployment also serves the read-only JSON API at `/api/v1` (see the README), which `streamlit run` cannot.
+This deployment also serves the read-only JSON API at `/api/v1` (see the README), which `streamlit run streamlit_app.py` cannot.
 
 Know the limits before relying on it. Vercel runs the app in short-lived functions and supports the live
 connection Streamlit needs only in beta. On the free plan, each visitor's connection is cut after 5 minutes. The

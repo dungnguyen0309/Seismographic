@@ -13,6 +13,7 @@ from . import config, interpret
 # The PDF uses the built-in Helvetica font, which only knows Latin-1 characters
 _PLAIN = {"—": "-", "–": "-", "−": "-", "→": "->", "≥": ">=", "≤": "<=", "▲": "+", "▼": "-", "■": "=", "’": "'",
           "‘": "'", "“": '"', "”": '"', "…": "...", "•": "-", "⚑": "!", "✓": "", "✅": "", " ": " "}
+_PLAIN["*"] = ""  # the reading's Markdown emphasis
 INK, MUTED, RULE, ACCENT = (20, 20, 20), (110, 110, 105), (210, 210, 205), (232, 96, 88)
 
 
@@ -84,6 +85,16 @@ def country_pdf(reading: interpret.Reading, row: pd.Series, rows: pd.DataFrame, 
                 weights_label: str = "") -> bytes:
     """The brief for one country. `row` is its line of ui.master_table, `rows` its history (one row per year);
     `weights_label` names the pillar weights when they are not the defaults."""
+    for level in range(3):  # about one brief in twelve runs long: fewer bullets keep it on one page
+        pdf = _draw(reading, row, rows, flags, year, weights_label, level)
+        if pdf.page == 1:
+            break
+    return bytes(pdf.output())
+
+
+def _draw(reading: interpret.Reading, row: pd.Series, rows: pd.DataFrame, flags: list[dict], year: int,
+          weights_label: str, level: int) -> FPDF:
+    """level 0 is the full brief; 1 and 2 list fewer bullets."""
     pdf = _Brief(format="A4")
     pdf.set_margins(16, 14, 16)
     pdf.set_auto_page_break(True, margin=16)
@@ -180,13 +191,13 @@ def country_pdf(reading: interpret.Reading, row: pd.Series, rows: pd.DataFrame, 
     pdf.multi_cell(0, 4.2, _t(reading.ground), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     if reading.warnings:
         _heading(pdf, "Warning signs right now")
-        _bullets(pdf, [f"{w['label']}. {w['meaning']}" for w in reading.warnings], limit=4)
+        _bullets(pdf, [f"{w['label']}. {w['meaning']}" for w in reading.warnings], limit=(4, 3, 2)[level])
     if reading.direction:
         _heading(pdf, "Direction")
-        _bullets(pdf, reading.direction, limit=3)
+        _bullets(pdf, reading.direction, limit=(3, 2, 1)[level])
     if reading.events:
         _heading(pdf, "Coming up")
-        _bullets(pdf, reading.events, limit=3)
+        _bullets(pdf, reading.events, limit=(3, 2, 1)[level])
     if reading.actions:
         _heading(pdf, "What to do")
         for key, label in interpret.AUDIENCES.items():
@@ -194,15 +205,20 @@ def country_pdf(reading: interpret.Reading, row: pd.Series, rows: pd.DataFrame, 
             if items:
                 pdf.set_font("Helvetica", "B", 8.5)
                 pdf.cell(0, 4.6, _t(label), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-                _bullets(pdf, items, limit=2)
+                _bullets(pdf, items, limit=(2, 1, 1)[level])
 
     # Sources
     pdf.ln(2)
     pdf.set_font("Helvetica", "", 7)
     pdf.set_text_color(*MUTED)
-    pdf.multi_cell(0, 3.6, _t(
-        "Sources: World Bank Worldwide Governance Indicators and World Development Indicators; IMF World Economic "
-        "Outlook; UNHCR; Uppsala Conflict Data Program; IFES ElectionGuide. Scores are relative (0 = lowest risk in "
-        "the sample, 100 = highest) and describe the latest data, which can lag events. " + " ".join(reading.caveats)),
-        new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-    return bytes(pdf.output())
+    note = ("Sources: World Bank Worldwide Governance Indicators and World Development Indicators; IMF World "
+            "Economic Outlook; UNHCR; Uppsala Conflict Data Program; IFES ElectionGuide. Scores are relative (0 = "
+            "lowest risk in the sample, 100 = highest) and describe the latest data, which can lag events.")
+    # The general caveats go first if the page is full; a low-coverage warning (always first) never does
+    coverage = [c for c in reading.caveats[:1] if c.startswith("Only ")]
+    variants = [note + " " + " ".join(c) for c in (reading.caveats, coverage)] + ([] if coverage else [note])
+    fits = [v for v in variants
+            if pdf.get_y() + len(pdf.multi_cell(0, 3.6, _t(v), dry_run=True, output="LINES")) * 3.6
+            <= pdf.page_break_trigger]
+    pdf.multi_cell(0, 3.6, _t(fits[0] if fits else variants[0]), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    return pdf

@@ -17,7 +17,7 @@ import unicodedata
 import time
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import pandas as pd
 import requests
@@ -59,8 +59,6 @@ class SeriesResult:
     last_updated: str | None = None
     edition: str | None = None
     error: str | None = None
-    from_snapshot: bool = False
-    fetched_at: str = field(default_factory=lambda: dt.datetime.now(dt.timezone.utc).isoformat(timespec="minutes"))
 
 
 def _empty() -> pd.DataFrame:
@@ -204,9 +202,11 @@ def _iso(value) -> str | None:
 
 
 def fetch_unhcr_displacement(key: str = "displaced", years: int = 13) -> SeriesResult:
-    """Forcibly displaced people by country of origin, for each of the last `years` published years."""
+    """Forcibly displaced people by country of origin, for the last `years` published years and never starting after
+    the index history does."""
     this_year = dt.date.today().year
-    items = _unhcr_pages({"yearFrom": this_year - years, "yearTo": this_year - 1, "coo_all": "true"})
+    start = min(config.HISTORY_START, this_year - years)
+    items = _unhcr_pages({"yearFrom": start, "yearTo": this_year - 1, "coo_all": "true"})
     rows = []
     for item in items:
         iso3 = _iso(item.get("coo_iso") or item.get("coo"))
@@ -264,7 +264,7 @@ def fetch_many(specs: dict[str, tuple[str, str, dict]], max_workers: int = 6) ->
     if any(spec[0] == "IMF" for spec in specs.values()):
         try:
             imf_editions = fetch_imf_editions()
-        except SourceError:
+        except Exception:  # only labels: an odd answer must not sink the whole download
             imf_editions = {}
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures = {key: pool.submit(fetch_series, key, spec, imf_editions) for key, spec in specs.items()}
@@ -402,7 +402,7 @@ def fetch_news(name: str | None) -> tuple[pd.DataFrame, str]:
         return merged[NEWS_COLUMNS].head(30).reset_index(drop=True), " + ".join(used)
     if name:
         try:
-            return fetch_gdelt_articles(name)[NEWS_COLUMNS], "GDELT"
+            return fetch_gdelt_articles(name), "GDELT"
         except SourceError as exc:
             errors.append(str(exc))
     if errors:
@@ -417,6 +417,19 @@ def _gdelt_term(name: str) -> str:
     return f'"{clean}"' if " " in clean else clean
 
 
+def _gdelt_json(params: dict) -> dict:
+    try:
+        response = requests.get(GDELT_API, params=params, timeout=GDELT_TIMEOUT, headers=HEADERS)
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        raise SourceError(f"GDELT unreachable: {exc}") from exc
+    try:
+        return response.json()
+    except ValueError as exc:
+        # GDELT answers rate limits and query errors in plain text
+        raise SourceError(response.text.strip()[:200] or "GDELT returned no data") from exc
+
+
 def fetch_gdelt_articles(name: str, timespan: str = "7d", max_records: int = 25) -> pd.DataFrame:
     params = {
         "query": f"{_gdelt_term(name)} {RISK_TERMS} sourcelang:english",
@@ -426,27 +439,18 @@ def fetch_gdelt_articles(name: str, timespan: str = "7d", max_records: int = 25)
         "timespan": timespan,
         "sort": "DateDesc",
     }
-    try:
-        response = requests.get(GDELT_API, params=params, timeout=GDELT_TIMEOUT, headers=HEADERS)
-        response.raise_for_status()
-    except requests.RequestException as exc:
-        raise SourceError(f"GDELT unreachable: {exc}") from exc
-    try:
-        data = response.json()
-    except ValueError as exc:
-        # GDELT answers rate limits and query errors in plain text
-        raise SourceError(response.text.strip()[:200] or "GDELT returned no data") from exc
+    data = _gdelt_json(params)
     articles = data.get("articles") or []
     if not articles:
-        return pd.DataFrame(columns=[*NEWS_COLUMNS, "sourcecountry"])
+        return pd.DataFrame(columns=NEWS_COLUMNS)
     df = pd.DataFrame(articles)
-    for col in ("title", "domain", "url", "sourcecountry", "seendate", "socialimage"):
+    for col in ("title", "domain", "url", "seendate", "socialimage"):
         if col not in df.columns:
             df[col] = ""
     df["seen"] = pd.to_datetime(df["seendate"], format="%Y%m%dT%H%M%SZ", errors="coerce", utc=True)
     df["image"] = df["socialimage"].where(df["socialimage"].str.startswith("https://", na=False))
     df = df.drop_duplicates(subset="title").sort_values("seen", ascending=False)
-    return df[[*NEWS_COLUMNS, "sourcecountry"]].reset_index(drop=True)
+    return df[NEWS_COLUMNS].reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
@@ -502,14 +506,7 @@ def fetch_gdelt_tone(name: str, timespan: str = "3m") -> pd.DataFrame:
         "format": "json",
         "timespan": timespan,
     }
-    try:
-        response = requests.get(GDELT_API, params=params, timeout=GDELT_TIMEOUT, headers=HEADERS)
-        response.raise_for_status()
-        data = response.json()
-    except requests.RequestException as exc:
-        raise SourceError(f"GDELT unreachable: {exc}") from exc
-    except ValueError as exc:
-        raise SourceError(response.text.strip()[:200] or "GDELT returned no data") from exc
+    data = _gdelt_json(params)
     timeline = data.get("timeline") or []
     points = timeline[0].get("data", []) if timeline else []
     if not points:
@@ -531,14 +528,7 @@ def fetch_gdelt_protests(name: str, timespan: str = "3m") -> pd.DataFrame:
         "timespan": timespan,
         "timelinesmooth": 7,
     }
-    try:
-        response = requests.get(GDELT_API, params=params, timeout=GDELT_TIMEOUT, headers=HEADERS)
-        response.raise_for_status()
-        data = response.json()
-    except requests.RequestException as exc:
-        raise SourceError(f"GDELT unreachable: {exc}") from exc
-    except ValueError as exc:
-        raise SourceError(response.text.strip()[:200] or "GDELT returned no data") from exc
+    data = _gdelt_json(params)
     timeline = data.get("timeline") or []
     points = timeline[0].get("data", []) if timeline else []
     if not points:

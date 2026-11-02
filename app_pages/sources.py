@@ -165,7 +165,7 @@ with t_index:
         inds = [i for i in INDICATORS if config.indicator_source(i) == key]
         links = " · ".join(f'<a href="{html.escape(config.indicator_url(i))}" target="_blank" rel="noopener">'
                            f'{html.escape(i.short)}</a>' for i in inds)
-        extra = status([k for k in RAW_SERIES if not k.endswith(("_lb", "_ub")) and config.series_source(k) == key])
+        extra = status([k for k in RAW_SERIES if config.series_source(k) == key])
         if links:
             extra += f'<div style="font-size:0.78rem;margin-top:6px;line-height:1.6">Indicators: {links}</div>'
         index_cards.append(card(key, extra))
@@ -303,12 +303,9 @@ with t_reading:
     st.markdown("\n".join([
         "1. Write quarterly assessments for 5–10 countries in one region and track how your ratings compare with "
         "what happened.",
-        "2. Benchmark the index against the Fragile States Index or OECD classification: where do they disagree, "
-        "and why?",
+        "2. Benchmark the index against the OECD's fragility classification: where do they disagree, and why?",
         "3. Add a conflict-events map with a free UCDP access token or an ACLED account.",
-        "4. Back-test: compute the index for earlier years and check whether high scores preceded coups, defaults "
-        "or mass protest.",
-        "5. Add a sanctions pillar from OpenSanctions or official lists for a compliance angle.",
+        "4. Add a sanctions pillar from OpenSanctions or official lists for a compliance angle.",
     ]))
 
 with t_cite:

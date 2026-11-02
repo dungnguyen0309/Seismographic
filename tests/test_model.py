@@ -11,6 +11,8 @@ from prm import cases, config, data, forecast, glossary, report, scoring, valida
 def core():
     snapshot = data._snapshot_core()
     assert snapshot is not None, "data/snapshot is missing"
+    if snapshot["history_default"] is None:  # 1 January until the next Monday refresh: the saved history is last year's
+        snapshot = {**snapshot, "history_default": data.build_default_history(snapshot["series"], snapshot["countries"])}
     return snapshot
 
 
@@ -50,6 +52,13 @@ def test_red_flag_thresholds():
     assert labels["reserves_months"] == "serious"
     assert labels["battle_deaths_raw"] == "critical"
     assert scoring.red_flags(pd.Series({"inflation": 3.0})) == []
+
+
+def test_flag_changes_compare_by_indicator_and_severity():
+    worse, eased = scoring.flag_changes(pd.Series({"inflation": 97.6}), pd.Series({"inflation": 27.6}))
+    assert worse == [] and [f["severity"] for f in eased] == ["critical"]
+    worse, eased = scoring.flag_changes(pd.Series({"battle_deaths_raw": 30.0}), pd.Series({"battle_deaths_raw": 1500.0}))
+    assert [f["severity"] for f in worse] == ["critical"] and eased == []
 
 
 def test_saved_history_matches_a_fresh_build(core):
@@ -208,6 +217,10 @@ def test_json_api():
     assert one.status_code == 200 and one.json()["country"]["iso3"] == "KEN" and one.json()["history"]
     assert one.headers["access-control-allow-origin"] == "*"
     assert client.get("/api/v1/countries/XYZ").status_code == 404
+    missing = client.get("/api/v1/countriez")  # a typo once answered 200 with the app's HTML page
+    assert missing.status_code == 404 and "error" in missing.json()
+    everyone = client.get("/api/v1/countries").json()["count"]
+    assert client.get("/api/v1/countries?tier=%20").json()["count"] == everyone  # a blank filter is ignored
     assert client.get("/api/v1").json()["endpoints"]
 
 

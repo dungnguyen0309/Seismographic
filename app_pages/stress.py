@@ -16,6 +16,9 @@ CUSTOM = "Custom"
 FIRST = next(iter(stress.SCENARIOS))
 KEYS = {s.key: f"stress_{s.key}" for s in stress.SHOCKS}
 INCOMES = ["Low income", "Lower middle income", "Upper middle income", "High income"]
+REGIONS = sorted(table["region"].dropna().unique())
+INCOME_GROUPS = [i for i in INCOMES if i in set(table["income"])]
+SCOPE = {"stress_regions": ("regions", REGIONS), "stress_incomes": ("incomes", INCOME_GROUPS)}  # key: (link, options)
 
 
 def _set(shocks: dict[str, float]) -> None:
@@ -43,16 +46,17 @@ if "stress_scenario" not in st.session_state:
     seed = stress.decode(st.query_params.get("shock")) or st.session_state.get("_stress_last") or stress.SCENARIOS[FIRST]
     st.session_state["stress_scenario"] = next((n for n, v in stress.SCENARIOS.items() if v == seed), CUSTOM)
     _set(seed)
+    for key, (param, options) in SCOPE.items():  # the link is untrusted: keep only real options
+        if picked := [x for x in st.query_params.get(param, "").split("|") if x in options]:
+            st.session_state[key] = picked
 
 with st.container(border=True):
     c1, c2, c3 = st.columns([1.3, 1, 1])
     c1.selectbox("Scenario", [*stress.SCENARIOS, CUSTOM], key="stress_scenario", on_change=_preset,
                  help="Round-number versions of past world-wide shocks, to start from. Countries hit are scored "
                       "against today's values, so the yardstick stays fixed.")
-    regions = c2.multiselect("Regions hit", sorted(table["region"].dropna().unique()), key="stress_regions",
-                             placeholder="All regions")
-    incomes = c3.multiselect("Income groups hit", [i for i in INCOMES if i in set(table["income"])],
-                             key="stress_incomes", placeholder="All income groups")
+    regions = c2.multiselect("Regions hit", REGIONS, key="stress_regions", placeholder="All regions")
+    incomes = c3.multiselect("Income groups hit", INCOME_GROUPS, key="stress_incomes", placeholder="All income groups")
     # The sliders fold away, so the results sit right under the scenario on a phone too; the label says what is set
     set_now = [f"{s.label} {st.session_state[KEYS[s.key]]:+g} {s.unit}" for s in stress.SHOCKS
                if st.session_state[KEYS[s.key]]]
@@ -66,6 +70,11 @@ with st.container(border=True):
 
 shocks = {s.key: float(st.session_state[KEYS[s.key]]) for s in stress.SHOCKS if st.session_state[KEYS[s.key]]}
 st.session_state["_stress_last"] = shocks
+for key, (param, _) in SCOPE.items():
+    if picked := st.session_state.get(key):
+        st.query_params[param] = "|".join(picked)
+    else:
+        st.query_params.pop(param, None)
 if not shocks:
     st.query_params.pop("shock", None)
     st.info("Pick a scenario or move a slider.")
@@ -159,7 +168,7 @@ def _csv() -> bytes:
     cols = ["iso3", "name", "region", "income", "composite_before", "composite_after", "delta", "tier_before",
             "tier_after", "flags_before", "flags_after"]
     out = hit[cols].assign(new_flags=hit["new_flags"].map(" | ".join))
-    return out.round(2).to_csv(index=False).encode("utf-8")
+    return out.round(2).to_csv(index=False).encode("utf-8-sig")
 
 
 st.download_button("Download results (CSV)", data=_csv, file_name="seismographic-stress-test.csv", mime="text/csv",

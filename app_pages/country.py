@@ -42,9 +42,6 @@ assessment = ui.assessments().get(iso3)
 
 # --- Header -----------------------------------------------------------------
 country_hist = hist[hist["iso3"] == iso3].sort_values("year")
-prev = country_hist[country_hist["year"] == year - 1]
-prev = prev.iloc[0] if len(prev) else None
-score_delta = None if prev is None or pd.isna(s["composite"]) or pd.isna(prev["composite"])     else round(float(s["composite"] - prev["composite"]), 1)
 gdppc = v.get("gdppc")
 meta = [str(row["region"]), str(row["income"]), f"{ui.fmt_population(v.get('population'))} people"]
 if pd.notna(gdppc):
@@ -52,7 +49,7 @@ if pd.notna(gdppc):
 if s["coverage"] < 75:
     meta.append(f"data coverage {s['coverage']:.0f}%: read with care")
 ui.country_header(name, row,
-                  country_hist.set_index("year")["composite"], score_delta, year, " · ".join(meta),
+                  country_hist.set_index("year")["composite"], row.get("delta_1y"), year, html.escape(" · ".join(meta)),
                   analyst_rating=(assessment or {}).get("meta", {}).get("analyst_rating") or None)
 
 
@@ -63,10 +60,14 @@ def _add_to_compare() -> None:
     a11y.keep_focus("compare_add")  # the button is redrawn as "Open comparison"; keep the keyboard on it
 
 
+weights_label = ui.custom_weights_label()  # read now: the PDF is built later, outside this run
+
+
 def _brief_pdf() -> bytes:
     """Built only when the button is clicked."""
-    reading = interpret.country_reading(iso3, table, values, scores, hist, content.load_events(), core.get("flows"), year)
-    return report.country_pdf(reading, row, country_hist, scoring.red_flags(v), year, ui.custom_weights_label())
+    reading = interpret.country_reading(iso3, table, values, scores, hist, content.load_events(), core.get("flows"), year,
+                                       core["series"])
+    return report.country_pdf(reading, row, country_hist, flags, year, weights_label)
 
 
 if toast := st.session_state.pop("_compare_toast", None):
@@ -102,6 +103,9 @@ st.caption(f"Sources: {sources}  \nElsewhere: " + " · ".join(f"[{label} ↗]({u
 
 flags = scoring.red_flags(v)
 trend = scoring.wgi_trend(core["series"], iso3, "pv")
+if trend and trend["change"] <= -config.WGI_TREND_THRESHOLD:  # in the Summary and the PDF brief
+    flags.append({"severity": "warning",
+                  "label": f"Political stability deteriorating ({trend['change']:+.1f} points since {trend['start_year']})"})
 
 TABS = {"summary": ":material/summarize: Summary", "real": ":material/explore: In real life",
         "peers": ":material/groups: Peers", "map": ":material/map: Map & refugees", "whatif": ":material/tune: What-if",
@@ -152,9 +156,6 @@ with t_summary:
                 st.page_link("app_pages/conflict.py", label="How this is estimated (Conflict outlook)",
                              icon=":material/insights:", query_params={"tab": "outlook"})
             st.header("Red flags")
-            if trend and trend["change"] <= -config.WGI_TREND_THRESHOLD:
-                flags.append({"severity": "warning",
-                              "label": f"Political stability deteriorating ({trend['change']:+.1f} points since {trend['start_year']})"})
             if flags:
                 for f in sorted(flags, key=lambda f: config.SEVERITY_ORDER[f["severity"]]):
                     st.markdown(f"{ui.sev_mark(f['severity'], spoken=False)}{SEVERITY_LABEL[f['severity']]}: "
@@ -196,7 +197,7 @@ with t_real:
         st.caption("The scores, red flags, trend and upcoming events in plain language, and how people commonly "
                    "act on them. General guidance only.")
         reading = interpret.country_reading(iso3, table, values, scores, hist, content.load_events(), core.get("flows"),
-                                            year)
+                                            year, core["series"])
         ui.render_reading(reading, key=f"real_{iso3}")
         ui.cite("index", "ifes", "ucdp_def", "imf_ara")
         st.page_link("app_pages/guide.py", label="Guide: reading the numbers",
@@ -297,7 +298,7 @@ WHATIF_PRESETS = {
                             "wgi_rl": ("add", 10), "wgi_cc": ("add", 10)},
 }
 BATTLE_DEATH_STEPS = [0, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000]
-WHATIF_PREFIX = f"wi_{iso3}_"
+WHATIF_PREFIX = f"wi_{iso3}_{core['version']}_"  # new data starts the sliders afresh, not as edits
 
 
 def _whatif_controls() -> dict[str, dict]:
@@ -412,10 +413,8 @@ def what_if_simulator() -> None:
         st.plotly_chart(charts.whatif_pillars(s, n), config={"displayModeBar": False}, key="whatif_chart")
         ui.cite("index")
 
-        before = {f["label"] for f in scoring.red_flags(v)}
-        after = scoring.red_flags(new_values)
-        new_flags = [f for f in after if f["label"] not in before]
-        cleared = before - {f["label"] for f in after}
+        new_flags, eased = scoring.flag_changes(v, new_values)  # a worse flag is new; one that eases or goes is cleared
+        cleared = {f["label"] for f in eased}
         if new_flags or cleared:
             st.markdown("**Red flags in this scenario**")
             for f in new_flags:
@@ -473,7 +472,7 @@ with t_indicators:
                             unsafe_allow_html=True)
             st.page_link(ui.SOURCES_PAGE, label="All sources and cross-checks", icon=":material/verified:")
         export = pd.DataFrame(rows).assign(Country=name, ISO3=iso3)
-        st.download_button("Download indicators (CSV)", export.to_csv(index=False).encode("utf-8"),
+        st.download_button("Download indicators (CSV)", export.to_csv(index=False).encode("utf-8-sig"),
                            file_name=f"{iso3}_indicators_{year}.csv", mime="text/csv")
 
 # --- Governance trends ---------------------------------------------------------------
@@ -515,9 +514,9 @@ with t_economy:
         e1, e2, e3 = st.columns(3)
         e1.metric("FX reserves (months of imports)", config.INDICATOR_BY_KEY["reserves_months"].fmt(v.get("reserves_months")),
                   help="World Bank WDI. Below 3 months is a common warning line.", border=True)
-        e2.metric("Youth unemployment", f"{config.INDICATOR_BY_KEY['youth_unemployment'].fmt(v.get('youth_unemployment'))}%",
+        e2.metric("Youth unemployment (%)", config.INDICATOR_BY_KEY["youth_unemployment"].fmt(v.get("youth_unemployment")),
                   border=True)
-        e3.metric("Displaced (% of population)", f"{config.INDICATOR_BY_KEY['displaced_share'].fmt(v.get('displaced_share'))}%",
+        e3.metric("Displaced (% of population)", config.INDICATOR_BY_KEY["displaced_share"].fmt(v.get("displaced_share")),
                   help="Refugees, asylum seekers, others in need of protection and IDPs from this country (UNHCR).",
                   border=True)
 
@@ -592,7 +591,7 @@ with t_analyst:
                 )
             st.caption(f"By {m.get('author') or 'the analyst'} · horizon {m.get('horizon') or '—'} · file assessments/{assessment['file']}")
             st.divider()
-            st.markdown(assessment["body"])
+            st.markdown(ui.money(assessment["body"]))
         else:
             st.info(f"No analyst assessment for {name} yet.")
             st.markdown(

@@ -19,7 +19,8 @@ ui.hero("Guide", "What the scores, tiers, pillars and red flags look like in rea
 st.header("1 · Read any country in plain language")
 iso3 = st.selectbox("Country", options, index=options.index(ui.current_country(countries)),
                     format_func=lambda i: names.get(i, i), key="guide_country")
-reading = interpret.country_reading(iso3, table, values, scores, hist, events, core.get("flows"), year)
+reading = interpret.country_reading(iso3, table, values, scores, hist, events, core.get("flows"), year,
+                                   core["series"])
 ui.render_reading(reading, key="guide")
 ui.cite("index", "ifes", "ucdp_def", "imf_ara")
 st.page_link(ui.COUNTRY_PAGE, label=f"Open the full {names[iso3]} profile", icon=":material/flag:")
@@ -76,40 +77,40 @@ ui.cite("ucdp_def", "imf_ara", "imf", "wdi", "unhcr")
 st.header("5 · Putting it to work, step by step")
 workflows = {
     "Screening a market (business & investors)": [
-        ("Shortlist", "Rank candidate countries on the Global overview; set the pillar weights in the sidebar to "
-                      "match your exposure (e.g. more weight on Economy for trade, Governance for long-term assets).",
+        ("Rank candidate countries on the Global overview; set the pillar weights in the sidebar to "
+         "match your exposure (e.g. more weight on Economy for trade, Governance for long-term assets).",
          "app_pages/overview.py"),
-        ("Check the trend", "Look for countries getting riskier on *Score changes*: a mid-tier country sliding fast "
-                            "can be a bigger worry than a stable high-tier one.", "app_pages/changes.py"),
-        ("Understand the drivers", "Open each profile's *In real life* tab, then *Peers* to compare with neighbours.",
+        ("Look for countries getting riskier on *Score changes*: a mid-tier country sliding fast "
+         "can be a bigger worry than a stable high-tier one.", "app_pages/changes.py"),
+        ("Open each profile's *In real life* tab, then *Peers* to compare with neighbours.",
          ui.COUNTRY_PAGE),
-        ("Stress-test", "Use the What-if simulator to see how a currency crisis or conflict would change the picture.",
+        ("Use the What-if simulator to see how a currency crisis or conflict would change the picture.",
          ui.COUNTRY_PAGE),
-        ("Time it", "Check the Events watchlist for elections or deadlines before committing.", "app_pages/watchlist.py"),
+        ("Check the Events watchlist for elections or deadlines before committing.", "app_pages/watchlist.py"),
     ],
     "Planning a programme (NGOs & humanitarian)": [
-        ("Find the need", "Conflict & displacement shows where people are being killed and displaced, and where "
-                          "refugees are hosted.", "app_pages/conflict.py"),
-        ("Read the context", "The *In real life* tab spells out access, safety and price pressures.", ui.COUNTRY_PAGE),
-        ("Watch the economy", "Economic stress flags inflation and currency problems that erode cash assistance.",
+        ("Conflict & displacement shows where people are being killed and displaced, and where "
+         "refugees are hosted.", "app_pages/conflict.py"),
+        ("The *In real life* tab spells out access, safety and price pressures.", ui.COUNTRY_PAGE),
+        ("Economic stress flags inflation and currency problems that erode cash assistance.",
          "app_pages/economy.py"),
-        ("Track events", "Add elections and deadlines to the watchlist; plan field movements around them.",
+        ("Add elections and deadlines to the watchlist; plan field movements around them.",
          "app_pages/watchlist.py"),
     ],
     "Preparing a trip, posting or study abroad": [
-        ("Get the picture", "Read the country's *In real life* tab and its latest news.", ui.COUNTRY_PAGE),
-        ("Check official advice", "Confirm with your government's current travel advice, which changes faster "
-                                  "than this data.", None),
-        ("Mind the calendar", "Avoid travelling around high-significance events in the watchlist.",
+        ("Read the country's *In real life* tab and its latest news.", ui.COUNTRY_PAGE),
+        ("Confirm with your government's current travel advice, which changes faster "
+         "than this data.", None),
+        ("Avoid travelling around high-significance events in the watchlist.",
          "app_pages/watchlist.py"),
     ],
     "Writing an analysis (policy, journalism, research)": [
-        ("Start from the drivers", "The profile's Summary and Indicators tabs show exactly what pushes the score.",
+        ("The profile's Summary and Indicators tabs show exactly what pushes the score.",
          ui.COUNTRY_PAGE),
-        ("Separate signal from noise", "Governance trends show whether a change is outside the margin of error.",
+        ("Governance trends show whether a change is outside the margin of error.",
          ui.COUNTRY_PAGE),
-        ("Compare", "Regions and Compare put a country in its neighbourhood.", "app_pages/regions.py"),
-        ("Write it up", "The Assessment builder turns your judgment into a structured brief with probabilities.",
+        ("Regions and Compare put a country in its neighbourhood.", "app_pages/regions.py"),
+        ("The Assessment builder turns your judgment into a structured brief with probabilities.",
          "app_pages/builder.py"),
     ],
 }
@@ -119,7 +120,7 @@ PAGE_NAMES = {"app_pages/overview.py": "Global overview", "app_pages/changes.py"
               "app_pages/regions.py": "Regions", "app_pages/builder.py": "Assessment builder"}
 for title, steps in workflows.items():
     with st.expander(title):
-        for n, (step, text, page) in enumerate(steps, start=1):
+        for n, (text, page) in enumerate(steps, start=1):
             st.markdown(f"{n}. {text}")
             if page:
                 st.page_link(page, label=f"Open {PAGE_NAMES[page]}", icon=":material/arrow_forward:")
