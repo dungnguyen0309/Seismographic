@@ -174,7 +174,7 @@ else:
         onsets = track["onset_list"].assign(
             country=lambda d: d["iso3"].map(names), started=lambda d: d["year"] + 1,
             fifth=lambda d: d["fifth"].map(lambda f: charts.FIFTHS[int(f) - 1]))
-        st.dataframe(onsets[["country", "started", "score", "fifth"]], hide_index=True,
+        st.dataframe(onsets[["country", "started", "score", "fifth"]].round({"score": 0}), hide_index=True,
                      column_config={"country": "Country", "started": st.column_config.NumberColumn("Conflict began", format="%d"),
                                     "score": st.column_config.NumberColumn("Score the year before", format="%.0f"),
                                     "fifth": "Where it ranked"})
@@ -219,13 +219,14 @@ with ui.guard("The benchmark"):
                 "score": st.column_config.NumberColumn("Seismographic", format="%.0f"),
                 "gap": st.column_config.NumberColumn("Gap", format="%+.0f",
                                                      help="Difference in position between the two rankings, percentile points")}
+        decimals = {"fsi": 1, "score": 0, "gap": 0}  # as displayed
         g1, g2 = st.columns(2)
         with g1:
             st.markdown("**Riskier in Seismographic**")
-            st.dataframe(both.nlargest(8, "gap")[list(cols)], hide_index=True, column_config=cols)
+            st.dataframe(both.nlargest(8, "gap")[list(cols)].round(decimals), hide_index=True, column_config=cols)
         with g2:
             st.markdown("**Riskier in the Fragile States Index**")
-            st.dataframe(both.nsmallest(8, "gap")[list(cols)], hide_index=True, column_config=cols)
+            st.dataframe(both.nsmallest(8, "gap")[list(cols)].round(decimals), hide_index=True, column_config=cols)
         st.caption(
             f"Both for {fsi_year}; the gap compares each country's position in the two rankings. The Fragile States Index "
             "also weighs group grievance, demographic pressure and outside intervention, which Seismographic does not "

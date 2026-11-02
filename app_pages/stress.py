@@ -133,7 +133,8 @@ if rows.empty:
 else:
     event = st.dataframe(
         # What crossed a line comes first; the scores behind it follow
-        rows[["iso3", "flag", "name", "tier_change", "delta", "flags_text", "composite_before", "composite_after"]],
+        rows[["iso3", "flag", "name", "tier_change", "delta", "flags_text", "composite_before", "composite_after"]]
+        .round({"delta": 1, "composite_before": 0, "composite_after": 0}),
         hide_index=True, on_select="rerun", selection_mode="single-row", key="stress_table",
         height=min(520, 36 * (len(rows) + 1) + 4),
         column_config={

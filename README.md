@@ -51,15 +51,16 @@ watchlist, and written analyst assessments with probabilistic key judgments and 
 |  | **Glossary & legend** | 123 terms in nine colour-coded categories, searchable, most of them linked to the organisation that defines or publishes them; plus a visual legend for tiers, pillars, symbols and colour scales |
 |  | **Sources** | Every dataset, definition and feed behind the tool, with links, update dates and the status of the data loaded now; where each warning threshold comes from; independent indices to cross-check the scores; who owns each video channel; how to cite the tool; and further reading |
 
-Most pages open on their own 3D globe: the overview (with a live news column and hotspots to watch), regions
+Most pages have their own 3D globe: the overview (with a live news column and hotspots to watch), regions
 (turned to the region), conflict & displacement (conflict rings and refugee arcs), economic stress, a
 diverging *map of change* on *Score changes*, the compared countries on *Compare*, upcoming events on the
-watchlist, and each country's own refugee links on its profile. Charts and maps name their sources underneath,
-with links.
+watchlist, and each country's own refugee links on its profile. Charts, maps and tables name their sources on
+the same page or tab, with links.
 
 A console bar along the bottom of every page keeps the tracked country one tap away (flag, score, tier,
 change and a small seismogram of its risk since 2015) next to tabs for Home, Compare, Live and Guide and a
-*Find* sheet that searches every country and every page (press / or Ctrl+K).
+*Find* sheet that searches every country and every page (press / or Ctrl+K). On the country profile, whose
+header already shows the country, the bar keeps only the tabs and *Find*.
 
 ## Method in brief
 
@@ -171,8 +172,10 @@ tests/                       tests for the model and every page
 * A data snapshot is saved every Monday, with the index history ready-made (*Refresh data snapshot*). A
   download that covers under 60% of the countries in the saved copy is rejected, and the new snapshot is only
   committed if the full test suite passes on it.
-* A watchlist check runs every Monday: if fewer than eight events fall in the next six months, it opens a
-  reminder issue, and closes it once the list is topped up (*Watchlist check*).
+* A watchlist check runs every Monday: if fewer than eight events fall in the next six months, or a row has a
+  date it cannot read, it opens a reminder issue, and closes it once the list is fixed (*Watchlist check*). To
+  add events, run the app with the `SEISMOGRAPHIC_MAINTAINER` environment variable set to `1`: the watchlist
+  then shows a helper that writes each line for `data/events.csv`.
 * If a Hugging Face Space is set up (the `HF_SPACE` variable and the `HF_TOKEN` secret), every push to `main`
   and every snapshot refresh is published to it (*Publish to Hugging Face*).
 

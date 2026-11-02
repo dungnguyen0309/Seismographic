@@ -98,4 +98,4 @@ st.page_link("app_pages/overview.py", label="Go to the global overview", icon=":
 st.header("Before you rely on it")
 st.markdown("\n".join(f"- {c}" for c in interpret.CAVEATS))
 ui.cite("index", "oecd_jrc")
-ui.footer()
+ui.footer(full=True)

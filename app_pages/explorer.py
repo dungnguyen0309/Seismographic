@@ -47,7 +47,24 @@ k3.metric("Riskiest", worst["name"].iloc[0] if len(worst) else "—", border=Tru
 k4.metric("Safest", best["name"].iloc[0] if len(best) else "—", border=True,
           help=None if best.empty else f"{ind.fmt(best['value'].iloc[0])} {ind.unit}")
 
+# --- Leaders ----------------------------------------------------------------------------------------
+for title, rows in (("Riskiest 10", known.nlargest(10, "risk")), ("Safest 10", known.nsmallest(10, "risk"))):
+    st.header(title)  # stacked: side by side, the half-width tables hid the risk score behind a sideways scroll
+    rows = rows.assign(shown=rows["value"].map(ind.fmt)).reset_index(drop=True)
+    event = st.dataframe(
+        rows[["iso3", "flag", "name", "shown", "year", "risk"]].round({"risk": 0}), hide_index=True, on_select="rerun",
+        selection_mode="single-row", key=f"exp_{title}",
+        column_config={
+            "iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country", "shown": ind.unit,
+            "year": st.column_config.NumberColumn("Year", format="%d"),
+            "risk": st.column_config.ProgressColumn("Risk score", min_value=0, max_value=100, format="%.0f",
+                                                    color=config.PILLAR_COLORS[ind.pillar]),
+        },
+    )
+    ui.open_selected(event, rows, f"exp_{title}")
+
 # --- Globe ------------------------------------------------------------------------------------------
+st.header("On the globe")
 notes = {
     r.iso3: f"{ind.short}: {ind.fmt(r.value)} {ind.unit}" + ("" if pd.isna(r.year) else f" ({int(r.year)})")
     for r in known.itertuples(index=False)
@@ -62,27 +79,10 @@ st.caption(f"Colour and height = risk score for this indicator (0 = safest count
            f"{pillar.short} pillar's colours. Hover for the actual value.")
 ui.cite(source, "natural_earth")
 
-# --- Distribution and leaders ----------------------------------------------------------------------------
+# --- Distribution ----------------------------------------------------------------------------------------
 st.header("How countries are spread")
 st.plotly_chart(charts.distribution(known["value"], f"{ind.short} ({ind.unit})", config.PILLAR_COLORS[ind.pillar],
                                     log=ind.norm == "log"), config={"displayModeBar": False})
 ui.cite(source)
-
-left, right = st.columns(2)
-for col, title, rows in ((left, "Riskiest 10", known.nlargest(10, "risk")), (right, "Safest 10", known.nsmallest(10, "risk"))):
-    with col:
-        st.header(title)
-        rows = rows.assign(shown=rows["value"].map(ind.fmt)).reset_index(drop=True)
-        event = st.dataframe(
-            rows[["iso3", "flag", "name", "shown", "year", "risk"]], hide_index=True, on_select="rerun",
-            selection_mode="single-row", key=f"exp_{title}",
-            column_config={
-                "iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country", "shown": ind.unit,
-                "year": st.column_config.NumberColumn("Year", format="%d"),
-                "risk": st.column_config.ProgressColumn("Risk score", min_value=0, max_value=100, format="%.0f",
-                                                        color=config.PILLAR_COLORS[ind.pillar]),
-            },
-        )
-        ui.open_selected(event, rows, f"exp_{title}")
 
 ui.footer()

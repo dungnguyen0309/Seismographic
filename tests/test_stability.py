@@ -103,6 +103,28 @@ def test_events_with_typos_are_normalised(tmp_path, monkeypatch):
     assert row["iso3"] == "KEN" and row["significance"] == "High" and row["category"] == "Other"
 
 
+def test_watchlist_check_asks_to_fix_unreadable_dates(monkeypatch, tmp_path, capsys):
+    import importlib.util
+    from pathlib import Path
+    path = tmp_path / "events.csv"  # plenty of events ahead, plus one row re-saved by Excel as D/M/YYYY
+    ahead = [dt.date.today() + dt.timedelta(days=d) for d in range(1, 11)]
+    path.write_text("\n".join(["date,iso3,country,event,category,significance,source_url,notes",
+                               *[f"{d:%Y-%m-%d},KEN,Kenya,Event {d},Election,High,," for d in ahead],
+                               "1/3/2031,KEN,Kenya,Vote,Election,High,,"]), encoding="utf-8")
+    monkeypatch.setattr(content, "EVENTS_PATH", path)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "out"))
+    for name in ("CI", "GITHUB_STEP_SUMMARY"):
+        monkeypatch.delenv(name, raising=False)
+    script = Path(__file__).resolve().parents[1] / "scripts" / "check_watchlist.py"
+    spec = importlib.util.spec_from_file_location("check_watchlist", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.main()
+    report = capsys.readouterr().out
+    assert "Fix the dates first." in report and "running low" not in report and "Nothing to do" not in report
+    assert (tmp_path / "out").read_text() == "needs_update=true\n"
+
+
 def test_hand_edited_files_keep_their_good_rows(monkeypatch, tmp_path):
     rows = [f"2026-12-{d:02d},KEN,Kenya,Event {d},Election,High,," for d in range(1, 11)]
     path = tmp_path / "events.csv"

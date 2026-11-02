@@ -193,13 +193,17 @@ with tab_hot:
         else:
             hotspots = hotspots.sort_values(["signals", "composite"], ascending=False).head(12).reset_index(drop=True)
             hot_event = st.dataframe(
-                hotspots, hide_index=True, on_select="rerun", selection_mode="single-row", key="ov_hotspots",
+                hotspots.round({"composite": 0}), hide_index=True, on_select="rerun", selection_mode="single-row",
+                key="ov_hotspots", row_height=66, height=38 + 66 * len(hotspots),  # over 64 px, text wraps
+                # Fixed widths that fit the 810 px table at 1280 px; auto-sized columns get squeezed and cut mid-word.
+                # The signal count is hidden: the reasons list them, and it still sets the order.
                 column_config={
-                    "iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country",
+                    "iso3": None, "flag": ui.FLAG_COLUMN, "signals": None,
+                    "name": st.column_config.TextColumn("Country", width=190),
                     "composite": st.column_config.ProgressColumn("Score", min_value=0, max_value=100, format="%.0f",
-                                                                 color=COMPOSITE_COLOR),
-                    "tier": "Tier", "signals": st.column_config.NumberColumn("Signals", format="%d"),
-                    "why": st.column_config.TextColumn("Why it is on the list", width="large"),
+                                                                 color=COMPOSITE_COLOR, width=100),
+                    "why": st.column_config.TextColumn("Why it is on the list", width=290),
+                    "tier": st.column_config.TextColumn("Tier", width=100),
                 },
             )
             ui.open_selected(hot_event, hotspots, "overview_hotspots")
@@ -247,7 +251,7 @@ with tab_rank:
             for p in PILLARS
         }
         event = st.dataframe(
-            ranking,
+            ranking.round().assign(region=ranking["region"].map(config.region_short)),  # the CSV keeps full values
             hide_index=True,
             height=460,
             on_select="rerun",
@@ -310,7 +314,7 @@ with tab_matrix:
                 st.header(f"Highest risk in {region}")
                 top = scored.nsmallest(12, "rank").copy()
                 st.dataframe(
-                    top[["flag", "name", "composite", "tier", "flags"]],
+                    top[["flag", "name", "composite", "tier", "flags"]].round(),
                     hide_index=True,
                     column_config={
                         "flag": st.column_config.ImageColumn(" ", width="small"),

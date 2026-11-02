@@ -124,7 +124,6 @@ with t_summary:
         st.header("Risk over time")
         if country_hist["composite"].notna().sum() >= 2:
             st.plotly_chart(charts.risk_history(country_hist, marks=True), config={"displayModeBar": False})
-            ui.cite("index")
             st.caption(
                 f"The index recomputed for every year since {config.HISTORY_START}, each time with only the data "
                 "available for that year. Scores are relative to the other countries that year, so a rising line means "
@@ -139,7 +138,6 @@ with t_summary:
             st.header("What the data says")
             for line in scoring.country_brief(iso3, name, values, scores, core["series"], countries, year):
                 st.markdown(f"- {line}")
-            ui.cite("index")
         with c2:
             outlook = data.get_outlook(core, core["version"])
             mine = None if outlook is None else outlook.predictions.set_index("iso3").reindex([iso3]).iloc[0]
@@ -163,23 +161,20 @@ with t_summary:
             else:
                 st.markdown("No absolute warning thresholds crossed.")
             st.caption("Red flags use fixed thresholds (e.g. inflation ≥ 20%), independent of how other countries score.")
-            ui.cite("index", "ucdp_def", "imf_ara")
 
             st.header("Upcoming events")
             country_events = content.load_events()
             ui.upcoming_events(country_events[country_events["iso3"] == iso3].assign(country=name), limit=5)
             st.page_link("app_pages/watchlist.py", label="Events watchlist", icon=":material/event:")
-            ui.cite("ifes")
 
         st.header("Pillar scores")
         peers = table[table["region"] == row["region"]]
         st.plotly_chart(charts.pillar_bars(s, peers[[p.key for p in PILLARS]].median()), config={"displayModeBar": False})
-        ui.cite("index")
 
         with st.expander("Sensitivity to the weights"):
             sens = data.get_sensitivity(core, year, iso3, ui.weights_tuple(), core["version"])
             st.dataframe(
-                sens, hide_index=True,
+                sens.round(1), hide_index=True,
                 column_config={
                     "Score": st.column_config.NumberColumn(format="%.1f"),
                     "Rank": st.column_config.NumberColumn(format="%d"),
@@ -189,6 +184,7 @@ with t_summary:
                 "If the rank barely moves when a pillar is dropped, the result does not hinge on one modelling choice. "
                 "Large swings tell you which dimension drives the score."
             )
+        ui.cite("index", "ucdp_def", "imf_ara", "ifes")
 
 # --- In real life ------------------------------------------------------------------
 with t_real:
@@ -336,6 +332,7 @@ def _snap(spec: dict, value: float):
 
 def _apply_preset(name: str, specs: dict[str, dict]) -> None:
     _reset_whatif()
+    st.session_state[WHATIF_PREFIX + "preset"] = name  # shown as selected until the next preset or a reset
     for key, (op, amount) in WHATIF_PRESETS[name].items():
         if key not in specs:
             continue
@@ -357,19 +354,27 @@ def what_if_simulator() -> None:
         "the real index."
     )
     specs = _whatif_controls()
+    picked = st.session_state.get(WHATIF_PREFIX + "preset")
     with st.container(horizontal=True, wrap=True, key="whatif_presets"):  # full names; they wrap instead of truncating
         for preset in WHATIF_PRESETS:
-            st.button(preset, on_click=_apply_preset, args=(preset, specs), key=f"preset_{preset}")
+            st.button(preset, on_click=_apply_preset, args=(preset, specs), key=f"preset_{preset}",
+                      type="primary" if preset == picked else "secondary")
         st.button("Reset indicators", on_click=_reset_whatif, key="whatif_reset", icon=":material/restart_alt:")
 
     controls, results = st.container(key="split_whatif").columns([1, 1.15], gap="large")
     changes, moved = {}, []
     with controls:
+        live = st.empty()  # the result in one line, kept in view over the sliders when the split stacks (ui.py)
+        # a pillar opens once one of its values is changed and stays open until a reset or the next preset:
+        # following the values instead would close it under the user when a slider goes back to its start
+        opened = st.session_state.setdefault(WHATIF_PREFIX + "opened", set())
         for i, pillar in enumerate(PILLARS):
             keys = [k for k, s in specs.items() if s["ind"].pillar == pillar.key]
             if not keys:
                 continue
-            with st.expander(pillar.label, expanded=i == 0):
+            if any(st.session_state.get(WHATIF_PREFIX + k, specs[k]["current"]) != specs[k]["current"] for k in keys):
+                opened.add(pillar.key)
+            with st.expander(pillar.label, expanded=i == 0 or pillar.key in opened):
                 for key in keys:
                     spec = specs[key]
                     widget_key = WHATIF_PREFIX + key
@@ -402,11 +407,16 @@ def what_if_simulator() -> None:
         n = new_scores.loc[iso3]
         score_delta = n["composite"] - s["composite"]
         rank_delta = int(n["rank"] - s["rank"])
+        riskier = rank_delta < 0  # rank 1 = highest risk: riskier reads as up, like the score
+        places = f"{abs(rank_delta)} place{'s' if abs(rank_delta) > 1 else ''} {'riskier' if riskier else 'safer'}"
+        score_change = f"{score_delta:+.1f}" if round(score_delta, 1) else None
+        live.markdown(f'<div class="sg-whatif-live" aria-hidden="true"><span>Score {n["composite"]:.0f}'  # short enough for one phone line
+                      f'{f" ({score_change})" if score_change else ""} · Rank {int(n["rank"])}</span>{ui.tier_badge(n["tier"])}</div>',
+                      unsafe_allow_html=True)
         r1, r2 = st.columns(2)  # two figures fit a half-width panel; the tier goes on its own line below
-        r1.metric("Composite score", f"{n['composite']:.0f} / 100",
-                  delta=f"{score_delta:+.1f}" if round(score_delta, 1) else None, delta_color="inverse", border=True)
-        r2.metric("Global rank", f"{int(n['rank'])} of {int(n['n_ranked'])}",
-                  delta=f"{rank_delta:+d} places" if rank_delta else None, border=True,
+        r1.metric("Composite score", f"{n['composite']:.0f} / 100", delta=score_change, delta_color="inverse", border=True)
+        r2.metric("Global rank", f"{int(n['rank'])} of {int(n['n_ranked'])}", delta=places if rank_delta else None,
+                  delta_color="red" if riskier else "green", delta_arrow="up" if riskier else "down", border=True,
                   help="1 = highest risk, so a smaller number means riskier.")
         was = f" <span style='color:var(--sg-muted)'>was {s['tier']}</span>" if n["tier"] != s["tier"] else ""
         st.markdown(f"Risk tier&nbsp; {ui.tier_badge(n['tier'])}{was}", unsafe_allow_html=True)
@@ -422,7 +432,9 @@ def what_if_simulator() -> None:
             for label in sorted(cleared):
                 st.markdown(f"Cleared: {label}")
         if moved:
-            st.caption("Changed: " + ", ".join(moved) + ".")
+            st.caption((f"Scenario: {picked}. " if picked else "") + "Changed: " + ", ".join(moved) + ".")
+        elif picked:  # no data for it, already past its values, or every slider moved back
+            st.caption(f"Scenario: {picked}. No value differs from {name}'s own data.")
         else:
             st.caption("Move a slider or pick a scenario above to start.")
 
@@ -451,7 +463,7 @@ with t_indicators:
                 "Data": config.indicator_url(ind),
             })
         st.dataframe(
-            pd.DataFrame(rows), hide_index=True, height=640,
+            pd.DataFrame(rows).round({"Risk score": 0}), hide_index=True, height=640,
             column_config={
                 "Risk score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.0f"),
                 "Data": st.column_config.LinkColumn("Data", display_text="Open ↗",
@@ -530,7 +542,6 @@ with t_news:
             "newest first, from Bing News and Google News (photos where the feed has one), with GDELT as a backup."
         )
         ui.news_list(news_name, limit=20, iso2=row["iso2"])
-        ui.cite("news", "gdelt")
 
         with ui.guard("Video reports"):
             st.header(f"Video reports on {name}")
@@ -543,7 +554,6 @@ with t_news:
                 st.caption("From the latest uploads of international broadcasters and think tanks; play one here or open it on YouTube.")
                 ui.video_gallery(about, key=f"profile_videos_{iso3}", limit=6)
             st.page_link("app_pages/video.py", label="Live TV and all video reports", icon=":material/live_tv:")
-            ui.cite("youtube")
         with ui.guard("Media tone"):
             if st.toggle("Show media tone over the last 3 months (GDELT)"):
                 tone, terr = data.load_tone(news_name)
@@ -554,7 +564,6 @@ with t_news:
                 else:
                     st.plotly_chart(charts.tone_chart(tone), config={"displayModeBar": False})
                     st.caption("GDELT average tone of English-language coverage. A sustained fall often precedes or accompanies crises.")
-                    ui.cite("gdelt")
         with ui.guard("Protest coverage"):
             if st.toggle("Show protest coverage over the last 3 months (GDELT)"):
                 protests, perr = data.load_protests(news_name)
@@ -568,7 +577,7 @@ with t_news:
                     st.caption(f"Share of all English-language news GDELT monitors that mentions {name} together with protests, "
                                "riots, strikes or unrest, smoothed over a week. Spikes show unrest getting attention; compare "
                                "with the headlines above.")
-                    ui.cite("gdelt")
+        ui.cite("news", "gdelt", "youtube")
 
 # --- Analyst assessment -------------------------------------------------------------------
 with t_analyst:

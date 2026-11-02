@@ -239,7 +239,6 @@ DOCK_CSS = f"""
 .st-key-sg_read {{ position: relative; background: var(--sg-panel); border: 1px solid var(--sg-line); border-radius: 8px;
   padding: 6px 10px 6px 8px !important; overflow: visible !important; min-height: 46px; }}
 .st-key-sg_read:hover {{ background: var(--sg-hover); }}
-.st-key-sg_read:has(.sg-read.on) {{ border-color: color-mix(in srgb, {ACCENT} 55%, transparent); }}
 .st-key-sg_read [data-testid="stMarkdownContainer"] {{ margin-bottom: 0 !important; }}
 .st-key-sg_read > [data-testid="stElementContainer"] {{ flex: 1 1 auto !important; min-width: 0; }}
 .st-key-sg_read_link, .st-key-sg_read_link * {{ position: static !important; }}
@@ -253,11 +252,11 @@ DOCK_CSS = f"""
 .sg-read-name {{ font-weight: 700; font-size: 0.86rem; color: var(--sg-strong); white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; }}
 .sg-read-meta {{ font-size: 0.75rem; color: var(--sg-muted); white-space: nowrap; }}
-.sg-read-meta b {{ color: var(--sg-c); font-size: 0.8rem; }}
+.sg-read-meta b {{ color: var(--sg-strong); font-size: 0.8rem; }}
 .sg-spark {{ flex: none; width: 92px; height: 26px; }}
 
 /* tabs */
-{_wrap("sg_tabs")} {{ flex: 0 0 auto !important; }}
+{_wrap("sg_tabs")} {{ flex: 0 0 auto !important; margin-left: auto; }}  /* right-aligned, with or without the readout */
 .st-key-sg_tabs {{ gap: 2px !important; }}
 .st-key-sg_tabs > [data-testid="stLayoutWrapper"] {{ flex: 0 0 64px !important; min-width: 0; }}
 .st-key-sg_tabs [data-testid="stElementContainer"], .st-key-sg_tabs [data-testid="stPageLink"],
@@ -363,7 +362,17 @@ GLOBAL_CSS = """
   /* stacked, the result comes first, right under the scenario buttons that change it */
   .st-key-split_whatif [data-testid="stHorizontalBlock"]:not([data-testid="stColumn"] *) > [data-testid="stColumn"]:last-child {
     order: -1; }
+  /* and a one-line copy of it stays under the top bar while the sliders scroll */
+  .st-key-split_whatif [data-testid="stElementContainer"]:has(.sg-whatif-live) { display: flex !important;
+    position: sticky; top: 3.75rem; z-index: 5; padding: 8px 0; background: var(--sg-bg); border-bottom: 1px solid var(--sg-line); }
 }
+.st-key-split_whatif [data-testid="stElementContainer"]:has(.sg-whatif-live) { display: none; }  /* side by side, the full result shows */
+.sg-whatif-live { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 0.85rem; color: var(--sg-soft); }
+[data-testid="stMarkdownContainer"]:has(> .sg-whatif-live) { margin-bottom: 0 !important; }  /* its backdrop covers all of it */
+/* keyboard focus scrolls clear of the top bar and the dock, and of the What-if line while it sticks */
+[data-testid="stMain"] { scroll-padding: 3.75rem 0 6rem; }
+[data-testid="stMain"]:has(.sg-whatif-live) { scroll-padding-top: 9.5rem; }  /* the slider label and value too */
+@media (max-width: 640px) { [data-testid="stMain"] { scroll-padding-bottom: 8rem; } }  /* the dock takes two rows */
 @container sgsplit (max-width: 780px) {
   [data-testid="stHorizontalBlock"]:not([data-testid="stColumn"] *) > [data-testid="stColumn"] {
     min-width: 100% !important; flex: 1 1 100% !important; }
@@ -396,6 +405,9 @@ GLOBAL_CSS = """
 [data-testid="stMain"] h2.sg-panel-title { font-size: 1rem; padding: 0; margin: 0 0 2px; }
 [data-testid="stMain"] h3 { font-size: clamp(1.05rem, 2vw, 1.18rem); }
 [data-testid="stMain"] h4, [data-testid="stMain"] h5 { font-size: 1rem; }
+/* reading measure: prose and captions wrap at about 70 characters; table cells keep their width */
+[data-testid="stMain"] [data-testid="stMarkdownContainer"] :is(p, li):not(table *, .sg-news > li),
+[data-testid="stMain"] [data-testid="stCaptionContainer"] { max-width: 70ch; }
 /* metrics: labels wrap between words instead of being cut off or split mid-word */
 [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * { white-space: normal !important; overflow: visible !important;
   text-overflow: clip !important; word-break: normal !important; overflow-wrap: normal !important; hyphens: none; }
@@ -418,9 +430,8 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
 [data-testid="stMain"] h1.sg-head-title { font-size: clamp(1.5rem, 3vw, 1.85rem); font-weight: 700; line-height: 1.2;
   padding: 0; margin: 0; color: var(--sg-strong); }
 .sg-head-sub { margin: 6px 0 0; font-size: 0.98rem; color: var(--sg-soft); max-width: 70ch; }
-/* figures keep the mono face: digits line up and read as data */
-[data-testid="stMetricValue"], .sg-cs-num, .sg-read-meta b, .sg-fol-meta b {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+/* figures: digits line up and read as data */
+[data-testid="stMetricValue"], .sg-cs-num, .sg-read-meta b, .sg-fol-meta b { font-variant-numeric: tabular-nums; }
 /* follow: the sync slot renders nothing */
 .st-key-sg_follow_sync, [data-testid="stElementContainer"]:has(.st-key-sg_follow_sync),
 .st-key-sg_a11y, [data-testid="stElementContainer"]:has(.st-key-sg_a11y) { display: none !important; }
@@ -460,7 +471,7 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
 .sg-fol-name { font-weight: 700; font-size: 0.86rem; color: var(--sg-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   max-width: 140px; }
 .sg-fol-meta { font-size: 0.72rem; color: var(--sg-muted); }
-.sg-fol-meta b { color: var(--c); font-size: 0.84rem; }
+.sg-fol-meta b { color: var(--sg-strong); font-size: 0.84rem; }
 [class*="st-key-fol_open_"] { position: absolute !important; inset: 0; margin: 0 !important; }
 [class*="st-key-fol_open_"] button { position: absolute !important; inset: 0; width: 100%; height: 100%; opacity: 0; }
 [data-testid="stElementContainer"]:has([class*="st-key-fol_open_"]) { position: absolute; inset: 0; }
@@ -474,7 +485,7 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
   line-height: 1.1 !important; }
 .sg-country-meta { color: var(--sg-muted); font-size: 0.84rem; margin-top: 6px; line-height: 1.45; }
 .sg-country-score { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; flex: 0 1 auto; }
-.sg-cs-num { font-size: 3rem; font-weight: 700; line-height: 1; color: var(--c); }
+.sg-cs-num { font-size: 3rem; font-weight: 700; line-height: 1; color: var(--sg-strong); }
 .sg-cs-num span { font-size: 0.95rem; color: var(--sg-faint); font-weight: 400; margin-left: 2px; }
 .sg-cs-side { display: flex; flex-direction: column; gap: 5px; font-size: 0.8rem; color: var(--sg-soft); }
 .sg-cs-line:empty { display: none; }
@@ -499,6 +510,9 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
 /* reduced motion: transitions become instant; loading spinners keep turning (they are status, not decoration) */
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; } }
 """
+# The face comes from Google Fonts: if that is blocked, text falls back to a system mono, not Streamlit's sans.
+# Streamlit marks every Material icon (and nothing else) translate="no"; those keep their icon font.
+GLOBAL_CSS += 'body, body :not([translate="no"]) { font-family: ' + config.MONO_FONT + "; }\n"
 
 
 def _on_dock_search() -> None:
@@ -525,7 +539,7 @@ def _sparkline(values: pd.Series, color: str, w: int = 92, h: int = 26, css: str
             f'fill="{color}"/></svg>')
 
 
-def _readout(current_url_path: str) -> None:
+def _readout() -> None:
     """The tracked country: flag, score, tier, change and its risk since 2015. Tap to open it."""
     try:
         core = data.load_core()
@@ -548,10 +562,9 @@ def _readout(current_url_path: str) -> None:
         trend = "" if delta is None or pd.isna(delta) else f" · {trend_label(delta)}"
         meta = f"<b>{score:.0f}</b> · {html.escape(tier)}{trend}"
     flag = config.flag_url(row["iso2"])
-    state = " on" if current_url_path == "country" else ""
     with st.container(key="sg_read", horizontal=True, vertical_alignment="center", wrap=False):
         st.markdown(
-            f'<div class="sg-read{state}" style="--sg-c:{color}" title="Open the country profile">'
+            f'<div class="sg-read" style="--sg-c:{color}" title="Open the country profile">'
             '<span class="sg-tier"></span>'
             + (f'<img src="{flag}" alt="">' if flag else "")
             + f'<div class="sg-read-text"><div class="sg-read-name">{html.escape(str(row["name"]))}</div>'
@@ -614,7 +627,8 @@ def dock(current_url_path: str, pages: dict) -> None:
                 with st.popover("Find", icon=":material/search:", type="tertiary", width="stretch",
                                 help="Search countries and pages (press / or Ctrl+K)"):
                     _find(pages)
-        _readout(current_url_path)  # last, so the tabs never wait for it (CSS shows it first)
+        if current_url_path != "country":  # the profile's own header already shows the country
+            _readout()  # last, so the tabs never wait for it (CSS shows it first)
 
 
 # ---------------------------------------------------------------------------
@@ -765,7 +779,7 @@ def country_header(name: str, row: pd.Series, years: pd.Series, delta, year: int
         + (f'<img src="{flag}" alt="">' if flag else "")
         + f'<div><h1 class="sg-country-name">{html.escape(str(name))}</h1>'
         f'<div class="sg-country-meta">{meta}</div></div></div>'
-        f'<div class="sg-country-score" style="--c:{color}">'
+        '<div class="sg-country-score">'
         f'<div class="sg-cs-num">{"—" if pd.isna(score) else f"{score:.0f}"}<span>/100</span></div>'
         f'<div class="sg-cs-side">{tier_badge(tier)}<div class="sg-cs-line">{rank}</div>'
         f'<div class="sg-cs-line">{change}</div>{analyst}</div>'
@@ -788,7 +802,6 @@ def following_strip(table: pd.DataFrame) -> None:
     with st.container(horizontal=True, wrap=True, gap="small", key="following_strip"):
         for iso3 in followed:
             r = rows.loc[iso3]
-            color = config.TIER_COLORS.get(r["tier"], config.INK["faint"])
             delta = r.get("delta_1y")
             change = "" if pd.isna(delta) else trend_label(delta)
             flag = config.flag_url(r["iso2"])
@@ -796,7 +809,7 @@ def following_strip(table: pd.DataFrame) -> None:
             tier = html.escape(r["tier"]) if isinstance(r["tier"], str) else "—"
             with st.container(key=f"fol_{iso3}", width=210):
                 st.markdown(
-                    f'<div class="sg-fol" style="--c:{color}">' + (f'<img src="{flag}" alt="">' if flag else "")
+                    '<div class="sg-fol">' + (f'<img src="{flag}" alt="">' if flag else "")
                     + f'<div><div class="sg-fol-name">{html.escape(str(r["name"]))}</div>'
                     f'<div class="sg-fol-meta"><b>{score}</b> · {tier} {change}</div></div></div>',
                     unsafe_allow_html=True,
@@ -1009,26 +1022,24 @@ def movers_lists(df: pd.DataFrame, n: int = 5, key: str = "movers") -> None:
     valid = df.dropna(subset=["delta_1y"])
     risers = valid[valid["delta_1y"] >= TREND_THRESHOLD].nlargest(n, "delta_1y").reset_index(drop=True)
     fallers = valid[valid["delta_1y"] <= -TREND_THRESHOLD].nsmallest(n, "delta_1y").reset_index(drop=True)
-    left, right = st.columns(2)
-    for col, title, frame, part in ((left, "▲ Biggest risers (riskier)", risers, "up"),
-                                    (right, "▼ Biggest fallers (safer)", fallers, "down")):
-        with col:
-            st.markdown(f"**{title}**")
-            if frame.empty:
-                st.caption("No country moved by a point or more.")
-                continue
-            frame = frame.assign(tier_text=[f"{a} → {b}" if isinstance(a, str) and a != b else b
-                                            for a, b in zip(frame["prev_tier"], frame["tier"])])
-            event = st.dataframe(
-                frame[["iso3", "flag", "name", "composite", "trend", "tier_text"]], hide_index=True,
-                on_select="rerun", selection_mode="single-row", key=f"{key}_{part}",
-                column_config={
-                    "iso3": None, "flag": FLAG_COLUMN, "name": "Country",
-                    "composite": st.column_config.NumberColumn("Score", format="%.0f"),
-                    "trend": "Change", "tier_text": "Tier",
-                },
-            )
-            open_selected(event, frame, f"{key}_{part}")
+    # stacked: side by side, half-width tables cut names and tiers
+    for title, frame, part in (("▲ Biggest risers (riskier)", risers, "up"), ("▼ Biggest fallers (safer)", fallers, "down")):
+        st.markdown(f"**{title}**")
+        if frame.empty:
+            st.caption("No country moved by a point or more.")
+            continue
+        frame = frame.assign(tier_text=[f"{a} → {b}" if isinstance(a, str) and a != b else b
+                                        for a, b in zip(frame["prev_tier"], frame["tier"])])
+        event = st.dataframe(
+            frame[["iso3", "flag", "name", "composite", "trend", "tier_text"]].round(), hide_index=True,
+            on_select="rerun", selection_mode="single-row", key=f"{key}_{part}",
+            column_config={
+                "iso3": None, "flag": FLAG_COLUMN, "name": "Country",
+                "composite": st.column_config.NumberColumn("Score", format="%.0f"),
+                "trend": "Change", "tier_text": "Tier",
+            },
+        )
+        open_selected(event, frame, f"{key}_{part}")
 
 
 def country_table(df: pd.DataFrame, key: str, height: int | None = None, extra: dict | None = None,
@@ -1038,8 +1049,8 @@ def country_table(df: pd.DataFrame, key: str, height: int | None = None, extra: 
     cols = ["iso3", "flag", "name", "composite", "trend", "tier", "rank", *[p.key for p in PILLARS], *(extra or {})]
     frame = df.sort_values(sort, ascending=ascending, na_position="last")[[c for c in cols if c in df.columns]]
     frame = frame.reset_index(drop=True)
-    event = st.dataframe(
-        frame, hide_index=True, on_select="rerun", selection_mode="single-row", key=key, height=height,
+    event = st.dataframe(  # every number here shows whole, so screen readers get them rounded too
+        frame.round(), hide_index=True, on_select="rerun", selection_mode="single-row", key=key, height=height,
         column_config={
             "iso3": None, "flag": st.column_config.ImageColumn(" ", width="small", pinned=True),
             "name": st.column_config.TextColumn("Country", pinned=True, width="medium"),
@@ -1212,8 +1223,15 @@ def data_status(core: dict) -> None:
             st.caption("Errors: " + " · ".join(f"**{k}**: {v[:160]}" for k, v in errors.items()))
 
 
-def footer() -> None:
+def footer(full: bool = False) -> None:
+    """The full footer on the Introduction and Sources pages; one line everywhere else."""
     st.divider()
+    if not full:
+        with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+            st.caption("Educational project. Scores are relative and model-based and do not forecast specific events. "
+                       "Not investment or security advice.", width="content")
+            st.page_link(SOURCES_PAGE, label="Sources", icon=":material/verified:")
+        return
     st.caption(
         f"{config.APP_TITLE}: {config.APP_DESCRIPTION} Data: World Bank Worldwide Governance Indicators & World "
         "Development Indicators · IMF World Economic Outlook · UNHCR · UCDP (via World Bank) · Bing News, Google News "

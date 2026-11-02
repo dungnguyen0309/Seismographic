@@ -5,7 +5,7 @@ import html
 import pandas as pd
 import streamlit as st
 
-from prm import cases, charts, config, data, ui
+from prm import cases, charts, data, ui
 
 core, year, values, scores = ui.load()
 hist = ui.history(core)
@@ -35,28 +35,26 @@ st.markdown(
     unsafe_allow_html=True,
 )
 table = pd.DataFrame([{
-    "key": c.key, "flag": config.flag_url(iso2.get(c.iso3)), "country": names.get(c.iso3, c.iso3), "event": c.title,
-    "date": pd.Timestamp(c.date), "verdict": readings[c.key].get("verdict") or "No data",
-    "score": readings[c.key].get("score"), "tier": readings[c.key].get("tier"), "rank": readings[c.key].get("rank"),
+    "country": names.get(c.iso3, c.iso3), "event": c.title, "date": pd.Timestamp(c.date),
+    "verdict": readings[c.key].get("verdict") or "No data", "tier": readings[c.key].get("tier"),
+    "rank": readings[c.key].get("rank"),
 } for c in cases.CASES])
-event = st.dataframe(
-    table, hide_index=True, on_select="rerun", selection_mode="single-row", key="cases_table",
+# Fixed widths: auto-sized columns get squeezed to fit and cut the event names. Tier and rank, the verdict rule's
+# inputs, fit at 1280 px only without the flag and score columns; each case below shows both.
+st.dataframe(
+    table, hide_index=True,
     column_config={
-        "key": None, "flag": ui.FLAG_COLUMN, "country": "Country", "event": "Event",
-        "date": st.column_config.DateColumn("Date", format="D MMM YYYY"), "verdict": "Verdict",
-        "score": st.column_config.ProgressColumn("Score the year before", min_value=0, max_value=100, format="%.0f",
-                                                 color="#fd8078"),
-        "tier": "Tier", "rank": st.column_config.NumberColumn("Rank", format="%d", help="1 = riskiest"),
+        "country": st.column_config.TextColumn("Country", width=110),
+        "event": st.column_config.TextColumn("Event", width=245),
+        "date": st.column_config.DateColumn("Date", format="D MMM YYYY", width=110),
+        "verdict": st.column_config.TextColumn("Verdict", width=140),
+        "tier": st.column_config.TextColumn("Tier", width=100, help="In the year before the event"),
+        "rank": st.column_config.NumberColumn("Rank", format="%d", help="In the year before the event. 1 = riskiest"),
     },
 )
-st.caption("Tick a row for the full case.")
 
 # --- One case ----------------------------------------------------------------------------------------------
 keys = [c.key for c in cases.CASES]
-clicked = event.selection.rows[0] if event and event.selection.rows else None
-if clicked is not None and clicked != st.session_state.get("_case_row"):  # a new click in the table wins
-    st.session_state["case_pick"] = keys[clicked]
-st.session_state["_case_row"] = clicked
 pick = st.selectbox("Case", keys, key="case_pick",
                     format_func=lambda k: next(f"{names.get(c.iso3, c.iso3)} · {c.title} ({c.date[:4]})"
                                                for c in cases.CASES if c.key == k))

@@ -15,8 +15,8 @@ meta = core["meta"]
 ui.hero("Sources",
         "Every number, map, headline and video in Seismographic, traced back to the organisation that published it.")
 st.markdown(
-    "Seismographic collects no data itself. Every chart names its source underneath; this page lists them all, "
-    "with links to the originals."
+    "Seismographic collects no data itself. Charts, maps and tables name their sources on the same page or tab; "
+    "this page lists them all, with links to the originals."
 )
 
 references = [k for keys in config.SOURCE_GROUPS.values() for k in keys]
@@ -319,6 +319,6 @@ with t_cite:
         f"the IMF ({edition}), UNHCR and the Uppsala Conflict Data Program. Retrieved {dt.date.today():%d %B %Y}.",
         language=None, wrap_lines=True,
     )
-    st.caption("When you quote a figure, cite the original source too: it is named under every chart and in the "
-               "*Index data* tab.")
-ui.footer()
+    st.caption("When you quote a figure, cite the original source too: it is named on the page or tab the "
+               "figure comes from and in the *Index data* tab.")
+ui.footer(full=True)

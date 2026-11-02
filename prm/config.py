@@ -667,7 +667,7 @@ REGION_NEWS = {
     "Sub-Saharan Africa": '(Africa OR Sahel OR "Horn of Africa")',
 }
 
-# Shorter region names for chart labels (filters and tables keep the World Bank names)
+# Shorter region names for chart labels and tables (filters and the CSV download keep the World Bank names)
 REGION_SHORT = {"Middle East, North Africa, Afghanistan & Pakistan": "MENA, Afghanistan & Pakistan",
                 "Latin America & Caribbean": "Latin America & Carib."}
 

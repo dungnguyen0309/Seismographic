@@ -1,5 +1,5 @@
-# Every Monday: check that the events watchlist still covers the next six months.
-# If it is running low, open (or refresh) a reminder issue; once it is topped up, close the issue.
+# Every Monday: check that the events watchlist still covers the next six months and that every date can be read.
+# If not, open (or refresh) a reminder issue; once the check passes, close the issue.
 name: Watchlist check
 
 on:
@@ -29,7 +29,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           NEEDS_UPDATE: ${{ steps.check.outputs.needs_update }}
         run: |
-          title="Watchlist: add upcoming events"
+          title="Watchlist: update data/events.csv"
           open_issue=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number')
           if [ "$NEEDS_UPDATE" = "true" ]; then
             if [ -n "$open_issue" ]; then
@@ -38,5 +38,5 @@ jobs:
               gh issue create --title "$title" --body-file watchlist_report.md
             fi
           elif [ -n "$open_issue" ]; then
-            gh issue close "$open_issue" --comment "The watchlist covers the next six months again. Closing."
+            gh issue close "$open_issue" --comment "The watchlist check passes again. Closing."
           fi

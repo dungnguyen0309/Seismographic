@@ -67,8 +67,9 @@ save, and run it again.
 
 * **Write assessments**: use the app's *Assessment builder* page, download the file and upload it to the
   `assessments` folder. See `assessments/README.md` for a writing guide.
-* **Fill the watchlist**: use the helper on the *Events watchlist* page, then edit `data/events.csv` on GitHub
-  (pencil icon → paste the line at the bottom → *Commit changes*).
+* **Fill the watchlist**: run the app with the `SEISMOGRAPHIC_MAINTAINER` environment variable set to `1` and
+  use the helper on the *Events watchlist* page, then edit `data/events.csv` on GitHub (pencil icon → paste the
+  line at the bottom → *Commit changes*).
 * **Change the model**: weights, thresholds and indicators are all in `prm/config.py`.
 
 Every change you commit on GitHub appears in the live app a few minutes later.

@@ -40,7 +40,6 @@ k4.metric("People displaced from the region", ui.fmt_population(rv["displaced_to
 riskiest = scored.nsmallest(1, "rank")
 k5.metric("Highest risk", riskiest["name"].iloc[0] if len(riskiest) else "—", border=True,
           help="Highest composite score in the region")
-ui.cite("index", "unhcr")
 
 # --- Map and tier mix -----------------------------------------------------------------------------
 left, right = st.columns([1.3, 1])
@@ -51,23 +50,19 @@ with left:
                    layers={"spin": False, "flows": False})
     st.caption("Turned to the region; countries elsewhere are dimmed. Click a country for its index, ▶ to replay "
                f"since {config.HISTORY_START}.")
-    ui.cite("index", "natural_earth")
 with right:
     st.header(f"Tier mix since {config.HISTORY_START}")
     st.plotly_chart(charts.tier_mix(rh), config={"displayModeBar": False})
     st.caption("How many of the region's countries sat in each tier, year by year.")
-    ui.cite("index")
 
 # --- Risers and fallers ---------------------------------------------------------------------------------
 st.header(f"Biggest moves since {year - 1}")
 ui.movers_lists(rv, n=5, key="reg_movers")
-ui.cite("index")
 
 # --- Ranking ----------------------------------------------------------------------------------------------
 st.header("Ranking")
 st.caption("Tick a row to open the country.")
 ui.country_table(rv, key="reg_table", height=min(460, 38 * (len(rv) + 1)))
-ui.cite("index", "wb_countries", "flags")
 
 # --- Events and news ---------------------------------------------------------------------------------------
 e_col, n_col = st.columns(2)
@@ -79,12 +74,11 @@ with e_col:
         names = dict(zip(table["iso3"], table["name"]))
         events = events.assign(country=events["iso3"].map(names).fillna(events["country"]))
     ui.upcoming_events(events, limit=10)
-    ui.cite("ifes")
     st.page_link("app_pages/watchlist.py", label="Full events watchlist", icon=":material/event:")
 with n_col:
     st.header("Regional news")
     with st.container(height=520, border=False):
         ui.news_list(config.REGION_NEWS.get(region, region), limit=12)
-        ui.cite("news", "gdelt")
+ui.cite("index", "unhcr", "natural_earth", "wb_countries", "flags", "ifes", "news", "gdelt")
 
 ui.footer()

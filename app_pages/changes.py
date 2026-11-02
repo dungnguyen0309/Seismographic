@@ -65,6 +65,18 @@ k4.metric("Moved to a safer tier", int((moved["tier_move"] < 0).sum()), border=T
 k5.metric("New red flags", int((flags["change"] == "New").sum()), border=True,
           help="Absolute warning thresholds crossed this year that were not crossed last year")
 
+# --- Biggest moves -------------------------------------------------------------------------------
+st.header("Biggest moves")
+if moved.empty:
+    st.info("No year-on-year comparison is available for this selection.")
+else:
+    event = st.plotly_chart(charts.change_bars(moved), config={"displayModeBar": False},
+                            on_select="rerun", selection_mode="points", key="chg_bars")
+    if iso3 := ui.clicked_iso3(event):
+        ui.go_to_country(iso3)
+    st.caption("Red = riskier than last year, blue = safer. Scores are relative, so a country can move because "
+               "others changed. Click a bar to open the country.")
+
 # --- Map of change ----------------------------------------------------------------------------------
 st.header("Map of change")
 
@@ -84,20 +96,6 @@ ui.globe_panel(
 )
 st.caption("Red = riskier than last year, blue = safer, grey = little change; the bigger the move, the brighter "
            "and taller the country. Moves beyond ±10 points share the end colour.")
-ui.cite("index")
-
-# --- Biggest moves -------------------------------------------------------------------------------
-st.header("Biggest moves")
-if moved.empty:
-    st.info("No year-on-year comparison is available for this selection.")
-else:
-    event = st.plotly_chart(charts.change_bars(moved), config={"displayModeBar": False},
-                            on_select="rerun", selection_mode="points", key="chg_bars")
-    if iso3 := ui.clicked_iso3(event):
-        ui.go_to_country(iso3)
-    st.caption("Red = riskier than last year, blue = safer. Scores are relative, so a country can move because "
-               "others changed. Click a bar to open the country.")
-    ui.cite("index")
 
 # --- Tier changes --------------------------------------------------------------------------------------
 st.header("Tier changes")
@@ -106,28 +104,32 @@ if tiers.empty:
     st.caption("No country changed tier.")
 else:
     tiers = tiers.assign(move=tiers.apply(lambda r: f"{r['prev_tier']} → {r['tier']}", axis=1)).reset_index(drop=True)
+    # Fixed widths: auto-sized columns get squeezed to fit, which cut "Moderate → Elevated" and long names.
+    # No region column: even shortened it does not fit at 1280 px, and the Region filter above sets it.
     event = st.dataframe(
-        tiers[["iso3", "flag", "name", "region", "move", "trend", "driver"]], hide_index=True,
+        tiers[["iso3", "flag", "name", "move", "trend", "driver"]], hide_index=True,
         on_select="rerun", selection_mode="single-row", key="chg_tiers",
-        column_config={"iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country", "region": "Region",
-                       "move": "Tier", "trend": "Score change",
-                       "driver": st.column_config.TextColumn("Main driver", help="Pillar that moved most")},
+        column_config={"iso3": None, "flag": ui.FLAG_COLUMN,
+                       "name": st.column_config.TextColumn("Country", width=220),
+                       "move": st.column_config.TextColumn("Tier", width=180),
+                       "trend": st.column_config.TextColumn("Change", width=90, help="Composite score vs last year"),
+                       "driver": st.column_config.TextColumn("Main driver", width=140, help="Pillar that moved most")},
     )
     ui.open_selected(event, tiers, "changes_tiers")
 
 # --- What drove the change ------------------------------------------------------------------------------
 st.header("What drove each change")
 st.caption("Change in each pillar score since last year, for every country whose composite moved by a point or more.")
-ui.cite("index")
 drivers = moved[moved["delta_1y"].abs() >= ui.TREND_THRESHOLD].sort_values("delta_1y", ascending=False)
 drivers = drivers.reset_index(drop=True)
-event = st.dataframe(
-    drivers[["iso3", "flag", "name", "trend", *[f"d_{p.key}" for p in PILLARS], "driver"]], hide_index=True,
+event = st.dataframe(  # rounded as shown, so screen readers do not get 15-digit floats
+    # No "Main driver" column: the pillar columns show it, and without it the table fits at 1280 px
+    drivers[["iso3", "flag", "name", "trend", *[f"d_{p.key}" for p in PILLARS]]].round(), hide_index=True,
     height=420, on_select="rerun", selection_mode="single-row", key="chg_drivers",
     column_config={
-        "iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country", "trend": "Composite",
+        "iso3": None, "flag": ui.FLAG_COLUMN, "name": st.column_config.TextColumn("Country", width=220),
+        "trend": "Composite",
         **{f"d_{p.key}": st.column_config.NumberColumn(p.short, format="%+.0f", help=p.label) for p in PILLARS},
-        "driver": "Main driver",
     },
 )
 ui.open_selected(event, drivers, "changes_drivers")

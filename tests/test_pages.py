@@ -45,8 +45,23 @@ def test_country_picker_updates_the_dock(app):
     app.switch_page("app_pages/country.py")
     app.run()
     app.selectbox(key="country_pick").select("KEN").run()
+    assert not any('class="sg-read' in m.value for m in app.markdown)  # the profile header shows it instead
+    app.switch_page("app_pages/overview.py")
+    app.run()
     readout = next(m.value for m in app.markdown if 'class="sg-read' in m.value)
     assert "Kenya" in readout
+
+
+def test_watchlist_shows_maintainer_tools_only_with_the_flag(app, monkeypatch):
+    app.switch_page("app_pages/watchlist.py")
+    monkeypatch.delenv("SEISMOGRAPHIC_MAINTAINER", raising=False)
+    app.run()
+    assert not errors(app), errors(app)
+    assert not any("data/events.csv" in e.label for e in app.expander)
+    monkeypatch.setenv("SEISMOGRAPHIC_MAINTAINER", "1")
+    app.run()
+    assert not errors(app), errors(app)
+    assert any("data/events.csv" in e.label for e in app.expander)
 
 
 @pytest.mark.parametrize("tab", CONFLICT_TABS)
@@ -188,3 +203,41 @@ def test_comparison_link_with_repeats_and_junk(app):
     app.run()
     assert not errors(app), errors(app)
     assert list(app.multiselect(key="compare_picked").value) == ["KEN", "BRA", "USA", "CHN", "IND", "RUS"]
+
+
+def test_whatif_preset_stays_selected_until_reset(app):
+    def run_whatif():  # the test tree can send back an older tab choice, so the tab is set on every run
+        app.session_state["country_tab"] = COUNTRY_TABS[4]
+        app.run()
+
+    def governance_open():
+        return next(e for e in app.expander if e.label == "Governance & Institutions").proto.expanded
+
+    app.switch_page("app_pages/country.py")
+    run_whatif()
+    start = {s.key: s.value for s in app.slider if s.key and s.key.endswith(("wgi_va", "wgi_rl", "wgi_cc", "wgi_ge"))}
+    app.button(key="preset_Democratic backsliding").click()
+    run_whatif()
+    assert not errors(app), errors(app)
+    assert app.button(key="preset_Democratic backsliding").proto.type == "primary"
+    assert governance_open()  # the edited pillar
+    assert any(c.value.startswith("Scenario: Democratic backsliding.") for c in app.caption)
+    rank = next(m for m in app.metric if m.label == "Global rank")
+    assert rank.delta is None or re.fullmatch(r"\d+ places? (riskier|safer)", rank.delta), rank.delta
+    assert any('class="sg-whatif-live"' in m.value for m in app.markdown)
+    for key, value in start.items():  # every Governance value back at its start: the pillar stays open
+        app.slider(key=key).set_value(value)
+    run_whatif()
+    assert len(start) == 4 and governance_open()
+    app.button(key="whatif_reset").click()
+    run_whatif()
+    assert app.button(key="preset_Democratic backsliding").proto.type == "secondary"
+
+
+def test_ranking_table_shows_rounded_scores_and_short_regions(app):
+    app.switch_page("app_pages/overview.py")
+    app.session_state["ov_tab"] = OVERVIEW_TABS[2]
+    app.run()
+    shown = next(d.value for d in app.dataframe if "region" in d.value.columns)
+    assert "MENA, Afghanistan & Pakistan" in set(shown["region"])  # config.REGION_SHORT
+    assert (shown["composite"].dropna() % 1 == 0).all()  # screen readers get the number shown, not 15 digits

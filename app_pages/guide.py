@@ -94,7 +94,7 @@ workflows = {
         ("The *In real life* tab spells out access, safety and price pressures.", ui.COUNTRY_PAGE),
         ("Economic stress flags inflation and currency problems that erode cash assistance.",
          "app_pages/economy.py"),
-        ("Add elections and deadlines to the watchlist; plan field movements around them.",
+        ("Check the watchlist for elections and deadlines; plan field movements around them.",
          "app_pages/watchlist.py"),
     ],
     "Preparing a trip, posting or study abroad": [

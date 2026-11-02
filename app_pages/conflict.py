@@ -45,7 +45,6 @@ k4.metric(f"Forcibly displaced, {dp_year}", ui.fmt_population(displaced_by_year.
                "people (UNHCR)")
 k5.metric("Refugees across borders", ui.fmt_population(flows["value"].sum()) if flows is not None else "—", border=True,
           help="Refugees, asylum seekers and others in need of protection living outside their country (UNHCR)")
-ui.cite("ucdp", "ucdp_def", "unhcr")
 
 # --- The globe: stability risk, conflict rings, refugee arcs -------------------------------------------------
 st.header("On the globe")
@@ -65,7 +64,7 @@ ui.globe_panel(table=table, hist=hist, flows=flows, metric="stability", metric_l
 st.caption("Countries coloured by the Political Stability & Violence pillar (brighter = riskier). Rings mark "
            "armed conflict (bigger and faster = more deaths); arcs run from refugees' origin to their host country. "
            "Click a country to see only its flows.")
-ui.cite("index", "ucdp", "unhcr", "natural_earth")
+ui.cite("index", "ucdp", "ucdp_def", "unhcr", "natural_earth")
 
 TABS = {"conflict": ":material/swords: Armed conflict", "displacement": ":material/luggage: Displacement & refugees",
         "outlook": ":material/insights: Outlook"}
@@ -84,14 +83,12 @@ with tab_conflict:
             st.plotly_chart(charts.yearly_bars(recent.index, recent.values, "Battle-related deaths", charts.WORSE, "deaths"),
                             config={"displayModeBar": False})
             st.caption("Sum over all countries of deaths in state-based armed conflict (UCDP), by the country where they occurred.")
-            ui.cite("ucdp", "ucdp_def")
         with c2:
             st.header("Deadliest conflicts over time")
             top = latest_bd.nlargest(6).index.tolist()
             st.plotly_chart(charts.compare_lines(core["series"], "battle_deaths", top, names, "Battle-related deaths",
                                                  start_year=2010), config={"displayModeBar": False})
             st.caption(f"The six countries with the most battle deaths in {bd_year}.")
-            ui.cite("ucdp")
 
         st.header(f"Countries in armed conflict ({bd_year})")
         st.caption("At least 25 battle-related deaths in the year. Tick a row to open the country.")
@@ -105,7 +102,8 @@ with tab_conflict:
         conflict = conflict.sort_values("deaths", ascending=False).reset_index(drop=True)
         event = st.dataframe(
             conflict[["iso3", "flag", "name", "level", "deaths", "change_text", "battle_deaths_100k", "displaced_share",
-                      "stability", "tier"]],
+                      "stability", "tier"]].round({"deaths": 0, "battle_deaths_100k": 2, "displaced_share": 1,
+                                                   "stability": 0}),
             hide_index=True, height=460, on_select="rerun", selection_mode="single-row", key="cf_table",
             column_config={
                 "iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country",
@@ -131,14 +129,12 @@ with tab_displacement:
             st.plotly_chart(charts.yearly_bars(displaced_by_year.index, displaced_by_year.values, "People",
                                                config.PILLAR_COLORS["social"], "people"), config={"displayModeBar": False})
             st.caption("Refugees, asylum seekers, others in need of protection and internally displaced people, by year (UNHCR).")
-            ui.cite("unhcr")
         with d2:
             st.header(f"Largest displaced populations ({dp_year})")
             origins = dp[dp["year"] == dp_year].nlargest(10, "value").assign(name=lambda d: d["iso3"].map(names))
             event = st.plotly_chart(charts.ranked_bars(origins, "value", "name", charts.WORSE, "people displaced"),
                                     config={"displayModeBar": False}, on_select="rerun", selection_mode="points",
                                     key="cf_origins")
-            ui.cite("unhcr")
             if iso3 := ui.clicked_iso3(event):
                 ui.go_to_country(iso3)
 
@@ -153,7 +149,6 @@ with tab_displacement:
                 event = st.plotly_chart(charts.ranked_bars(hosts, "value", "name", charts.BETTER, "refugees hosted"),
                                         config={"displayModeBar": False}, on_select="rerun", selection_mode="points",
                                         key="cf_hosts")
-                ui.cite("unhcr")
                 if iso3 := ui.clicked_iso3(event):
                     ui.go_to_country(iso3)
             with h2:
@@ -161,9 +156,9 @@ with tab_displacement:
                 st.plotly_chart(charts.refugee_sankey(flows, names), config={"displayModeBar": False})
                 st.caption("Origins (red, left) to host countries (blue, right); band width = people. Hover for numbers. "
                            "Internally displaced people are not included, as they never cross a border.")
-                ui.cite("unhcr")
         else:
             st.info("Refugee flow data is not available right now.")
+        ui.cite("unhcr")
 
 # --- Outlook: chance of new armed conflict next year ----------------------------------------------------------
 with tab_outlook:
@@ -197,7 +192,7 @@ with tab_outlook:
             shown = peaceful.head(20).assign(chance=lambda d: d["probability"] * 100,
                                              recent=lambda d: d["recent_conflict"].map({1.0: "yes", 0.0: ""}))
             event = st.dataframe(
-                shown[["iso3", "flag", "name", "chance", "relative", "recent", "tier"]].reset_index(drop=True),
+                shown[["iso3", "flag", "name", "chance", "relative", "recent", "tier"]].reset_index(drop=True).round(1),
                 hide_index=True, on_select="rerun", selection_mode="single-row", key="outlook_table",
                 column_config={
                     "iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country",

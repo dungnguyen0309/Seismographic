@@ -53,6 +53,23 @@ def _base(fig: go.Figure, height: int = 420, legend: bool = False) -> go.Figure:
     return fig
 
 
+def _label_room(fig: go.Figure, labels) -> go.Figure:
+    """Reserve the y-label width up front (7.2 px a character in the 12 px mono face, plus slack). automargin
+    measures the fallback font before the web font swaps in, which clipped the first letters of long names."""
+    fig.update_layout(margin_l=12 + round(7.5 * max((len(str(s)) for s in labels), default=0)))
+    return fig
+
+
+def _value_room(fig: go.Figure, x: pd.Series) -> go.Figure:
+    """Room past the longest bars for their outside value labels: on a phone the plot is about 170 px wide, and
+    without it '+10.3' ran off the edge and '-6.0' was drawn over the country names."""
+    if (x != 0).any():  # all zero (or empty): keep autorange, not a zero-width axis
+        lo, hi = min(float(x.min()), 0.0), max(float(x.max()), 0.0)
+        pad = 0.45 * ((hi - lo) or 1)
+        fig.update_xaxes(range=[lo - pad if lo < 0 else 0, hi + pad if hi > 0 else 0])
+    return fig
+
+
 # ---------------------------------------------------------------------------
 # Overview
 # ---------------------------------------------------------------------------
@@ -206,7 +223,7 @@ def movers(df: pd.DataFrame, n: int = 8) -> go.Figure:
     fig.add_vline(x=0, line=dict(color=MUTED, width=1))
     fig.update_xaxes(title="Change in score (points)")
     fig.update_yaxes(title=None, automargin=True)
-    return _base(fig, height=max(320, 26 * len(d) + 80))
+    return _value_room(_label_room(_base(fig, height=max(320, 26 * len(d) + 80)), d["name"]), d["change"])
 
 
 # ---------------------------------------------------------------------------
@@ -495,9 +512,9 @@ def change_bars(df: pd.DataFrame, n: int = 10) -> go.Figure:
                       "<br><i>Click to open the profile</i><extra></extra>",
     ))
     fig.add_vline(x=0, line=dict(color=MUTED, width=1))
-    fig.update_xaxes(title="Change in composite score vs last year (points)")
+    fig.update_xaxes(title="Points vs last year")  # a longer title was cut on phones
     fig.update_yaxes(title=None, automargin=True)
-    return _base(fig, height=max(320, 24 * len(d) + 90))
+    return _value_room(_label_room(_base(fig, height=max(320, 24 * len(d) + 90)), d["name"]), d["delta_1y"])
 
 
 def tier_mix(hist: pd.DataFrame) -> go.Figure:
@@ -616,7 +633,7 @@ def ranked_bars(df: pd.DataFrame, value: str, label: str, color: str, hover: str
     fig.update_yaxes(title=None, automargin=True)
     top = float(d[value].max()) if len(d) else 1.0
     fig.update_xaxes(showticklabels=False, range=[0, top * 1.18 if top > 0 else 1])  # room for the value labels
-    return _base(fig, height=max(300, 28 * len(d) + 60))
+    return _label_room(_base(fig, height=max(300, 28 * len(d) + 60)), d[label])
 
 
 def refugee_sankey(flows: pd.DataFrame, names: dict[str, str], n: int = 25) -> go.Figure:
