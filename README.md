@@ -11,8 +11,8 @@ World Bank, IMF, UNHCR and the Uppsala Conflict Data Program (UCDP). It follows 
 models use (indicators, then pillars, then a weighted composite) and shows every step, so a reader can see why a
 country scores the way it does and question the assumptions.
 
-On top of the model sit the parts a model cannot do: red flags on absolute thresholds, live news, an events
-watchlist, and written analyst assessments with probabilistic key judgments and scenarios.
+The app adds what the model cannot do: red flags on absolute thresholds, live news, an events watchlist and
+written analyst assessments with probabilistic key judgments and scenarios.
 
 <picture>
   <source media="(prefers-reduced-motion: reduce)" srcset="docs/screenshots/what-if.png">
@@ -33,7 +33,7 @@ watchlist, and written analyst assessments with probabilistic key judgments and 
 |---|---|---|
 | Monitor | **Global overview** | A 3D globe of the index (click a country for its score and news, replay every year since 2015, rings where armed conflict is active and refugee-flow arcs) or a flat map; the countries you follow; headline numbers with changes; tabs for hotspots, the biggest moves, the full ranking and a risk matrix by region |
 |  | **Country profile** | Score, rank and tier with the change since last year, a ☆ Follow button, an automatic brief, the conflict outlook, red flags, pillar scores against the regional median, a seismogram of its risk since 2015, a sensitivity check, a what-if simulator, every indicator with its year and source, governance and IMF charts, news and protest coverage, the most similar countries, a one-page PDF brief and the analyst assessment (none published yet) |
-|  | **Compare countries** | Up to six countries, added from any profile with *Add to compare* or from the *similar to* suggestions; the address is a shareable link to the comparison. It shows a pillar radar, governance over time, indicator table, economic trajectories |
+|  | **Compare countries** | A pillar radar, governance over time, an indicator table and economic trajectories for up to six countries. Add them from any profile with *Add to compare* or from the *similar to* suggestions; the address is a shareable link to the comparison |
 |  | **Score changes** | This year vs last: biggest risers and fallers, tier changes, the pillar that drove each move, red flags newly crossed or cleared |
 |  | **Live video** | 25 live news channels from five regions, each labelled with where it is based and who owns it, plus recent video reports, think-tank analysis (CFR, Crisis Group, Carnegie, Brookings, Atlantic Council, CSIS) and briefings from the UN, IMF, World Bank, ICRC and Human Rights Watch, filterable by country |
 | Briefings | **Regions** | One region at a time: headline numbers with trends, zoomed map, tier mix since 2015, risers and fallers, ranking, upcoming events and regional news |
@@ -58,10 +58,10 @@ each country's own refugee links on its profile. Charts, maps and tables name th
 the same page or tab, with links.
 
 A console bar along the bottom of every page keeps the tracked country one tap away (flag, score, tier and
-change) next to tabs for Home, Compare, Live and Guide and a *Find* sheet that searches every country and every
-page (press / or Ctrl+K). On a wide screen with the sidebar open, the bar drops the page tabs, since the sidebar
-lists the pages, and keeps the tracked country and *Find*. On the country profile, whose header already shows the
-country, the bar leaves the tracked country out.
+change), with tabs for Home, Compare, Live and Guide and a *Find* sheet that searches every country and every
+page (press / or Ctrl+K). On a wide screen with the sidebar open, the bar keeps the tracked country and *Find*
+but drops the page tabs, which the sidebar lists. On the country profile the header already shows the
+country, so the bar leaves the tracked country out.
 
 ## Method in brief
 
@@ -77,9 +77,9 @@ country, the bar leaves the tracked country out.
   and changes in the World Bank governance scores (WGI) are tested against their 90% confidence intervals.
 * Red flags use absolute thresholds (e.g. UCDP's 25 battle-death threshold for armed conflict, reserves below
   three months of imports) next to the relative index.
-* The conflict outlook is a penalised logistic regression written in numpy; its coefficients are charted on the
-  Outlook tab. From the four pillars, low-level violence (under 25 battle deaths a year) and conflict in the past
-  five years, it gives each country at peace a chance of new armed conflict next year.
+* The conflict outlook is a penalised logistic regression written in numpy. From the four pillars, low-level
+  violence (under 25 battle deaths a year) and conflict in the past five years, it gives each country at peace a
+  chance of new armed conflict next year. Its coefficients are charted on the Outlook tab.
 * The stress test scores shocked countries against today's distribution, so a shock that hits every country
   still shows (re-ranking everyone against each other would hide it).
 
@@ -114,7 +114,7 @@ benchmark is computed on the Methodology page (`app_pages/methodology.py`).
 
 | Source | Used for | Access |
 |---|---|---|
-| [World Bank Worldwide Governance Indicators](https://www.worldbank.org/en/publication/worldwide-governance-indicators) (WGI) | Six governance dimensions (2025 methodology, 0–100 scores) | Public API |
+| [World Bank Worldwide Governance Indicators](https://www.worldbank.org/en/publication/worldwide-governance-indicators) (WGI) | Six governance dimensions (2025 methodology, 0-100 scores) | Public API |
 | [World Bank World Development Indicators](https://datatopics.worldbank.org/world-development-indicators/) | Population, battle deaths (from UCDP), homicides, reserves, unemployment and youth unemployment | Public API |
 | [IMF World Economic Outlook](https://www.imf.org/external/datamapper) | Growth, GDP per capita, inflation, debt, fiscal and current-account balances, projections | Public API |
 | [UNHCR Refugee Data Finder](https://www.unhcr.org/refugee-statistics/) | Forcibly displaced people by origin, and refugee flows between countries | Public API |
@@ -229,7 +229,7 @@ minutes). The `Dockerfile` also runs the app on Render, Fly.io or any Docker hos
 
 The index is relative and largely backward-looking: governance data describe the previous year and conflict data
 lag by up to two years. Governance indicators are perception-based and carry margins of error. Countries with the
-least data are often those with the most risk. The score is a structured starting point for analysis. It does
+least data are often those with the most risk. The score is a structured starting point for analysis and does
 not forecast events, which is why the written assessments exist.
 
 ## Author
