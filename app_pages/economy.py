@@ -25,11 +25,11 @@ view = df if region == "All regions" else df[df["region"] == region]
 
 # --- Headline numbers -----------------------------------------------------------------------------
 k1, k2, k3, k4, k5 = st.columns(5)
-k1.metric("High inflation (≥ 20%)", int((view["inflation"] >= 20).sum()), border=True)
-k2.metric("Economy shrinking", int((view["gdp_growth"] < 0).sum()), border=True, help="Negative real GDP growth")
-k3.metric("Public debt ≥ 90% of GDP", int((view["gov_debt"] >= 90).sum()), border=True)
-k4.metric("Deficit ≥ 5% of GDP", int((view["fiscal_balance"] <= -5).sum()), border=True)
-k5.metric("Reserves < 3 months of imports", int((view["reserves_months"] < 3).sum()), border=True)
+k1.metric("High inflation (≥ 20%)", int((view["inflation"] >= 20).sum()))
+k2.metric("Economy shrinking", int((view["gdp_growth"] < 0).sum()), help="Negative real GDP growth")
+k3.metric("Public debt ≥ 90% of GDP", int((view["gov_debt"] >= 90).sum()))
+k4.metric("Deficit ≥ 5% of GDP", int((view["fiscal_balance"] <= -5).sum()))
+k5.metric("Reserves < 3 months of imports", int((view["reserves_months"] < 3).sum()))
 st.page_link("app_pages/stress.py", label="Stress test: apply one shock to many countries", icon=":material/bolt:")
 
 # Economic red flags per country (used by the globe and the warning-lights table)
@@ -93,16 +93,17 @@ for r in view.itertuples(index=False):
         rows.append({"iso3": r.iso3, "flag": r.flag, "name": r.name, "count": len(hits),
                      "warnings": " · ".join(f"{f['short']} ({config.SEVERITY_LABEL[f['severity']].lower()})" for f in hits),
                      "economic": r.economic})
-warnings = pd.DataFrame(rows, columns=["iso3", "flag", "name", "count", "warnings", "economic"])
+warnings = pd.DataFrame(rows, columns=["iso3", "name", "count", "economic", "flag", "warnings"])  # figures by the name
 if warnings.empty:
     st.caption("No country crosses two or more economic warning thresholds.")
 else:
     warnings = warnings.sort_values(["count", "economic"], ascending=False).reset_index(drop=True)
     event = st.dataframe(
-        warnings.round({"economic": 0}), hide_index=True, height=min(460, 38 * (len(warnings) + 1)), on_select="rerun",
+        warnings.round({"economic": 0}), hide_index=True, height=min(460, 35 * (len(warnings) + 1) + 3), on_select="rerun",
         selection_mode="single-row", key="eco_warnings",
         column_config={
-            "iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country", "count": "Warnings",
+            "iso3": None, "flag": ui.FLAG_COLUMN, "name": ui.NAME_COLUMN,
+            "count": st.column_config.NumberColumn("Warnings", width=100),
             "warnings": st.column_config.TextColumn("Thresholds crossed", width="large"),
             "economic": st.column_config.ProgressColumn("Economy risk", min_value=0, max_value=100, format="%.0f",
                                                         color=config.PILLAR_COLORS["economic"]),

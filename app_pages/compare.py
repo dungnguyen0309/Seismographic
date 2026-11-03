@@ -14,10 +14,6 @@ table = ui.master_table(core, values, scores, hist).set_index("iso3")
 options, names = ui.country_options(core["countries"])
 
 ui.hero("Compare countries")
-st.caption(
-    f"Pick up to {MAX_COMPARE} countries, or use Add to compare on any country profile. "
-    "Colours follow the order you pick them in."
-)
 
 # The widget's own state is dropped when you leave the page, so seed it each visit: a shared link (?c=NGA,KEN) first,
 # then the list built with "Add to compare", then a default
@@ -77,11 +73,6 @@ for col, iso3, colour in zip(cols, picked, COUNTRY_COLORS):
                         f'{"" if int(r["flags"]) == 1 else "s"} · {r.get("trend", "—")} in a year</div>',
                         unsafe_allow_html=True)
 
-st.header("On the globe")
-ui.globe_panel(table=table.reset_index(), hist=hist, flows=core.get("flows"), metric="composite",
-               metric_label="Composite", key="cmp_globe", in_view=set(picked), height=480,
-               layers={"spin": True, "flows": False, "conflict": False})
-
 st.header("Risk index over time")
 st.plotly_chart(
     charts.compare_lines({"composite": hist.rename(columns={"composite": "value"})}, "composite", picked, names,
@@ -107,19 +98,17 @@ with right:
 # --- Indicator table -------------------------------------------------------------
 st.header("Indicators")
 rows = []
-for ind in INDICATORS:
-    label = ind.short if "(" in ind.short or "/" in ind.short else f"{ind.short} ({ind.unit})"  # no doubled units
-    entry = {"Pillar": config.PILLAR_BY_KEY[ind.pillar].short, "Indicator": label}
-    for iso3 in picked:
-        entry[names[iso3]] = ind.fmt(values.loc[iso3].get(ind.key))
-    rows.append(entry)
+for ind in INDICATORS:  # short names and the unit last, so the country columns fit beside them on a phone
+    rows.append({"Indicator": ind.short, **{names[i]: ind.fmt(values.loc[i].get(ind.key)) for i in picked},
+                 "Unit": ind.unit})
 for p in PILLARS:
-    entry = {"Pillar": "Score", "Indicator": f"{p.label} (0–100 risk)"}
-    for iso3 in picked:
-        val = sel.loc[iso3, p.key]
-        entry[names[iso3]] = "—" if pd.isna(val) else f"{val:.0f}"
-    rows.append(entry)
-st.dataframe(pd.DataFrame(rows), hide_index=True, height=min(38 * (len(rows) + 1), 820))
+    rows.append({"Indicator": f"{p.short} pillar",
+                 **{names[i]: "—" if pd.isna(sel.loc[i, p.key]) else f"{sel.loc[i, p.key]:.0f}" for i in picked},
+                 "Unit": "risk score, 0–100"})
+st.dataframe(pd.DataFrame(rows), hide_index=True, height="content", column_config={
+    "Indicator": st.column_config.TextColumn(pinned=True),
+    **{names[i]: st.column_config.TextColumn(alignment="right") for i in picked},
+})
 
 # --- Economy over time ----------------------------------------------------------------
 st.header("Economic trajectory")
@@ -135,6 +124,6 @@ st.plotly_chart(
                          projected_from=year),
     config={"displayModeBar": False},
 )
-ui.cite("index", "natural_earth", "wgi", "imf")
+ui.cite("index", "wgi", "imf", "flags")
 
 ui.footer()

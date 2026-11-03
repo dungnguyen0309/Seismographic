@@ -30,8 +30,8 @@ stats = [
 st.markdown(
     '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:4px 0 8px">'
     + "".join(f'<div style="border:1px solid var(--sg-line);border-radius:10px;padding:10px 12px">'
-              f'<div style="font-size:1.7rem;font-weight:700;line-height:1.1">{n}</div>'
-              f'<div style="font-size:0.78rem;color:var(--sg-muted);margin-top:2px">{label}</div></div>' for n, label in stats)
+              f'<div style="font-size:1.5rem;font-weight:700;line-height:1.1">{n}</div>'
+              f'<div style="font-size:0.75rem;color:var(--sg-muted);margin-top:2px">{label}</div></div>' for n, label in stats)
     + "</div>",
     unsafe_allow_html=True,
 )
@@ -43,11 +43,11 @@ def card(key: str, extra: str = "") -> str:
     return (
         f'<div style="background:var(--sg-raised);border:1px solid var(--sg-line);border-radius:10px;'
         'padding:12px 14px">'
-        f'<div style="font-size:0.78rem;color:var(--sg-faint)">'
+        f'<div style="font-size:0.75rem;color:var(--sg-faint)">'
         f'{html.escape(s.publisher)}</div>'
         f'<div style="font-weight:700;margin:3px 0 6px;line-height:1.35">{ui.source_link(key, s.name)}</div>'
-        f'<div style="font-size:0.86rem;color:var(--sg-soft);line-height:1.45">{html.escape(s.used_for)}</div>'
-        + (f'<div style="font-size:0.74rem;color:var(--sg-faint);margin-top:8px">{html.escape(details)}</div>' if details else "")
+        f'<div style="font-size:0.875rem;color:var(--sg-soft);line-height:1.45">{html.escape(s.used_for)}</div>'
+        + (f'<div style="font-size:0.75rem;color:var(--sg-faint);margin-top:8px">{html.escape(details)}</div>' if details else "")
         + extra + "</div>"
     )
 
@@ -67,7 +67,7 @@ def status(keys: list[str]) -> str:
     live = sum(1 for m in loaded if not m["from_snapshot"] and not m["error"])
     state = "live" if live == len(loaded) else ("saved snapshot" if live == 0 else f"{live} of {len(loaded)} live")
     updated = f"source updated {', '.join(dates)}" if dates else "update date not published"
-    return (f'<div style="font-size:0.74rem;color:#5fb98a;margin-top:6px">● Loaded now: {html.escape(updated)} · '
+    return (f'<div style="font-size:0.75rem;color:var(--sg-soft);margin-top:6px">Loaded now: {html.escape(updated)} · '
             f'{state}</div>')
 
 
@@ -167,7 +167,7 @@ with t_index:
                            f'{html.escape(i.short)}</a>' for i in inds)
         extra = status([k for k in RAW_SERIES if config.series_source(k) == key])
         if links:
-            extra += f'<div style="font-size:0.78rem;margin-top:6px;line-height:1.6">Indicators: {links}</div>'
+            extra += f'<div style="font-size:0.75rem;margin-top:6px;line-height:1.6">Indicators: {links}</div>'
         index_cards.append(card(key, extra))
     grid(index_cards)
 
@@ -251,7 +251,7 @@ with t_refs:
     countries_state = "saved snapshot" if core.get("countries_from_snapshot") else "live"
     for group, keys in config.SOURCE_GROUPS.items():
         st.subheader(group)
-        grid([card(k, f'<div style="font-size:0.74rem;color:#5fb98a;margin-top:6px">● Loaded now: {countries_state}'
+        grid([card(k, f'<div style="font-size:0.75rem;color:var(--sg-soft);margin-top:6px">Loaded now: {countries_state}'
                       '</div>' if k == "wb_countries" else "") for k in keys])
 
     # --- Video channels -----------------------------------------------------------------------------------------

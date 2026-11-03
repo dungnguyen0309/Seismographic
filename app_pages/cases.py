@@ -5,7 +5,7 @@ import html
 import pandas as pd
 import streamlit as st
 
-from prm import cases, charts, data, ui
+from prm import cases, charts, data, interpret, ui
 
 core, year, values, scores = ui.load()
 hist = ui.history(core)
@@ -28,8 +28,8 @@ counts = {v: sum(1 for r in readings.values() if r.get("verdict") == v) for v in
 st.markdown(
     '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin:6px 0 10px">'
     + "".join(f'<div style="border:1px solid var(--sg-line);border-radius:10px;padding:10px 12px">'
-              f'<div style="font-size:1.7rem;font-weight:700;line-height:1.1">{counts[v]} of {len(cases.CASES)}</div>'
-              f'<div style="font-size:0.8rem;color:{color};margin-top:2px">{v}</div></div>'
+              f'<div style="font-size:1.5rem;font-weight:700;line-height:1.1">{counts[v]} of {len(cases.CASES)}</div>'
+              f'<div style="font-size:0.75rem;color:{color};margin-top:2px">{v}</div></div>'
               for v, (color, _) in cases.VERDICTS.items())
     + "</div>",
     unsafe_allow_html=True,
@@ -74,14 +74,14 @@ else:
     st.markdown(
         f'<span style="display:inline-block;border:1px solid {color};color:{color};border-radius:999px;'
         f'padding:2px 12px;font-weight:700">{r["verdict"]}</span> '
-        f'<span style="color:var(--sg-muted);font-size:0.85rem">{html.escape(meaning)}</span>',
+        f'<span style="color:var(--sg-muted);font-size:0.875rem">{html.escape(meaning)}</span>',
         unsafe_allow_html=True,
     )
     m1, m2, m3 = st.columns(3)
-    m1.metric(f"Score in {r['before']}", f"{r['score']:.0f} / 100", border=True, help=r["tier"])
-    m2.metric("Global rank", f"{r['rank']} of {r['n']}", border=True, help="1 = the riskiest economy that year")
-    m3.metric(f"Change since {r['before'] - 3}", "—" if r["change"] is None else f"{r['change']:+.1f}",
-              border=True, help="Composite score, three years before the year before the event")
+    m1.metric(f"Score in {r['before']} (of 100)", f"{r['score']:.0f}", help=r["tier"])
+    m2.metric(f"Global rank (of {r['n']})", f"{r['rank']}", help="1 = the riskiest economy that year")
+    m3.metric(f"Change since {r['before'] - 3}", "—" if r["change"] is None else interpret.signed(r["change"]),
+              help="Composite score, three years before the year before the event")
 
     rows = hist[hist["iso3"] == case.iso3].sort_values("year")
     st.plotly_chart(charts.case_history(rows, case.date, case.title), config={"displayModeBar": False})
@@ -92,7 +92,7 @@ else:
         if r["pillar_moves"]:
             for pillar, move in sorted(r["pillar_moves"].items(), key=lambda kv: -abs(kv[1])):
                 arrow = "▲" if move >= 1 else ("▼" if move <= -1 else "■")
-                st.markdown(f"- {arrow} {pillar}: {move:+.1f} points")
+                st.markdown(f"- {arrow} {pillar}: {interpret.signed(move)} points")
         else:
             st.caption("Not enough history.")
     with right:

@@ -40,6 +40,8 @@ name = names[iso3]
 st.set_page_config(page_title=f"{name} · {config.APP_TITLE}")
 assessment = ui.assessments().get(iso3)
 
+flags = scoring.red_flags(v) + scoring.stability_flags(core["series"], iso3)  # also in the Summary and the PDF brief
+
 # --- Header -----------------------------------------------------------------
 country_hist = hist[hist["iso3"] == iso3].sort_values("year")
 gdppc = v.get("gdppc")
@@ -48,8 +50,9 @@ if pd.notna(gdppc):
     meta.append(f"${gdppc:,.0f} per person (IMF, {int(v['gdppc__year'])})")
 if s["coverage"] < 75:
     meta.append(f"data coverage {s['coverage']:.0f}%: read with care")
-ui.country_header(name, row,
-                  country_hist.set_index("year")["composite"], row.get("delta_1y"), year, html.escape(" · ".join(meta)),
+top_flag = (f"{ui.sev_mark(flags[0]['severity'])}{html.escape(flags[0].get('short', flags[0]['label']))} · "
+            if flags else "")  # flags come most severe first
+ui.country_header(name, row, row.get("delta_1y"), year, top_flag + html.escape(" · ".join(meta)),
                   analyst_rating=(assessment or {}).get("meta", {}).get("analyst_rating") or None)
 
 
@@ -93,25 +96,9 @@ with st.container(horizontal=True, vertical_alignment="center", key="country_act
     if compare_list and iso3 not in compare_list:  # once this country is in, the button above opens the comparison
         st.page_link(ui.COMPARE_PAGE, label=f"Open comparison ({len(compare_list)})", icon=":material/compare_arrows:")
 
-elsewhere = ([("World Bank", f"https://data.worldbank.org/country/{row['iso2']}")] if isinstance(row["iso2"], str) else []) + [
-    ("IMF", f"https://www.imf.org/en/countries/{iso3.lower()}"),
-    ("ReliefWeb", f"https://reliefweb.int/country/{iso3.lower()}")]
-if row["income"] != "High income":  # FAO's food-security briefs cover developing countries
-    elsewhere.append(("FAO food security", f"https://www.fao.org/giews/countrybrief/country.jsp?code={iso3}"))
-sources = " · ".join(f"[{ui.source_label(k)}]({config.SOURCES[k].url})" for k in ("wb_countries", "wdi", "imf"))
-st.caption(f"Sources: {sources}  \nElsewhere: " + " · ".join(f"[{label} ↗]({url})" for label, url in elsewhere))
-
-flags = scoring.red_flags(v)
-trend = scoring.wgi_trend(core["series"], iso3, "pv")
-if trend and trend["change"] <= -config.WGI_TREND_THRESHOLD:  # in the Summary and the PDF brief
-    flags.append({"severity": "warning",
-                  "label": f"Political stability deteriorating ({trend['change']:+.1f} points since {trend['start_year']})"})
-
-TABS = {"summary": ":material/summarize: Summary", "real": ":material/explore: In real life",
-        "peers": ":material/groups: Peers", "map": ":material/map: Map & refugees", "whatif": ":material/tune: What-if",
-        "indicators": ":material/list_alt: Indicators", "governance": ":material/account_balance: Governance",
-        "economy": ":material/monitoring: Economy", "news": ":material/newspaper: News",
-        "assessment": ":material/edit_note: Assessment"}
+TABS = {"summary": "Summary", "real": "In real life", "peers": "Peers", "map": "Map & refugees", "whatif": "What-if",
+        "indicators": "Indicators", "governance": "Governance", "economy": "Economy", "news": "News",
+        "assessment": "Assessment"}  # text only, so the ten fit one row of a laptop's page column
 if st.query_params.get("tab") in TABS:  # e.g. ?country=KEN&tab=news
     st.session_state["country_tab"] = TABS[st.query_params["tab"]]
     del st.query_params["tab"]
@@ -124,12 +111,8 @@ with t_summary:
         st.header("Risk over time")
         if country_hist["composite"].notna().sum() >= 2:
             st.plotly_chart(charts.risk_history(country_hist, marks=True), config={"displayModeBar": False})
-            st.caption(
-                f"The index recomputed for every year since {config.HISTORY_START}, each time with only the data "
-                "available for that year. Scores are relative to the other countries that year, so a rising line means "
-                f"{name} moved up the risk ranking. Marks = a new tier or armed conflict entering or leaving the data; "
-                f"bands = tiers; the pillars can be switched on in the legend. {year} uses IMF estimates."
-            )
+            st.caption(f"Recomputed for every year since {config.HISTORY_START} with the data available that year, "
+                       f"relative to the other countries that year. {year} uses IMF estimates.")
         else:
             st.info("Not enough history to draw a trend for this country.")
 
@@ -151,7 +134,7 @@ with t_summary:
                     st.markdown(f"{level}A {mine['probability']:.1%} chance that armed conflict breaks out in "
                                 f"{outlook.index_year + 1}: {mine['relative']:.1f}× the average for a country at peace.",
                                 unsafe_allow_html=True)
-                st.page_link("app_pages/conflict.py", label="How this is estimated (Conflict outlook)",
+                st.page_link("app_pages/conflict.py", label="How this is estimated",
                              icon=":material/insights:", query_params={"tab": "outlook"})
             st.header("Red flags")
             if flags:
@@ -218,18 +201,18 @@ with t_peers:
                 f"(1 = highest risk; group median {ranked['composite'].median():.0f})."
             )
         st.plotly_chart(charts.peer_strip(s, peer_df[peer_df["iso3"] != iso3], name), config={"displayModeBar": False})
-        st.caption("Grey dots = the other countries in the group (hover for names), white tick = group median, "
-                   f"big dot = {name}.")
         ui.cite("index", "wb_countries")
 
         st.header("Peer ranking")
         peer_table = ranked.assign(name=[f"▶ {n}" if i == iso3 else n for i, n in zip(ranked["iso3"], ranked["name"])],
                                    group_rank=range(1, len(ranked) + 1))
+        start = max(0, min((position[0] if len(position) else 0) - 5, len(peer_table) - 11))  # 11 rows around it
+        peer_table = peer_table.iloc[start:start + 11]
         ui.country_table(
-            peer_table, key="peer_table", height=min(460, 38 * (len(peer_table) + 1)),
-            extra={"group_rank": st.column_config.NumberColumn("Rank in group", format="%d")},
+            peer_table, key="peer_table", height="content", sort="group_rank",
+            extra={"group_rank": st.column_config.NumberColumn("Group rank", format="%d", width=100)},
         )
-        st.caption(f"▶ marks {name}. Tick a row to open another country.")
+        st.caption(f"▶ marks {name}. Group ranks {start + 1} to {start + len(peer_table)} of {len(ranked)}.")
 
         st.header("Most similar risk profiles")
         like = scoring.similar(scores, iso3, n=8)
@@ -239,14 +222,14 @@ with t_peers:
             similar_table = table.set_index("iso3").loc[like.index].reset_index().assign(
                 closeness=(100 - like["distance"].to_numpy()).clip(0, 100))
             ui.country_table(
-                similar_table, key="similar_table", height=min(360, 38 * (len(similar_table) + 1)),
+                similar_table, key="similar_table", height="content",
                 sort="closeness", ascending=False,
                 extra={"closeness": st.column_config.ProgressColumn(
-                    "Similarity", min_value=0, max_value=100, format="%.0f",
+                    "Similarity", min_value=0, max_value=100, format="%.0f", width=100,
                     help="100 = the same four pillar scores; based on the distance between the profiles")},
             )
             st.caption(f"Countries anywhere in the world whose stability, governance, economic and social scores are "
-                       f"closest to {name}'s. Tick a row to open one.")
+                       f"closest to {name}'s.")
 
 # --- Map & refugee links ------------------------------------------------------------
 with t_map:
@@ -256,8 +239,6 @@ with t_map:
                        key=f"profile_globe_{iso3}", focus=iso3, height=520,
                        layers={"spin": False, "flows": True, "conflict": True},
                        hint=f"Arcs = refugees from or hosted by {name} · ▶ replays since {config.HISTORY_START}")
-        st.caption(f"The globe opens on {name} with its refugee flows: arcs run from the country people fled to the "
-                   "country hosting them. Click any other country for its index.")
         ui.cite("unhcr", "ucdp", "natural_earth")
         if flows is not None and not flows.empty:
             flows_year = int(flows["year"].max())
@@ -281,7 +262,7 @@ with t_map:
                         ui.go_to_country(clicked)
                     total = flows.loc[flows[side] == iso3, "value"].sum()
                     st.caption(f"{total:,.0f} people in total ({flows_year}, UNHCR: refugees, asylum seekers and others "
-                               "in need of international protection). Click a bar to open that country.")
+                               "in need of international protection).")
 
 # --- What-if simulator ------------------------------------------------------------
 WHATIF_PRESETS = {
@@ -349,10 +330,7 @@ def _reset_whatif() -> None:
 @st.fragment
 def what_if_simulator() -> None:
     st.header("What-if simulator")
-    st.caption(
-        f"Change {name}'s indicators to see how its score, tier and rank respond. Every country is re-scored, as in "
-        "the real index."
-    )
+    st.caption("Every country is re-scored, as in the real index.")
     specs = _whatif_controls()
     picked = st.session_state.get(WHATIF_PREFIX + "preset")
     with st.container(horizontal=True, wrap=True, key="whatif_presets"):  # full names; they wrap instead of truncating
@@ -414,9 +392,9 @@ def what_if_simulator() -> None:
                       f'{f" ({score_change})" if score_change else ""} · Rank {int(n["rank"])}</span>{ui.tier_badge(n["tier"])}</div>',
                       unsafe_allow_html=True)
         r1, r2 = st.columns(2)  # two figures fit a half-width panel; the tier goes on its own line below
-        r1.metric("Composite score", f"{n['composite']:.0f} / 100", delta=score_change, delta_color="inverse", border=True)
-        r2.metric("Global rank", f"{int(n['rank'])} of {int(n['n_ranked'])}", delta=places if rank_delta else None,
-                  delta_color="red" if riskier else "green", delta_arrow="up" if riskier else "down", border=True,
+        r1.metric("Composite score (of 100)", f"{n['composite']:.0f}", delta=score_change, delta_color="inverse")
+        r2.metric(f"Global rank (of {int(n['n_ranked'])})", f"{int(n['rank'])}", delta=places if rank_delta else None,
+                  delta_color="red" if riskier else "green", delta_arrow="up" if riskier else "down",
                   help="1 = highest risk, so a smaller number means riskier.")
         was = f" <span style='color:var(--sg-muted)'>was {s['tier']}</span>" if n["tier"] != s["tier"] else ""
         st.markdown(f"Risk tier&nbsp; {ui.tier_badge(n['tier'])}{was}", unsafe_allow_html=True)
@@ -435,8 +413,6 @@ def what_if_simulator() -> None:
             st.caption((f"Scenario: {picked}. " if picked else "") + "Changed: " + ", ".join(moved) + ".")
         elif picked:  # no data for it, already past its values, or every slider moved back
             st.caption(f"Scenario: {picked}. No value differs from {name}'s own data.")
-        else:
-            st.caption("Move a slider or pick a scenario above to start.")
 
 
 with t_whatif:
@@ -452,32 +428,39 @@ with t_indicators:
             raw = v.get(ind.key)
             yr = v.get(f"{ind.key}__year")
             rows.append({
-                "Pillar": config.PILLAR_BY_KEY[ind.pillar].short,
-                "Indicator": ind.label,
+                "Indicator": ind.short,
                 "Value": ind.fmt(raw),
-                "Unit": ind.unit,
-                "Year": "—" if pd.isna(yr) else str(int(yr)),
                 "Risk score": s.get(f"n_{ind.key}"),
-                "Direction": "Higher = riskier" if ind.higher_is_riskier else "Lower = riskier",
+                "Year": "—" if pd.isna(yr) else str(int(yr)),
+                "Pillar": config.PILLAR_BY_KEY[ind.pillar].short,
+                "Unit": ind.unit,
                 "Source": ind.source,
                 "Data": config.indicator_url(ind),
+                "Full name": ind.label,
+                "Direction": "Higher = riskier" if ind.higher_is_riskier else "Lower = riskier",
             })
         st.dataframe(
             pd.DataFrame(rows).round({"Risk score": 0}), hide_index=True, height=640,
             column_config={
+                "Indicator": st.column_config.TextColumn(pinned=True),
+                "Value": st.column_config.TextColumn(alignment="right"),
                 "Risk score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.0f"),
-                "Data": st.column_config.LinkColumn("Data", display_text="Open ↗",
+                # capped so the grid fits a 970px column; the long ones show in full in the download
+                "Unit": st.column_config.TextColumn(width=140),
+                "Source": st.column_config.TextColumn(width=180),
+                "Data": st.column_config.LinkColumn("Data", display_text="Open ↗", width="small",
                                                     help="The source's own page for this indicator"),
+                # hidden to fit the screen: in the download below, and Show/hide columns brings them back
+                "Full name": None, "Direction": None,
             },
         )
         st.caption(
             "Risk score = position relative to all other countries (0–100). Battle deaths and displacement use a log "
-            "scale so that countries without conflict score 0. See the Methodology page."
+            "scale so that countries without conflict score 0."
         )
         ui.cite("index")
         with st.expander(f"Cross-check {name} with independent sources"):
-            st.caption("Respected indices that measure similar things but are not used in the score. Look the country up "
-                       "in them: if they disagree with Seismographic, find out why.")
+            st.caption("Indices that measure similar things but are not used in the score.")
             for pillar_key, keys in config.CROSS_CHECKS.items():
                 label = ("**Overall fragility**" if pillar_key == "composite" else ui.pillar_chip(pillar_key))
                 st.markdown(f"{label} &nbsp; " + " · ".join(ui.source_link(k, config.SOURCES[k].name) for k in keys),
@@ -500,20 +483,28 @@ with t_governance:
         st.plotly_chart(charts.wgi_small_multiples(core["series"], ci, iso3), config={"displayModeBar": False})
         ui.cite("wgi")
         trend_rows = []
-        for dim, label in WGI_DIMENSIONS.items():
+        for dim in WGI_DIMENSIONS:
             t = scoring.wgi_trend(core["series"], iso3, dim)
             if not t:
                 continue
             overlap = scoring.ci_overlap(core["series"], ci, iso3, dim, t["start_year"], t["end_year"])
             trend_rows.append({
-                "Dimension": label,
+                "Dimension": config.INDICATOR_BY_KEY[f"wgi_{dim}"].short,
                 f"Score {t['start_year']}": round(t["start"], 1),
                 f"Score {t['end_year']}": round(t["end"], 1),
                 "Change": round(t["change"], 1),
                 "Statistically clear?": "—" if overlap is None else ("No (intervals overlap)" if overlap else "Yes"),
             })
         if trend_rows:
-            st.dataframe(pd.DataFrame(trend_rows), hide_index=True)
+            trend_df = pd.DataFrame(trend_rows)
+            # Change shows signed but stays a number, so it sorts as one
+            st.dataframe(trend_df.style.format(interpret.signed, subset=["Change"], na_rep="—"), hide_index=True,
+                         placeholder="—",  # the grid draws missing cells itself
+                         column_config={
+                             "Dimension": st.column_config.TextColumn(pinned=True),
+                             **{c: st.column_config.NumberColumn(format="%.1f") for c in trend_df
+                                if c.startswith("Score ")},
+                         })
 
 # --- Economy --------------------------------------------------------------------------
 with t_economy:
@@ -523,14 +514,19 @@ with t_economy:
         st.caption(f"Source: {edition}. Dashed lines are IMF projections.")
         st.plotly_chart(charts.macro_small_multiples(core["series"], iso3, year), config={"displayModeBar": False})
         ui.cite("imf", "wdi", "unhcr")
-        e1, e2, e3 = st.columns(3)
-        e1.metric("FX reserves (months of imports)", config.INDICATOR_BY_KEY["reserves_months"].fmt(v.get("reserves_months")),
-                  help="World Bank WDI. Below 3 months is a common warning line.", border=True)
-        e2.metric("Youth unemployment (%)", config.INDICATOR_BY_KEY["youth_unemployment"].fmt(v.get("youth_unemployment")),
-                  border=True)
-        e3.metric("Displaced (% of population)", config.INDICATOR_BY_KEY["displaced_share"].fmt(v.get("displaced_share")),
-                  help="Refugees, asylum seekers, others in need of protection and IDPs from this country (UNHCR).",
-                  border=True)
+        # a missing figure reads "No data" in small grey, not a big dash. Only the inline p shrinks, so the value's
+        # line box keeps its height and the text sits on the same bottom line as its neighbours
+        st.html('<style>[class*="st-key-econ_nodata_"] [data-testid="stMetricValue"] p { font-size: 0.875rem !important;'
+                ' color: var(--sg-muted) !important; }</style>')
+        for col, (key, label, tip) in zip(st.columns(3), (
+            ("reserves_months", "FX reserves (months of imports)", "World Bank WDI. Below 3 months is a common warning line."),
+            ("youth_unemployment", "Youth unemployment (%)", None),
+            ("displaced_share", "Displaced (% of population)",
+             "Refugees, asylum seekers, others in need of protection and IDPs from this country (UNHCR)."),
+        )):
+            raw = v.get(key)
+            with col.container(key=f"econ_{'nodata_' if pd.isna(raw) else ''}{key}"):
+                st.metric(label, "No data" if pd.isna(raw) else config.INDICATOR_BY_KEY[key].fmt(raw), help=tip)
 
 # --- News pulse -------------------------------------------------------------------------
 with t_news:
@@ -539,9 +535,9 @@ with t_news:
         st.header("Risk-related news, last 7 days")
         st.caption(
             f"Live headlines matching '{news_name}' plus risk keywords (protest, election, coup, sanctions, clashes…), "
-            "newest first, from Bing News and Google News (photos where the feed has one), with GDELT as a backup."
+            "newest first, from Bing News and Google News, with GDELT as a backup."
         )
-        ui.news_list(news_name, limit=20, iso2=row["iso2"])
+        ui.news_list(news_name, limit=20)
 
         with ui.guard("Video reports"):
             st.header(f"Video reports on {name}")
@@ -551,7 +547,7 @@ with t_news:
             if about is None or about.empty:
                 st.caption(f"None of the latest videos from the international broadcasters and think tanks mention {name}.")
             else:
-                st.caption("From the latest uploads of international broadcasters and think tanks; play one here or open it on YouTube.")
+                st.caption("From the latest uploads of international broadcasters and think tanks.")
                 ui.video_gallery(about, key=f"profile_videos_{iso3}", limit=6)
             st.page_link("app_pages/video.py", label="Live TV and all video reports", icon=":material/live_tv:")
         with ui.guard("Media tone"):
@@ -575,8 +571,7 @@ with t_news:
                 else:
                     st.plotly_chart(charts.protest_chart(protests), config={"displayModeBar": False})
                     st.caption(f"Share of all English-language news GDELT monitors that mentions {name} together with protests, "
-                               "riots, strikes or unrest, smoothed over a week. Spikes show unrest getting attention; compare "
-                               "with the headlines above.")
+                               "riots, strikes or unrest, smoothed over a week.")
         ui.cite("news", "gdelt", "youtube")
 
 # --- Analyst assessment -------------------------------------------------------------------
@@ -609,5 +604,14 @@ with t_analyst:
                 "folder."
             )
             st.page_link("app_pages/builder.py", label="Open the assessment builder", icon=":material/edit_note:")
+
+# The header's sources and other profiles of the country, under the tabs so the tabs sit right below the header
+elsewhere = ([("World Bank", f"https://data.worldbank.org/country/{row['iso2']}")] if isinstance(row["iso2"], str) else []) + [
+    ("IMF", f"https://www.imf.org/en/countries/{iso3.lower()}"),
+    ("ReliefWeb", f"https://reliefweb.int/country/{iso3.lower()}")]
+if row["income"] != "High income":  # FAO's food-security briefs cover developing countries
+    elsewhere.append(("FAO food security", f"https://www.fao.org/giews/countrybrief/country.jsp?code={iso3}"))
+sources = " · ".join(f"[{ui.source_label(k)}]({config.SOURCES[k].url})" for k in ("wb_countries", "wdi", "imf"))
+st.caption(f"Region, income, population and GDP: {sources}  \nElsewhere: " + " · ".join(f"[{label} ↗]({url})" for label, url in elsewhere))
 
 ui.footer()

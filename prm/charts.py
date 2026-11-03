@@ -15,7 +15,7 @@ import plotly.colors as pcolors
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from . import config
+from . import config, interpret
 from .config import (
     FORECAST_GREY,
     NO_DATA_COLOR,
@@ -34,8 +34,8 @@ SURFACE = INK["bg"]
 GRID = INK["line"]
 MUTED = INK["faint"]
 CI_FILL = "rgba(255,255,255,0.09)"  # neutral, so it sits under a line of any colour
-WORSE = "#e66767"
-BETTER = "#3987e5"
+WORSE = INK["worse"]
+BETTER = INK["better"]
 HOVER = dict(bgcolor=INK["hover"], bordercolor=INK["line-strong"], font=dict(color=INK["strong"], **FONT))
 
 
@@ -45,11 +45,12 @@ def _base(fig: go.Figure, height: int = 420, legend: bool = False) -> go.Figure:
         margin=dict(l=8, r=8, t=36, b=8),
         font=FONT,
         showlegend=legend,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0, title=None),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0, title=None,
+                    font=dict(color=INK["text"])),
         hoverlabel=HOVER,
     )
-    fig.update_xaxes(gridcolor=GRID, zeroline=False)
-    fig.update_yaxes(gridcolor=GRID, zeroline=False)
+    fig.update_xaxes(gridcolor=GRID, zeroline=False, tickfont_color=MUTED, title_font_color=MUTED)
+    fig.update_yaxes(gridcolor=GRID, zeroline=False, tickfont_color=MUTED, title_font_color=MUTED)
     return fig
 
 
@@ -166,12 +167,12 @@ def risk_matrix(df: pd.DataFrame, x_key: str, y_key: str) -> go.Figure:
             )
         )
     # Soft quadrant tints: blue = lower risk on both axes, red = higher risk on both
-    fig.add_shape(type="rect", x0=50, x1=103, y0=50, y1=103, fillcolor="rgba(230,103,103,0.10)", line_width=0, layer="below")
-    fig.add_shape(type="rect", x0=-3, x1=50, y0=-3, y1=50, fillcolor="rgba(57,135,229,0.10)", line_width=0, layer="below")
+    fig.add_shape(type="rect", x0=50, x1=103, y0=50, y1=103, fillcolor=WORSE, opacity=0.10, line_width=0, layer="below")
+    fig.add_shape(type="rect", x0=-3, x1=50, y0=-3, y1=50, fillcolor=BETTER, opacity=0.10, line_width=0, layer="below")
     fig.add_annotation(x=101, y=101, text="Higher risk on both", showarrow=False, xanchor="right", yanchor="top",
-                       font=dict(color="#fd8078", size=11))
+                       font=dict(color=WORSE, size=12))
     fig.add_annotation(x=-1, y=-1, text="Lower risk on both", showarrow=False, xanchor="left", yanchor="bottom",
-                       font=dict(color="#74b1fe", size=11))
+                       font=dict(color=BETTER, size=12))
     for v in (50,):
         fig.add_vline(x=v, line=dict(color=MUTED, width=1, dash="dot"))
         fig.add_hline(y=v, line=dict(color=MUTED, width=1, dash="dot"))
@@ -213,7 +214,7 @@ def movers(df: pd.DataFrame, n: int = 8) -> go.Figure:
             x=d["change"], y=d["name"], orientation="h",
             marker=dict(color=colors, line=dict(color=SURFACE, width=1)),
             customdata=np.column_stack([d["start"].round(1), d["end"].round(1), d["iso3"]]),
-            text=[f"{c:+.1f}" for c in d["change"]], textposition="outside", cliponaxis=False,
+            text=[interpret.signed(c) for c in d["change"]], textposition="outside", cliponaxis=False,
             hovertemplate=(
                 "<b>%{y}</b><br>Change: %{x:+.1f} points<br>%{customdata[0]} → %{customdata[1]}"
                 "<br><i>Click to open the profile</i><extra></extra>"
@@ -250,14 +251,14 @@ def pillar_bars(row: pd.Series, regional_median: pd.Series) -> go.Figure:
             hovertemplate="Regional median: %{x:.0f}<extra></extra>",
         )
     )
-    fig.update_xaxes(range=[0, 108], title="Risk score (0 = lowest, 100 = highest)")
+    fig.update_xaxes(range=[0, 108], title="Risk score (0–100)")
     fig.update_yaxes(title=None, automargin=True)
     return _base(fig, height=300, legend=True)
 
 
 def history_marks(hist: pd.DataFrame) -> dict[int, list[str]]:
-    """The years something changed for one country: a new tier, or armed conflict (UCDP's 25 battle deaths) or war
-    (1,000) entering or leaving the data that year's index used."""
+    """The years something changed for one country: a new tier, armed conflict (UCDP's 25 battle deaths) or war
+    (1,000) starting, or armed conflict ending, in the data that year's index used."""
     marks: dict[int, list[str]] = {}
     prev = None
     for r in hist.sort_values("year").itertuples(index=False):
@@ -278,14 +279,14 @@ def history_marks(hist: pd.DataFrame) -> dict[int, list[str]]:
 
 
 def risk_history(hist: pd.DataFrame, marks: bool = False) -> go.Figure:
-    """One country's composite (bold, dots in tier colours) and pillar scores per year, over the tier bands. With
-    marks=True it reads as a seismogram: the trace leads (pillars start hidden in the legend) and the years where
-    something changed are marked on it."""
+    """One country's composite (bold) and pillar scores per year, over the tier bands (labelled outside the plot, on
+    the right). With marks=True it reads as a seismogram: the trace leads (pillars start hidden in the legend) and the
+    years where something changed are marked on it, rises above the line and falls below."""
     fig = go.Figure()
     for tier, upper in zip(config.TIERS, [t.lower for t in config.TIERS[1:]] + [100]):
         fig.add_hrect(y0=tier.lower, y1=upper, fillcolor=tier.color, opacity=0.06, line_width=0, layer="below")
-        fig.add_annotation(x=0, xref="paper", y=(tier.lower + upper) / 2, text=tier.label, showarrow=False,
-                           xanchor="left", font=dict(color=MUTED, size=10))
+        fig.add_annotation(x=1, xref="paper", y=(tier.lower + upper) / 2, text=tier.label, showarrow=False,
+                           xanchor="left", xshift=6, font=dict(color=MUTED, size=12))
     for p in PILLARS:
         fig.add_trace(go.Scatter(
             x=hist["year"], y=hist[p.key], name=p.short, mode="lines",
@@ -294,24 +295,27 @@ def risk_history(hist: pd.DataFrame, marks: bool = False) -> go.Figure:
         ))
     if marks:
         at = hist.set_index("year")["composite"]
-        for i, (year, labels) in enumerate(sorted(history_marks(hist).items())):
+        side = {True: 0, False: 0}  # marks so far below / above the line: each side alternates its own offset
+        for year, labels in sorted(history_marks(hist).items()):
             if pd.isna(at.get(year)):
                 continue
+            # a fall goes below the line, unless the line is too low to leave room under it
+            down = at[year] >= 35 and all(m.startswith("▼") or m == "conflict ends" for m in labels)
             fig.add_annotation(x=year, y=at[year], text=" · ".join(labels), showarrow=True, arrowhead=0,
-                               arrowcolor=INK["faint"], arrowwidth=1, ax=0, ay=-30 if i % 2 == 0 else -66,
-                               font=dict(color=INK["soft"], size=11), bgcolor="rgba(0,0,0,0.7)")
+                               arrowcolor=INK["faint"], arrowwidth=1, ax=0,
+                               ay=(30 if side[down] % 2 == 0 else 66) * (1 if down else -1),
+                               font=dict(color=INK["soft"], size=12), bgcolor="rgba(0,0,0,0.7)")
+            side[down] += 1
     tiers = hist["tier"].fillna("—")
     fig.add_trace(go.Scatter(
-        x=hist["year"], y=hist["composite"], name="Composite", mode="lines+markers",
-        line=dict(color="#ffffff", width=3),
-        marker=dict(size=9, color=[TIER_COLORS.get(t, MUTED) for t in tiers], line=dict(color=SURFACE, width=1.5)),
+        x=hist["year"], y=hist["composite"], name="Composite", mode="lines", line=dict(color="#ffffff", width=3),
         customdata=np.column_stack([tiers, hist["rank"].fillna(0).astype(int)]),
         hovertemplate="<b>%{x}</b>: %{y:.0f} · %{customdata[0]} · rank %{customdata[1]}<extra></extra>",
     ))
     fig.update_yaxes(range=[0, 100], title="Risk score (0–100)")
-    fig.update_xaxes(dtick=1, tickformat="d")
+    fig.update_xaxes(dtick=2, tickformat="d", tickangle=0)
     fig.update_layout(hovermode="x unified")
-    return _base(fig, height=380, legend=True)
+    return _base(fig, height=380, legend=True).update_layout(margin_r=72)  # room for the band labels
 
 
 def case_history(hist: pd.DataFrame, event_date: str, label: str) -> go.Figure:
@@ -327,19 +331,15 @@ def case_history(hist: pd.DataFrame, event_date: str, label: str) -> go.Figure:
 
 
 def whatif_pillars(base: pd.Series, scenario: pd.Series) -> go.Figure:
-    """Pillar scores today (grey) against the what-if scenario (pillar colours)."""
+    """Pillar scores in the what-if scenario (bars in pillar colours), with today's as a white tick."""
     keys = [p.key for p in PILLARS][::-1]
     labels = [p.short for p in PILLARS][::-1]
     before = [base.get(k) for k in keys]
     after = [scenario.get(k) for k in keys]
     fig = go.Figure()
     fig.add_trace(go.Bar(
-        x=before, y=labels, orientation="h", name="Today", marker=dict(color="#5a5955"),
-        hovertemplate="%{y} today: %{x:.0f}<extra></extra>",
-    ))
-    fig.add_trace(go.Bar(
-        x=after, y=labels, orientation="h", name="Scenario",
-        marker=dict(color=[PILLAR_COLORS[k] for k in keys], line=dict(color=SURFACE, width=1)),
+        x=after, y=labels, orientation="h", name="Scenario", showlegend=False, width=0.55,
+        marker=dict(color=[PILLAR_COLORS[k] for k in keys]),
         text=[
             "—" if pd.isna(a) else f"{a:.0f}" + ("" if pd.isna(b) or round(a - b) == 0 else f" ({a - b:+.0f})")
             for a, b in zip(after, before)
@@ -347,20 +347,29 @@ def whatif_pillars(base: pd.Series, scenario: pd.Series) -> go.Figure:
         textposition="outside", cliponaxis=False,
         hovertemplate="%{y} in scenario: %{x:.0f}<extra></extra>",
     ))
-    fig.update_layout(barmode="group", bargap=0.3, bargroupgap=0.08)
-    fig.update_xaxes(range=[0, 112], title="Risk score (0 = lowest, 100 = highest)")
+    fig.add_trace(go.Scatter(
+        x=before, y=labels, mode="markers", name="Today",
+        marker=dict(symbol="line-ns-open", size=26, color="#ffffff", line=dict(width=2.5)),
+        hovertemplate="%{y} today: %{x:.0f}<extra></extra>",
+    ))
+    fig.update_xaxes(range=[0, 112], title="Risk score (0–100)")
     fig.update_yaxes(title=None, automargin=True)
     return _base(fig, height=320, legend=True)
+
+
+def _lift_legend(fig: go.Figure) -> go.Figure:
+    """Small multiples: the legend sits at the top of the figure, above the first row's panel titles."""
+    return fig.update_layout(margin_t=64, legend=dict(yref="container", y=1, yanchor="top"))
 
 
 def wgi_small_multiples(series: dict[str, pd.DataFrame], ci: dict[str, pd.DataFrame], iso3: str) -> go.Figure:
     dims = list(WGI_DIMENSIONS.items())
     fig = make_subplots(
-        rows=2, cols=3, subplot_titles=[label for _, label in dims], shared_yaxes=True,
-        vertical_spacing=0.2, horizontal_spacing=0.04,
+        rows=3, cols=2, subplot_titles=[config.INDICATOR_BY_KEY[f"wgi_{dim}"].short for dim, _ in dims],
+        shared_yaxes=True, vertical_spacing=0.1, horizontal_spacing=0.06,
     )
     for i, (dim, label) in enumerate(dims):
-        r, c = i // 3 + 1, i % 3 + 1
+        r, c = i // 2 + 1, i % 2 + 1
         s = _country(series.get(f"wgi_{dim}"), iso3)
         lb = _country(ci.get(f"wgi_{dim}_lb"), iso3)
         ub = _country(ci.get(f"wgi_{dim}_ub"), iso3)
@@ -371,45 +380,55 @@ def wgi_small_multiples(series: dict[str, pd.DataFrame], ci: dict[str, pd.DataFr
             fig.add_trace(go.Scatter(x=band["year"], y=band["value_lb"], mode="lines", line=dict(width=0),
                                      fill="tonexty", fillcolor=CI_FILL, hoverinfo="skip",
                                      name="90% confidence interval", showlegend=(i == 0)), r, c)
-        fig.add_trace(go.Scatter(x=s["year"], y=s["value"], mode="lines", line=dict(color=PILLAR_COLORS["governance"], width=2),
+        color = PILLAR_COLORS[config.INDICATOR_BY_KEY[f"wgi_{dim}"].pillar]  # Political stability is a stability input
+        fig.add_trace(go.Scatter(x=s["year"], y=s["value"], mode="lines", line=dict(color=color, width=2),
                                  name="Score", showlegend=(i == 0),
                                  hovertemplate=label + "<br>%{x}: %{y:.1f}<extra></extra>"), r, c)
-    fig.update_yaxes(range=[0, 100], gridcolor=GRID)
-    fig.update_xaxes(gridcolor=GRID)
-    fig.update_annotations(font=dict(size=13))
-    return _base(fig, height=520, legend=True)
+    fig.update_yaxes(range=[0, 100])
+    fig.update_xaxes(tickformat="d", tickangle=0)
+    fig.update_annotations(font=dict(size=12))
+    return _lift_legend(_base(fig, height=600, legend=True))
 
 
-MACRO_PANELS = [
-    ("gdp_growth", "Real GDP growth (%)", True),
+MACRO_PANELS = [  # titles short enough for two panels side by side on a phone
+    ("gdp_growth", "GDP growth (%)", True),
     ("inflation", "Inflation (%)", False),
-    ("gov_debt", "Public debt (% of GDP)", False),
-    ("fiscal_balance", "Fiscal balance (% of GDP)", True),
-    ("current_account", "Current account (% of GDP)", True),
+    ("gov_debt", "Public debt (% GDP)", False),
+    ("fiscal_balance", "Fiscal balance (% GDP)", True),
+    ("current_account", "Current account (% GDP)", True),
     ("unemployment_imf", "Unemployment (%)", False),
 ]
 
 
 def macro_small_multiples(series: dict[str, pd.DataFrame], iso3: str, year: int, history: int = 12, ahead: int = 5) -> go.Figure:
-    fig = make_subplots(rows=2, cols=3, subplot_titles=[t for _, t, _ in MACRO_PANELS],
-                        vertical_spacing=0.2, horizontal_spacing=0.07)
+    fig = make_subplots(rows=3, cols=2, subplot_titles=[t for _, t, _ in MACRO_PANELS],
+                        vertical_spacing=0.1, horizontal_spacing=0.1)
     for i, (key, title, zero_line) in enumerate(MACRO_PANELS):
-        r, c = i // 3 + 1, i % 3 + 1
+        r, c = i // 2 + 1, i % 2 + 1
         s = _country(series.get(key), iso3)
         s = s[(s["year"] >= year - history) & (s["year"] <= year + ahead)]
+        if s.empty:  # one note instead of a panel of made-up axes
+            # in paper coordinates: an axis with no trace is never drawn, so a note on its domain would not show
+            cell = fig.get_subplot(r, c)
+            fig.add_annotation(text="No IMF data", x=sum(cell.xaxis.domain) / 2, y=sum(cell.yaxis.domain) / 2,
+                               xref="paper", yref="paper", showarrow=False, font=dict(color=MUTED))
+            continue
         actual = s[s["year"] <= year - 1]
         projected = s[s["year"] >= year - 1]
+        first = not fig.data  # the legend comes from the first panel with data, which may not be panel 0
         fig.add_trace(go.Scatter(x=actual["year"], y=actual["value"], mode="lines", line=dict(color=PILLAR_COLORS["economic"], width=2),
-                                 name="Reported / estimated", showlegend=(i == 0),
+                                 name="Reported / estimated", showlegend=first,
                                  hovertemplate=title + "<br>%{x}: %{y:.1f}<extra></extra>"), r, c)
         fig.add_trace(go.Scatter(x=projected["year"], y=projected["value"], mode="lines",
                                  line=dict(color=FORECAST_GREY, width=2, dash="dash"),
-                                 name="IMF projection", showlegend=(i == 0),
+                                 name="IMF projection", showlegend=first,
                                  hovertemplate=title + " (projection)<br>%{x}: %{y:.1f}<extra></extra>"), r, c)
         if zero_line:
             fig.add_hline(y=0, line=dict(color=MUTED, width=1), row=r, col=c)
-    fig.update_annotations(font=dict(size=13))
-    return _base(fig, height=520, legend=True)
+    fig.update_xaxes(range=[year - history, year + ahead], tickformat="d", tickangle=0)
+    fig.update_annotations(font=dict(size=12))
+    # fixed entry width: plotly measures the fallback font before the mono one loads, and the entries overlapped
+    return _lift_legend(_base(fig, height=600, legend=True)).update_layout(legend_entrywidth=160)
 
 
 def tone_chart(df: pd.DataFrame) -> go.Figure:
@@ -442,8 +461,9 @@ def radar(scores: pd.DataFrame, names: dict[str, str]) -> go.Figure:
             line=dict(color=COUNTRY_COLORS[i], width=2), marker=dict(size=8),
             hovertemplate="%{theta}: %{r:.0f}<extra>" + names.get(iso3, iso3) + "</extra>",
         ))
-    fig.update_layout(polar=dict(radialaxis=dict(range=[0, 100], tickvals=[20, 40, 60, 80], gridcolor=GRID),
-                                 angularaxis=dict(gridcolor=GRID), bgcolor="rgba(0,0,0,0)"))
+    fig.update_layout(polar=dict(radialaxis=dict(range=[0, 100], tickvals=[20, 40, 60, 80], gridcolor=GRID,
+                                                 tickfont=dict(color=MUTED)),
+                                 angularaxis=dict(gridcolor=GRID, tickfont=dict(color=MUTED)), bgcolor="rgba(0,0,0,0)"))
     fig = _base(fig, height=440, legend=True)
     fig.update_layout(margin=dict(l=84, r=84, t=48, b=24))  # the pillar names sit outside the circle
     return fig
@@ -452,21 +472,30 @@ def radar(scores: pd.DataFrame, names: dict[str, str]) -> go.Figure:
 def compare_lines(series: dict[str, pd.DataFrame], key: str, iso3s: list[str], names: dict[str, str], title: str,
                   start_year: int | None = None, end_year: int | None = None,
                   projected_from: int | None = None) -> go.Figure:
+    """One line per country; with projected_from, the years from then on are shaded and dashed (IMF projections)."""
     fig = go.Figure()
-    if projected_from is not None:  # shade the years that are estimates or projections
-        fig.add_vrect(x0=projected_from - 0.5, x1=(end_year or projected_from + 5) + 0.5, fillcolor=FORECAST_GREY,
-                      opacity=0.12, line_width=0, annotation_text="IMF estimates & projections",
-                      annotation_position="top left", annotation_font=dict(color=MUTED, **FONT))
     for i, iso3 in enumerate(iso3s):
         s = _country(series.get(key), iso3)
         if start_year:
             s = s[s["year"] >= start_year]
         if end_year:
             s = s[s["year"] <= end_year]
-        fig.add_trace(go.Scatter(x=s["year"], y=s["value"], mode="lines", name=names.get(iso3, iso3),
-                                 line=dict(color=COUNTRY_COLORS[i], width=2),
-                                 hovertemplate=names.get(iso3, iso3) + "<br>%{x}: %{y:.1f}<extra></extra>"))
-    fig.update_yaxes(title=title)
+        name = names.get(iso3, iso3)
+        line = dict(color=COUNTRY_COLORS[i], width=2)
+        shown = s if projected_from is None else s[s["year"] <= projected_from - 1]
+        fig.add_trace(go.Scatter(x=shown["year"], y=shown["value"], mode="lines", name=name, legendgroup=iso3, line=line,
+                                 hovertemplate=name + "<br>%{x}: %{y:.1f}<extra></extra>"))
+        if projected_from is not None:  # dashed from the last reported year, so the two parts join
+            ahead = s[s["year"] >= projected_from - 1]
+            fig.add_trace(go.Scatter(x=ahead["year"], y=ahead["value"], mode="lines", name=name, legendgroup=iso3,
+                                     showlegend=False, line=dict(line, dash="dash"),
+                                     hovertemplate=name + " (projection)<br>%{x}: %{y:.1f}<extra></extra>"))
+    if projected_from is not None:  # shade the estimates and projections, ending where the data ends
+        last = max((max(t.x) for t in fig.data if len(t.x)), default=projected_from)
+        fig.add_vrect(x0=projected_from - 0.5, x1=max(last, projected_from) + 0.5, fillcolor=FORECAST_GREY,
+                      opacity=0.12, line_width=0, annotation_text="IMF estimates & projections",
+                      annotation_position="top left", annotation_font=dict(color=MUTED, **FONT))
+    fig.update_yaxes(title=title, rangemode="tozero")
     fig.update_layout(hovermode="x unified")
     return _base(fig, height=400, legend=True)
 
@@ -474,9 +503,6 @@ def compare_lines(series: dict[str, pd.DataFrame], key: str, iso3s: list[str], n
 # ---------------------------------------------------------------------------
 # Watchlist
 # ---------------------------------------------------------------------------
-SIGNIFICANCE_COLORS = {"Low": "#c42d31", "Medium": "#e94f4d", "High": "#feb5ae"}
-
-
 def events_timeline(df: pd.DataFrame) -> go.Figure:
     fig = go.Figure()
     for level in ["Low", "Medium", "High"]:
@@ -485,7 +511,7 @@ def events_timeline(df: pd.DataFrame) -> go.Figure:
             continue
         fig.add_trace(go.Scatter(
             x=d["date"], y=d["country"], mode="markers", name=f"{level} significance",
-            marker=dict(size={"Low": 10, "Medium": 14, "High": 18}[level], color=SIGNIFICANCE_COLORS[level],
+            marker=dict(size={"Low": 10, "Medium": 14, "High": 18}[level], color=INK["text"],
                         line=dict(color=SURFACE, width=2)),
             customdata=np.column_stack([d["event"], d["category"]]),
             hovertemplate="<b>%{y}</b> · %{x|%d %b %Y}<br>%{customdata[0]}<br><i>%{customdata[1]}</i><extra></extra>",
@@ -506,7 +532,7 @@ def change_bars(df: pd.DataFrame, n: int = 10) -> go.Figure:
     fig = go.Figure(go.Bar(
         x=d["delta_1y"], y=d["name"], orientation="h",
         marker=dict(color=[WORSE if c > 0 else BETTER for c in d["delta_1y"]], line=dict(color=SURFACE, width=1)),
-        text=[f"{c:+.1f}" for c in d["delta_1y"]], textposition="outside", cliponaxis=False,
+        text=[interpret.signed(c) for c in d["delta_1y"]], textposition="outside", cliponaxis=False,
         customdata=np.column_stack([d["prev_composite"].round(0), d["composite"].round(0), d["iso3"]]),
         hovertemplate="<b>%{y}</b><br>%{customdata[0]} → %{customdata[1]} (%{x:+.1f})"
                       "<br><i>Click to open the profile</i><extra></extra>",
@@ -544,6 +570,11 @@ def yearly_bars(years, values, title: str, color: str, hover: str) -> go.Figure:
 FIFTHS = ["Safest fifth", "2nd fifth", "Middle fifth", "4th fifth", "Riskiest fifth"]
 
 
+def _two_lines(labels: list[str]) -> list[str]:
+    """'Safest fifth' as two short lines, so five labels sit flat on a phone."""
+    return [label.replace(" ", "<br>", 1) for label in labels]
+
+
 def onset_fifths(by_fifth: pd.DataFrame, base_rate: float, color: str) -> go.Figure:
     """Share of countries at peace where armed conflict started the next year, by fifth of the risk score."""
     rate = by_fifth["mean"].fillna(0) * 100
@@ -557,7 +588,7 @@ def onset_fifths(by_fifth: pd.DataFrame, base_rate: float, color: str) -> go.Fig
                   annotation_text=f"average {base_rate * 100:.1f}%", annotation_position="top left",
                   annotation_font=dict(color=MUTED, **FONT))
     fig.update_yaxes(title="Conflict started the next year (%)", rangemode="tozero")
-    fig.update_xaxes(title="Risk score the year before")
+    fig.update_xaxes(title="Risk score the year before", tickangle=0, tickvals=FIFTHS, ticktext=_two_lines(FIFTHS))
     return _base(fig, height=360)
 
 
@@ -585,6 +616,7 @@ def calibration_bars(cal: pd.DataFrame) -> go.Figure:
                hovertemplate="%{x}: conflict began in %{y:.1f}% of cases<extra></extra>"),
     ])
     fig.update_layout(barmode="group")
+    fig.update_xaxes(tickangle=0, tickvals=labels, ticktext=_two_lines(labels))
     fig.update_yaxes(title="New armed conflict next year (%)", rangemode="tozero")
     return _base(fig, height=320, legend=True)
 
@@ -616,7 +648,7 @@ def benchmark_scatter(df: pd.DataFrame, year: int) -> go.Figure:
         customdata=df[["name"]].to_numpy(),
         hovertemplate="<b>%{customdata[0]}</b><br>Fragile States Index %{x:.1f}<br>Seismographic %{y:.0f}<extra></extra>",
     ))
-    fig.update_xaxes(title=f"Fragile States Index {year} (higher = more fragile)")
+    fig.update_xaxes(title=f"Fragile States Index {year}")
     fig.update_yaxes(title=f"Seismographic {year} (0–100)", range=[0, 100])
     return _base(fig, height=420)
 
@@ -631,9 +663,8 @@ def ranked_bars(df: pd.DataFrame, value: str, label: str, color: str, hover: str
         hovertemplate="<b>%{y}</b><br>%{x:" + fmt + "} " + hover + "<extra></extra>",
     ))
     fig.update_yaxes(title=None, automargin=True)
-    top = float(d[value].max()) if len(d) else 1.0
-    fig.update_xaxes(showticklabels=False, range=[0, top * 1.18 if top > 0 else 1])  # room for the value labels
-    return _label_room(_base(fig, height=max(300, 28 * len(d) + 60)), d[label])
+    fig.update_xaxes(showticklabels=False)
+    return _value_room(_label_room(_base(fig, height=max(300, 28 * len(d) + 60)), d[label]), d[value])
 
 
 def refugee_sankey(flows: pd.DataFrame, names: dict[str, str], n: int = 25) -> go.Figure:
@@ -693,7 +724,7 @@ def econ_heatmap(df: pd.DataFrame) -> go.Figure:
         for j, label in enumerate(labels):
             xs.append(label); ys.append(name); ts.append(text[i][j])
             cs.append(MUTED if np.isnan(z[i, j]) else _text_on(pcolors.sample_colorscale(scale, [z[i, j] / 100])[0]))
-    fig.add_trace(go.Scatter(x=xs, y=ys, mode="text", text=ts, textfont=dict(size=11, color=cs), hoverinfo="skip",
+    fig.add_trace(go.Scatter(x=xs, y=ys, mode="text", text=ts, textfont=dict(size=12, color=cs), hoverinfo="skip",
                              showlegend=False))
     # fixed ranges: the text layer would otherwise pad the axes and open a gap above the first row
     fig.update_yaxes(range=[len(df) - 0.5, -0.5], automargin=True)
@@ -720,10 +751,10 @@ def stagflation_scatter(df: pd.DataFrame, cap: float = 60.0) -> go.Figure:
         hovertemplate="<b>%{customdata[0]}</b><br>Growth %{customdata[2]}% · inflation %{customdata[1]}%"
                       "<br><i>Click to open the profile</i><extra></extra>",
     ))
-    fig.add_shape(type="rect", x0=-16, x1=0, y0=20, y1=cap + 3, fillcolor="rgba(230,103,103,0.10)", line_width=0,
+    fig.add_shape(type="rect", x0=-16, x1=0, y0=20, y1=cap + 3, fillcolor=WORSE, opacity=0.10, line_width=0,
                   layer="below")
     fig.add_annotation(x=-15.5, y=cap + 2, text="Stagflation zone", showarrow=False, xanchor="left",
-                       font=dict(color="#fd8078", size=11))
+                       font=dict(color=WORSE, size=12))
     fig.add_vline(x=0, line=dict(color=MUTED, width=1, dash="dot"))
     fig.add_hline(y=20, line=dict(color=MUTED, width=1, dash="dot"))
     fig.update_xaxes(title="Real GDP growth (%, ◀ ▶ = beyond ±15)", range=[-16, 16])
@@ -754,15 +785,18 @@ def distribution(values: pd.Series, title: str, color: str, log: bool = False) -
     """Histogram of one indicator across countries, with the median marked."""
     v = pd.to_numeric(values, errors="coerce").dropna()
     x = np.log10(v.clip(lower=0) + 1) if log else v
-    fig = go.Figure(go.Histogram(x=x, nbinsx=40, marker=dict(color=color, line=dict(color=SURFACE, width=1)),
-                                 hovertemplate="%{y} countries<extra></extra>"))
+    counts, edges = np.histogram(x, bins=40)  # binned here, so the tallest bar is known for the y ticks
+    fig = go.Figure(go.Bar(x=(edges[:-1] + edges[1:]) / 2, y=counts, width=np.diff(edges),
+                           marker=dict(color=color, line=dict(color=SURFACE, width=1)),
+                           hovertemplate="%{y} countries<extra></extra>"))
     if len(v):
         median = float(np.log10(max(v.median(), 0) + 1)) if log else float(v.median())
         fig.add_vline(x=median, line=dict(color="#ffffff", width=1.5, dash="dot"),
                       annotation_text=f"median {v.median():,.1f}", annotation_font_color="#ffffff")
     fig.update_xaxes(title=title + (" (log scale: log10(1 + x))" if log else ""))
-    fig.update_yaxes(title="Countries")
-    fig.update_layout(bargap=0.05)
+    peak = int(counts.max())
+    step = next(s for s in (1, 2, 5, 10, 20, 50, 100) if peak <= 4 * s)  # about 210 countries at most, and 4 x 100 = 400 always fits
+    fig.update_yaxes(title="Countries", dtick=step, range=[0, step * max(1, -(-peak // step))])
     return _base(fig, height=320)
 
 
@@ -791,7 +825,7 @@ def peer_strip(country: pd.Series, peers: pd.DataFrame, name: str) -> go.Figure:
                                      hovertemplate=name + ": %{x:.0f}<extra>" + label + "</extra>"))
     fig.update_yaxes(tickvals=list(range(len(rows))), ticktext=[label for _, label in rows], autorange="reversed",
                      showgrid=False)
-    fig.update_xaxes(range=[-2, 102], title="Risk score (0 = lowest, 100 = highest)")
+    fig.update_xaxes(range=[-2, 102], title="Risk score (0–100)")
     return _base(fig, height=360, legend=True)
 
 

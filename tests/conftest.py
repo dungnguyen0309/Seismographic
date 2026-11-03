@@ -19,6 +19,11 @@ os.environ["STREAMLIT_CLIENT_SHOW_ERROR_DETAILS"] = "full"  # visitors see only 
 
 @pytest.fixture(scope="session", autouse=True)
 def app() -> AppTest:
+    from prm import data  # it does not import the globe, so the order above still holds
+
+    # The tests use the saved snapshot. Once that is over SNAPSHOT_FRESH_DAYS old, load_core would start a live
+    # download, and when it lands mid-test the data version changes and multi-run state (the What-if) is lost.
+    data._ensure_download = lambda store: None
     at = AppTest.from_file(str(ROOT / "streamlit_app.py"), default_timeout=300)
     at.run()
     return at

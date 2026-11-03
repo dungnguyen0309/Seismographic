@@ -39,7 +39,7 @@ pages = {
         st.Page("app_pages/downloads.py", title="Data downloads", icon=":material/download:", url_path="data"),
     ],
     "Reference": [
-        st.Page("app_pages/intro.py", title="Introduction", icon=":material/waving_hand:", url_path="introduction"),
+        st.Page("app_pages/intro.py", title="Introduction", icon=":material/info:", url_path="introduction"),
         st.Page("app_pages/guide.py", title="Guide", icon=":material/lightbulb:", url_path="guide"),
         st.Page("app_pages/methodology.py", title="Methodology", icon=":material/functions:", url_path="methodology"),
         st.Page("app_pages/glossary.py", title="Glossary & legend", icon=":material/help:", url_path="glossary"),

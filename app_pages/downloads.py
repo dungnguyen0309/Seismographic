@@ -32,7 +32,7 @@ with st.container(border=True, gap="small"):
             rows += (f" ({int(frame['composite'].notna().sum())} with a score; the others have too little data and "
                      "their scores are blank)")
         left.markdown(f"**{name.replace('_', ' ').capitalize()}** · {rows}  \n"
-                      f"<span style='color:var(--sg-muted);font-size:0.86rem'>{text}</span>", unsafe_allow_html=True)
+                      f"<span style='color:var(--sg-muted);font-size:0.875rem'>{text}</span>", unsafe_allow_html=True)
         right.download_button("Download CSV", data=lambda f=frame: f.to_csv(index=False).encode("utf-8-sig"),
                               file_name=f"seismographic-{name}-{year}.csv", mime="text/csv", key=f"dl_{name}",
                               type="tertiary", icon=":material/download:")

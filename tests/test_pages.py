@@ -8,10 +8,8 @@ from streamlit.testing.v1 import AppTest  # the `app` fixture comes from conftes
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = re.findall(r'st\.Page\("(app_pages/[^"]+)"', (ROOT / "streamlit_app.py").read_text(encoding="utf-8"))
-COUNTRY_TABS = [":material/summarize: Summary", ":material/explore: In real life", ":material/groups: Peers",
-                ":material/map: Map & refugees", ":material/tune: What-if", ":material/list_alt: Indicators",
-                ":material/account_balance: Governance", ":material/monitoring: Economy", ":material/newspaper: News",
-                ":material/edit_note: Assessment"]
+COUNTRY_TABS = ["Summary", "In real life", "Peers", "Map & refugees", "What-if", "Indicators", "Governance", "Economy",
+                "News", "Assessment"]
 CONFLICT_TABS = [":material/swords: Armed conflict", ":material/luggage: Displacement & refugees",
                  ":material/insights: Outlook"]
 OVERVIEW_TABS = [":material/warning: Hotspots", ":material/trending_up: Changes",
@@ -222,7 +220,7 @@ def test_whatif_preset_stays_selected_until_reset(app):
     assert app.button(key="preset_Democratic backsliding").proto.type == "primary"
     assert governance_open()  # the edited pillar
     assert any(c.value.startswith("Scenario: Democratic backsliding.") for c in app.caption)
-    rank = next(m for m in app.metric if m.label == "Global rank")
+    rank = next(m for m in app.metric if m.label.startswith("Global rank (of "))
     assert rank.delta is None or re.fullmatch(r"\d+ places? (riskier|safer)", rank.delta), rank.delta
     assert any('class="sg-whatif-live"' in m.value for m in app.markdown)
     for key, value in start.items():  # every Governance value back at its start: the pillar stays open

@@ -1,7 +1,7 @@
 """Interactive 3D risk globe (WebGL, via the globe.gl library) as a Streamlit custom component.
 
 Drag to rotate, scroll / pinch or the +/− buttons to zoom, click a country (or a small-state dot) to
-see its index in a side panel. Layers: countries coloured and raised by risk, pulsing rings where
+see its index in a side panel. Layers: countries coloured and raised by risk, rings where
 battle deaths are high, animated arcs for the largest refugee flows, and a year slider that replays
 the index since config.HISTORY_START. The selected country is sent back to Python (for the news
 feed), and "Open full profile" sends a one-off trigger.
@@ -30,7 +30,7 @@ COUNTRIES_DETAILED_URL = (  # 1:50m, ~0.9 MB compressed: swapped in once loaded
 )
 EARTH_IMAGE_URL = "https://cdn.jsdelivr.net/npm/three-globe@2.45.2/example/img/earth-night.jpg"
 EARTH_BUMP_URL = "https://cdn.jsdelivr.net/npm/three-globe@2.45.2/example/img/earth-topology.png"
-HEIGHT = 640
+HEIGHT = 550
 OUT_OF_VIEW_COLOR = "#1b1b1a"  # countries outside the current region / income filter
 TOP_FLOWS = 40  # largest refugee flows drawn when no country is selected
 CONFLICT_THRESHOLD = 25  # UCDP: 25 battle deaths a year = active armed conflict
@@ -51,7 +51,7 @@ _HTML = """
       <button data-act="spin" title="Turn auto-rotation on or off">Spin</button>
       <button data-act="extrude" title="Raise each country by its risk score">3D</button>
       <button data-act="flows" title="Show the largest refugee flows (origin → host)">Flows</button>
-      <button data-act="conflict" title="Pulse where battle deaths are high (≥ 25 a year)">Conflict</button>
+      <button data-act="conflict" title="Ring the countries where battle deaths are high (≥ 25 a year)">Conflict</button>
     </div>
     <div class="rg-group rg-done-group" hidden>
       <button data-act="lock" title="Lock the globe so swiping scrolls the page again">Done</button>
@@ -74,34 +74,34 @@ _HTML = """
 """
 
 _CSS = """
-.rg-wrap { position: relative; width: 100%; height: 640px; border-radius: 14px; overflow: hidden;
+.rg-wrap { position: relative; width: 100%; height: 550px; border-radius: 14px; overflow: hidden;
   background: var(--sg-bg);
   border: 1px solid var(--sg-line); font-family: inherit; color: var(--sg-text); }
 .rg-canvas { position: absolute; inset: 0; cursor: grab; }
 .rg-status { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  padding: 24px; text-align: center; color: var(--sg-faint); font-size: 0.85rem; }
+  padding: 24px; text-align: center; color: var(--sg-faint); font-size: 0.875rem; }
 .rg-status[hidden], .rg-panel[hidden] { display: none; }
 .rg-status { flex-direction: column; gap: 10px; }
-.rg-retry { font: inherit; font-size: 0.8rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; color: var(--sg-text);
+.rg-retry { font: inherit; font-size: 0.75rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; color: var(--sg-text);
   background: var(--sg-panel); border: 1px solid var(--sg-line-strong); }
 .rg-retry:hover { border-color: var(--sg-accent); }
 /* touch screens: the globe is still until tapped, so swipes scroll the page */
 .rg-lock { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center;
   padding: 0; border: 0; background: transparent; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.rg-lock span { font-size: 0.8rem; color: var(--sg-text); padding: 8px 14px; background: rgba(10,10,10,0.82);
+.rg-lock span { font-size: 0.75rem; color: var(--sg-text); padding: 8px 14px; background: rgba(10,10,10,0.82);
   border: 1px solid var(--sg-line-strong); border-radius: 8px; }
-.rg-lock[hidden], .rg-done-group[hidden] { display: none; }
+.rg-lock[hidden], .rg-done-group[hidden], .rg-group button[hidden] { display: none; }
 .rg-locked .rg-canvas { pointer-events: none; }
 /* a short note when the wheel scrolls past the globe instead of zooming it */
 .rg-toast { position: absolute; left: 50%; top: 50%; z-index: 4; transform: translate(-50%, -50%); padding: 8px 14px;
-  font-size: 0.8rem; color: var(--sg-text); background: rgba(10,10,10,0.9); border: 1px solid var(--sg-line-strong); border-radius: 8px;
+  font-size: 0.75rem; color: var(--sg-text); background: rgba(10,10,10,0.9); border: 1px solid var(--sg-line-strong); border-radius: 8px;
   pointer-events: none; opacity: 0; transition: opacity 0.2s ease-out; }
 .rg-toast.on { opacity: 1; }
 .rg-controls { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 2; display: flex; flex-wrap: wrap;
   gap: 6px; pointer-events: none; }
 .rg-group { display: flex; pointer-events: auto; background: rgba(10,10,10,0.82); border: 1px solid var(--sg-line);
   border-radius: 8px; overflow: hidden; }
-.rg-group button, .rg-play { font: inherit; font-size: 0.74rem; min-width: 34px; height: 30px; padding: 0 10px;
+.rg-group button, .rg-play { font: inherit; font-size: 0.75rem; min-width: 34px; height: 30px; padding: 0 10px;
   cursor: pointer; background: transparent; color: var(--sg-soft); border: 0; }
 .rg-group button + button { border-left: 1px solid var(--sg-line); }
 .rg-group button:hover { background: rgba(255,255,255,0.06); color: var(--sg-strong); }
@@ -112,7 +112,8 @@ _CSS = """
   pointer-events: none; }
 .rg-legend { position: absolute; left: 12px; bottom: 12px; z-index: 2; width: 240px; padding: 8px 10px;
   background: rgba(10,10,10,0.82); border: 1px solid var(--sg-line); border-radius: 8px; font-size: 0.75rem; }
-.rg-legend-bar { height: 8px; border-radius: 4px; margin: 6px 0 4px; }
+.rg-legend-bar { display: flex; gap: 2px; height: 8px; margin: 6px 0 4px; }
+.rg-legend-bar i { flex: 1; }
 .rg-legend-ticks { display: flex; justify-content: space-between; color: var(--sg-faint); }
 .rg-legend-keys { margin-top: 6px; color: var(--sg-soft); line-height: 1.5; }
 .rg-legend-keys i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px;
@@ -121,7 +122,7 @@ _CSS = """
   gap: 10px; padding: 8px 12px; background: rgba(10,10,10,0.82); border: 1px solid var(--sg-line); border-radius: 8px; }
 .rg-time[hidden] { display: none; }
 .rg-time input { flex: 1; accent-color: var(--sg-accent); min-width: 60px; }
-.rg-custom { margin-top: 10px; font-size: 0.85rem; }
+.rg-custom { margin-top: 10px; font-size: 0.875rem; }
 .rg-custom b { font-size: 1.05rem; }
 .rg-year { font-weight: 700; min-width: 3.2em; text-align: right; }
 .rg-panel { position: absolute; top: 50px; right: 12px; z-index: 3; width: 300px; max-height: calc(100% - 122px);
@@ -135,12 +136,10 @@ _CSS = """
 .rg-score { display: flex; align-items: baseline; gap: 6px; margin-top: 10px; }
 .rg-big { font-size: 2.4rem; font-weight: 700; line-height: 1; }
 .rg-of { color: var(--sg-faint); }
-.rg-delta { font-size: 0.8rem; }
+.rg-delta { font-size: 0.75rem; }
 .rg-badge { margin-left: auto; padding: 3px 10px; border-radius: 999px; font-weight: 600; font-size: 0.75rem; }
-.rg-rank { font-size: 0.78rem; margin-top: 6px; }
+.rg-rank { font-size: 0.75rem; margin-top: 6px; }
 .rg-rank span, .rg-tip span, .rg-muted { color: var(--sg-faint); }
-.rg-spark { margin-top: 10px; }
-.rg-spark svg { display: block; width: 100%; height: 54px; }
 .rg-section { margin-top: 12px; font-size: 0.75rem; font-weight: 600; color: var(--sg-muted); }
 .rg-pillars { margin-top: 6px; display: grid; gap: 6px; }
 .rg-prow { display: grid; grid-template-columns: 92px 1fr 30px; align-items: center; gap: 8px;
@@ -151,8 +150,8 @@ _CSS = """
 .rg-pval { text-align: right; }
 .rg-flags { margin-top: 10px; font-size: 0.75rem; color: var(--sg-worse); }
 .rg-flags.ok { color: var(--sg-soft); }
-.rg-note { color: var(--sg-soft); font-size: 0.8rem; }
-.rg-open { margin-top: 12px; width: 100%; font: inherit; font-size: 0.8rem; font-weight: 600; padding: 8px;
+.rg-note { color: var(--sg-soft); font-size: 0.75rem; }
+.rg-open { margin-top: 12px; width: 100%; font: inherit; font-size: 0.75rem; font-weight: 600; padding: 8px;
   background: var(--sg-accent); color: var(--sg-on-accent); border: 0; border-radius: 8px; cursor: pointer; }
 .rg-tip { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.45; }
 .rg-narrow .rg-hint { display: none; }
@@ -163,7 +162,7 @@ _CSS = """
   .rg-wrap { height: var(--rg-mobile-h, 520px) !important; }
   .rg-hint { display: none; }
   .rg-controls { gap: 4px; }
-  .rg-group button { min-width: 32px; height: 30px; padding: 0 8px; font-size: 0.7rem; }
+  .rg-group button { min-width: 32px; height: 30px; padding: 0 8px; }
   .rg-legend { left: 12px; right: 12px; width: auto; bottom: 62px; padding: 6px 8px; }
   .rg-legend-keys { display: none; }
   .rg-time { left: 12px; right: 12px; }
@@ -187,7 +186,7 @@ const lastViews = {};  // per globe (component key): the camera survives Streaml
 const LITE = window.matchMedia("(pointer: coarse)").matches || Math.min(screen.width, screen.height) < 700 ||
   (navigator.hardwareConcurrency || 8) <= 4;
 const PIXEL_RATIO = Math.min(window.devicePixelRatio || 1, LITE ? 1.5 : 1.75);
-// Reduced motion: no spin, no camera flights, still conflict markers and solid flow lines
+// Reduced motion: no spin, no camera flights and solid flow lines
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)");
 const flyMs = (ms) => (REDUCED.matches ? 0 : ms);
 // Touch screens: the globe stays still until tapped, so a one-finger swipe scrolls the page instead of turning it
@@ -310,7 +309,10 @@ function norm(ctx, v) {
 }
 function fmtValue(ctx, v) {
   const f = ctx.data.valueFormat;
-  if (f === "signed") return (v > 0 ? "+" : "") + v.toFixed(1);
+  if (f === "signed") {
+    const r = Math.round(v * 10) / 10;  // round first, so -0.04 prints 0.0, not -0.0
+    return r === 0 ? "0.0" : (r > 0 ? "+" : "") + r.toFixed(1);
+  }
   if (f === "days") return v <= 0 ? "today" : Math.round(v) === 1 ? "tomorrow" : "in " + Math.round(v) + " days";
   if (f === "score") return v.toFixed(0) + "/100";
   return v.toFixed(1);
@@ -376,7 +378,7 @@ function heightFor(ctx, iso3, base) {
 // Each country owns a lit (Phong) cap and wall material. Colours change by editing those materials
 // in place (paintColours), which is instant and needs no geometry work — so hovering stays smooth even
 // with the detailed outlines. paint() also resets heights and borders (year, selection, 3D toggle);
-// the animated rings and arcs are redrawn by drawLayers().
+// the rings and arcs are redrawn by drawLayers().
 function materialsFor(ctx, f) {
   if (!f.__materials) {
     const Phong = ctx.globe.globeMaterial().constructor;  // three.js MeshPhongMaterial, from the bundle
@@ -467,41 +469,43 @@ function drawLayers(ctx) {
   drawArcs(ctx);
 }
 
+function circle(at, r, alt) {
+  // A ring r degrees around a point, as path points [lat, lng, altitude]
+  const k = 1 / Math.cos(at.lat * Math.PI / 180);
+  return Array.from({ length: 41 }, (_, i) => {
+    const a = (i / 40) * 2 * Math.PI;
+    return [at.lat + r * Math.sin(a), at.lng + r * k * Math.cos(a), alt];
+  });
+}
+
 function drawRings(ctx) {
+  // One still ink ring per armed conflict, wider for more battle deaths
   const rings = [];
   if (ctx.showConflict) {
     for (const c of ctx.data.countries) {
       const deaths = c.deaths ? c.deaths[ctx.yearIndex] : null;
       if (deaths == null || deaths < ctx.data.conflictThreshold) continue;
       const at = locate(ctx, c.iso3);
-      if (at) rings.push({ iso3: c.iso3, lat: at.lat, lng: at.lng, deaths });
+      if (at) rings.push({ iso3: c.iso3, at, deaths, alt: heightFor(ctx, c.iso3, 0.006) + 0.002 });
     }
   }
-  const still = REDUCED.matches;
-  const key = (still ? "still|" : "") +
-    rings.map((r) => r.iso3 + ":" + r.deaths + ":" + heightFor(ctx, r.iso3, 0).toFixed(4)).join();
-  if (key === ctx.ringsKey) return;  // unchanged: keep the running animation instead of restarting it
+  const key = rings.map((r) => r.iso3 + ":" + r.deaths + ":" + r.alt.toFixed(4)).join();
+  if (key === ctx.ringsKey) return;
   ctx.ringsKey = key;
-  // Reduced motion: a still dot per conflict, sized by battle deaths, instead of pulsing rings
-  ctx.globe.labelsData(still ? rings : [])
-    .labelLat("lat").labelLng("lng").labelText(() => "").labelSize(0.01).labelResolution(2)
-    .labelDotRadius((r) => 0.4 + Math.log10(r.deaths) * 0.35)
-    .labelColor(() => "rgba(253,128,120,0.9)")
-    .labelAltitude((r) => heightFor(ctx, r.iso3, 0.006) + 0.002);
-  ctx.globe.ringsData(still ? [] : rings)
-    .ringColor(() => (t) => "rgba(253,128,120," + Math.sqrt(Math.max(0, 1 - t)).toFixed(3) + ")")
-    .ringAltitude((r) => heightFor(ctx, r.iso3, 0.006) + 0.002)
-    .ringMaxRadius((r) => 1.5 + Math.log10(r.deaths) * 1.4)
-    .ringPropagationSpeed(1.8)
-    .ringRepeatPeriod((r) => Math.max(500, 1700 - Math.log10(r.deaths) * 260));
+  ctx.globe.pathsData(rings)
+    .pathPoints((r) => circle(r.at, 0.6 + Math.log10(r.deaths) * 0.6, r.alt))
+    .pathPointAlt((p) => p[2])
+    .pathColor(() => ctx.data.ink)
+    .pathStroke(0.25)
+    .pathTransitionDuration(0);
 }
 
 function drawArcs(ctx) {
   let flows = [];
   if (ctx.showFlows) {
     const all = ctx.data.flows || [];
-    flows = ctx.selected ? all.filter((f) => f.from === ctx.selected || f.to === ctx.selected).slice(0, 20)
-                         : all.slice(0, ctx.data.topFlows);
+    const pick = ctx.selected || ctx.data.focus;
+    flows = pick ? all.filter((f) => f.from === pick || f.to === pick).slice(0, 20) : all.slice(0, ctx.data.topFlows);
   }
   const max = Math.max(1, ...flows.map((f) => f.value));
   const arcs = [];
@@ -542,31 +546,18 @@ function tooltip(ctx, iso3, fallbackName) {
 
 function renderLegend(root, ctx) {
   const data = ctx.data;
-  const stops = data.colorscale.map(([t, c]) => c + " " + Math.round(t * 100) + "%").join(", ");
-  root.querySelector(".rg-legend-bar").style.background = "linear-gradient(90deg, " + stops + ")";
+  // Scores: one flat block per tier (the colour at its top score); other scales: one block per colour stop
+  const blocks = data.valueFormat === "score" ? [0.2, 0.4, 0.6, 0.8, 1].map((t) => colourAt(data.colorscale, t))
+                                              : data.colorscale.map(([, c]) => c);
+  root.querySelector(".rg-legend-bar").innerHTML = blocks.map((c) => '<i style="background:' + c + '"></i>').join("");
   root.querySelector(".rg-legend-title").textContent =
     data.custom ? data.metricLabel : data.metricLabel + " risk · " + data.years[ctx.yearIndex];
   root.querySelector(".rg-legend-ticks").innerHTML = data.ticks.map((t) => "<span>" + esc(t) + "</span>").join("");
   root.querySelector(".rg-legend-keys").innerHTML =
-    (ctx.showConflict ? '<div><i style="background:#fd8078"></i>Armed conflict (≥ ' + data.conflictThreshold + " battle deaths)</div>" : "") +
-    (ctx.showFlows ? '<div><i style="background:#b9d7fe"></i>Refugee flows, origin → host (' + data.flowsYear + ")</div>" : "");
-}
-
-function sparkline(ctx, c) {
-  const pts = c.composite.map((v, i) => [i, v]).filter(([, v]) => v != null);
-  if (pts.length < 2) return "";
-  const n = ctx.data.years.length - 1, W = 268, H = 54, pad = 4;
-  const x = (i) => pad + (i / n) * (W - 2 * pad);
-  const y = (v) => H - pad - (v / 100) * (H - 2 * pad);
-  const line = pts.map(([i, v]) => x(i).toFixed(1) + "," + y(v).toFixed(1)).join(" ");
-  const cur = c.composite[ctx.yearIndex];
-  const dot = cur == null ? "" : '<circle cx="' + x(ctx.yearIndex).toFixed(1) + '" cy="' + y(cur).toFixed(1) +
-    '" r="3.5" fill="' + (tierFor(ctx, cur) || { color: "#fff" }).color + '" stroke="#000" stroke-width="1.5"/>';
-  return '<div class="rg-section">Composite since ' + ctx.data.years[0] + '</div><div class="rg-spark">' +
-    '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none">' +
-    '<line x1="0" x2="' + W + '" y1="' + y(50) + '" y2="' + y(50) + '" stroke="#2c2c2a" stroke-dasharray="3 3"/>' +
-    '<polyline points="' + line + '" fill="none" stroke="#c3c2b7" stroke-width="1.6" vector-effect="non-scaling-stroke"/>' +
-    dot + "</svg></div>";
+    (ctx.showConflict ? '<div><i style="border:2px solid ' + data.ink + ';box-sizing:border-box"></i>Armed conflict (≥ ' +
+      data.conflictThreshold + " battle deaths)</div>" : "") +
+    (ctx.showFlows && data.flows.length ? '<div><i style="background:#b9d7fe"></i>Refugee flows, origin → host (' +
+      data.flowsYear + ")</div>" : "");
 }
 
 function customLine(ctx, c) {
@@ -598,14 +589,14 @@ function renderPanel(root, ctx) {
     const tier = tierFor(ctx, score);
     const prev = yi > 0 ? c.composite[yi - 1] : null;
     const d = prev == null ? null : Math.round((score - prev) * 10) / 10;  // rounded as in the tables
-    const delta = d == null ? "" : '<span class="rg-delta" style="color:' + (d >= 1 ? "#fd8078" : d <= -1 ? "#5ac698" : "#8f8e87") +
-      '">' + (d >= 1 ? "▲" : d <= -1 ? "▼" : "■") + " " + (d > 0 ? "+" : "") + d.toFixed(1) + " vs " + (year - 1) + "</span>";
+    const tone = d >= 1 ? "worse" : d <= -1 ? "better" : "faint";
+    const delta = d == null ? "" : '<span class="rg-delta" style="color:var(--sg-' + tone + ')">' +
+      (d >= 1 ? "▲" : d <= -1 ? "▼" : "■") + " " + (d > 0 ? "+" : "") + d.toFixed(1) + " vs " + (year - 1) + "</span>";
     html += '<div class="rg-sub">' + esc(c.region) + " · " + year + "</div>" +
       '<div class="rg-score"><span class="rg-big">' + score.toFixed(0) + '</span><span class="rg-of">/100</span>' +
       '<span class="rg-badge" style="background:' + tier.color + ";color:" + tier.text + '">' + esc(tier.label) + "</span></div>" +
       '<div class="rg-rank">Rank <b>' + c.rank[yi] + "</b> of " + ctx.data.nRanked[yi] + " " + delta + "</div>" +
       customLine(ctx, c) +
-      sparkline(ctx, c) +
       '<div class="rg-section">Pillars · ' + ctx.data.years[ctx.data.years.length - 1] + "</div>" +
       '<div class="rg-pillars">' + ctx.data.pillars.map((p) => {
         const v = c.pillars[p.key];
@@ -692,7 +683,7 @@ function control(root, ctx, action) {
   const view = g.pointOfView();
   if (action === "in") g.pointOfView({ ...view, altitude: Math.max(0.2, view.altitude * 0.65) }, flyMs(450));
   if (action === "out") g.pointOfView({ ...view, altitude: Math.min(5.5, view.altitude / 0.65) }, flyMs(450));
-  if (action === "reset") { select(root, ctx, ctx.data.focus || null, false); g.pointOfView(startView(ctx), flyMs(900)); }
+  if (action === "reset") { select(root, ctx, null, false); g.pointOfView(startView(ctx), flyMs(900)); }
   if (action === "spin") { ctx.spin = !ctx.spin; g.controls().autoRotate = ctx.spin; }
   if (action === "lock") lockGlobe(root, ctx, true);
   if (action === "extrude") ctx.extrude = !ctx.extrude;
@@ -711,7 +702,7 @@ function fitSize(root, ctx) {
 function build(root, ctx, Globe, features) {
   const el = root.querySelector(".rg-canvas");
   const lastView = lastViews[ctx.data.key];
-  const options = { animateIn: !lastView && !LITE && !REDUCED.matches,
+  const options = { animateIn: false,
                     rendererConfig: { antialias: !LITE, alpha: true, powerPreference: "high-performance" } };
   let g;
   try { g = new Globe(el, options); } catch (err) { g = Globe(options)(el); }
@@ -719,7 +710,7 @@ function build(root, ctx, Globe, features) {
   g.renderer().setPixelRatio(PIXEL_RATIO);  // sharp enough on high-DPI screens without rendering 4-9x the pixels
   g.backgroundColor("rgba(0,0,0,0)")
     .globeImageUrl(EARTH_IMAGE)
-    .showAtmosphere(true).atmosphereColor("#6ea8ff").atmosphereAltitude(0.16)
+    .showAtmosphere(false)
     .showGraticules(false)
     .polygonCapCurvatureResolution(LITE ? 6 : 4)
     .polygonCapMaterial((f) => materialsFor(ctx, f).cap)
@@ -732,6 +723,9 @@ function build(root, ctx, Globe, features) {
     .pointLabel((c) => tooltip(ctx, c.iso3, c.name))
     .onPointHover((c) => { el.style.cursor = c ? "pointer" : "grab"; hoverTo(ctx, c ? c.iso3 : null); })
     .onPointClick((c) => select(root, ctx, c.iso3, true))
+    .pathLabel((r) => tooltip(ctx, r.iso3, r.iso3))
+    .onPathHover((r) => { el.style.cursor = r ? "pointer" : "grab"; hoverTo(ctx, r ? r.iso3 : null); })
+    .onPathClick((r) => select(root, ctx, r.iso3, true))
     .onGlobeClick(() => select(root, ctx, null, false));
   useOutlines(ctx, features);
   // The Earth: night lights at full strength, deep-navy oceans, terrain relief from the bump map
@@ -809,7 +803,7 @@ function build(root, ctx, Globe, features) {
   root.querySelector(".rg-lock").onclick = () => lockGlobe(root, ctx, false);
   // The motion setting can change while the page is open
   ctx.motion = () => {
-    ctx.ringsKey = ctx.arcsKey = null;
+    ctx.arcsKey = null;
     drawLayers(ctx);
     if (REDUCED.matches) stopSpin(root, ctx);
   };
@@ -833,9 +827,9 @@ export default function (component) {
   const { data, parentElement, setTriggerValue, setStateValue } = component;
   const root = parentElement.querySelector(".rg-wrap");
   if (!root) return;
-  const picked = data.selected || data.focus || null;
   const ctx = root.__riskGlobe || (root.__riskGlobe = {
-    selected: picked, hover: null, spin: data.layers.spin && !picked && !LITE && !REDUCED.matches,
+    selected: data.selected || null, hover: null,
+    spin: data.layers.spin && !data.selected && !data.focus && !LITE && !REDUCED.matches,
     extrude: data.layers.extrude,
     showFlows: data.layers.flows, showConflict: data.layers.conflict, globe: null, timer: null,
     yearIndex: data.years.length - 1,
@@ -849,6 +843,7 @@ export default function (component) {
   root.style.height = data.height + "px";
   root.style.setProperty("--rg-mobile-h", Math.min(520, data.height) + "px");
   root.querySelector(".rg-time").hidden = !data.showTime;
+  root.querySelector('[data-act="flows"]').hidden = !data.flows.length;
   root.querySelector(".rg-hint").textContent = data.hint || defaultHint();
 
   if (ctx.globe) {
@@ -1000,7 +995,7 @@ def risk_globe(table: pd.DataFrame, hist: pd.DataFrame, flows: pd.DataFrame | No
             "composite": composite.get(iso3, blank),
             "rank": rank.get(iso3, blank),
             "deaths": deaths.get(iso3, blank),
-            "pillars": {p.key: _num(r.get(p.key)) for p in config.PILLARS},
+            "pillars": {p.key: _num(r.get(p.key), 0) for p in config.PILLARS},  # rounded once, as in the tables
             "flags": int(r.get("flags") or 0),
             "inView": iso3 in in_view,
         }
@@ -1029,6 +1024,7 @@ def risk_globe(table: pd.DataFrame, hist: pd.DataFrame, flows: pd.DataFrame | No
         "ticks": ticks or ["0 · lower", "50", "higher · 100"],
         "colorscale": colorscale or config.map_colorscale(metric),
         "noData": config.NO_DATA_COLOR,
+        "ink": config.INK["text"],
         "outOfView": OUT_OF_VIEW_COLOR,
         "centre": list(centre) if centre else None,
         "focus": focus,

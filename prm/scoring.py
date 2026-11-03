@@ -265,9 +265,18 @@ def flag_changes(before: pd.Series, after: pd.Series) -> tuple[list[dict], list[
     return worse, eased
 
 
-def flag_counts(values: pd.DataFrame) -> pd.Series:
-    """Number of red flags per country (for tables)."""
-    return values.apply(lambda row: len(red_flags(row)), axis=1)
+def flag_counts(values: pd.DataFrame, series: dict[str, pd.DataFrame] | None = None) -> pd.Series:
+    """Number of red flags per country (for tables). Given the series, a falling political stability trend counts
+    too, as on the profile: each country's own last WGI year, as in wgi_trend."""
+    counts = values.apply(lambda row: len(red_flags(row)), axis=1)
+    df = (series or {}).get("wgi_pv")
+    if df is None or df.empty:
+        return counts
+    last = df.groupby("iso3")["year"].transform("max")
+    end = df[df["year"] == last].set_index("iso3")["value"]
+    start = df[df["year"] == last - config.WGI_TREND_YEARS].set_index("iso3")["value"]
+    falling = (end - start).reindex(counts.index) <= -config.WGI_TREND_THRESHOLD
+    return counts + falling.astype(int)
 
 
 def wgi_trend(series: dict[str, pd.DataFrame], iso3: str, dim: str = "pv") -> dict | None:
@@ -291,6 +300,15 @@ def wgi_trend(series: dict[str, pd.DataFrame], iso3: str, dim: str = "pv") -> di
         "end": float(s.loc[end_year]),
         "change": float(s.loc[end_year] - s.loc[start_year]),
     }
+
+
+def stability_flags(series: dict[str, pd.DataFrame], iso3: str) -> list[dict]:
+    """The Watch flag for a falling political stability trend ([] if none), listed after the threshold flags."""
+    trend = wgi_trend(series, iso3, "pv")
+    if not trend or trend["change"] > -config.WGI_TREND_THRESHOLD:
+        return []
+    return [{"key": "wgi_pv", "severity": "warning", "short": "Political stability falling", "value": round(trend["change"], 1),
+             "label": f"Political stability deteriorating ({trend['change']:+.1f} points since {trend['start_year']})"}]
 
 
 def wgi_changes(series: dict[str, pd.DataFrame], countries: pd.DataFrame, dim: str = "pv") -> pd.DataFrame:
@@ -376,11 +394,13 @@ def country_brief(
 
     trend = wgi_trend(series, iso3, "pv")
     if trend:
-        direction = "improved" if trend["change"] > 0 else "deteriorated" if trend["change"] < 0 else "was unchanged"
+        from .interpret import signed  # interpret imports scoring
+        change = round(trend["change"], 1)  # the direction follows the change as printed
+        direction = "improved" if change > 0 else "deteriorated" if change < 0 else "was unchanged"
         lines.append(
             f"Political stability (World Bank governance indicators) {direction} from {trend['start']:.1f} "
             f"({trend['start_year']}) to "
-            f"{trend['end']:.1f} ({trend['end_year']}), a change of {trend['change']:+.1f} points."
+            f"{trend['end']:.1f} ({trend['end_year']}), a change of {signed(change)} points."
         )
 
     growth, infl = v.get("gdp_growth"), v.get("inflation")

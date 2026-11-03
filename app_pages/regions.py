@@ -9,9 +9,11 @@ hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 table = table.join(values[["displaced_total"]], on="iso3")
 
+head = st.empty()  # the title names the picked region, so it is drawn above the picker once it has a value
 regions = sorted(table["region"].dropna().unique())
 default = st.query_params.get("region")
-region = st.selectbox("Region", regions, index=regions.index(default) if default in regions else 0, key="reg_region")
+region = st.selectbox("Region", regions, index=regions.index(default) if default in regions else 0, key="reg_region",
+                      width=520)  # fits the longest name
 st.query_params["region"] = region
 
 rv = table[table["region"] == region]
@@ -21,24 +23,24 @@ yearly = rh.groupby("year").agg(median=("composite", "median"),
                                 high=("tier", lambda s: int(s.isin(["High", "Severe"]).sum())))
 last = yearly.loc[year - 1] if year - 1 in yearly.index else None
 
-ui.hero(f"{region}", f"{len(scored)} countries scored · {year}")
+with head:
+    ui.hero(f"{region}", f"{len(scored)} countries scored · {year}")
 
 # --- Headline numbers -------------------------------------------------------------------------
 median_now = scored["composite"].median() if len(scored) else None
 n_high = int(scored["tier"].isin(["High", "Severe"]).sum())
 k1, k2, k3, k4, k5 = st.columns(5)
-k1.metric("Median score", "—" if median_now is None else f"{median_now:.0f}", border=True,
-          delta=None if last is None or median_now is None else round(float(median_now - last["median"]), 1),
-          delta_color="inverse", delta_description=f"vs {year - 1}")
-k2.metric("High or Severe risk", n_high, border=True,
+k1.metric("Median score", "—" if median_now is None else f"{median_now:.0f}", **ui.median_delta(median_now, last),
+          delta_description=f"vs {year - 1}")
+k2.metric("High or Severe risk", n_high,
           delta=None if last is None else int(n_high - last["high"]), delta_color="inverse",
           delta_description=f"vs {year - 1}")
-k3.metric("In armed conflict", int((scored["battle_deaths_raw"] >= 25).sum()), border=True,
+k3.metric("In armed conflict", int((scored["battle_deaths_raw"] >= 25).sum()),
           help="At least 25 battle-related deaths in the latest UCDP year")
-k4.metric("People displaced from the region", ui.fmt_population(rv["displaced_total"].sum()), border=True,
+k4.metric("Displaced people", ui.fmt_population(rv["displaced_total"].sum()),
           help="Refugees, asylum seekers, others in need of protection and IDPs originating from the region (UNHCR)")
 riskiest = scored.nsmallest(1, "rank")
-k5.metric("Highest risk", riskiest["name"].iloc[0] if len(riskiest) else "—", border=True,
+k5.metric("Highest risk", riskiest["name"].iloc[0] if len(riskiest) else "—",
           help="Highest composite score in the region")
 
 # --- Map and tier mix -----------------------------------------------------------------------------
@@ -48,12 +50,9 @@ with left:
     ui.globe_panel(table=table, hist=hist, flows=core.get("flows"), metric="composite", metric_label="Composite",
                    in_view=set(rv["iso3"]), region=region, key="reg_globe", height=520,
                    layers={"spin": False, "flows": False})
-    st.caption("Turned to the region; countries elsewhere are dimmed. Click a country for its index, ▶ to replay "
-               f"since {config.HISTORY_START}.")
 with right:
     st.header(f"Tier mix since {config.HISTORY_START}")
     st.plotly_chart(charts.tier_mix(rh), config={"displayModeBar": False})
-    st.caption("How many of the region's countries sat in each tier, year by year.")
 
 # --- Risers and fallers ---------------------------------------------------------------------------------
 st.header(f"Biggest moves since {year - 1}")
@@ -61,8 +60,7 @@ ui.movers_lists(rv, n=5, key="reg_movers")
 
 # --- Ranking ----------------------------------------------------------------------------------------------
 st.header("Ranking")
-st.caption("Tick a row to open the country.")
-ui.country_table(rv, key="reg_table", height=min(460, 38 * (len(rv) + 1)))
+ui.country_table(rv, key="reg_table", height=min(460, 35 * (len(rv) + 1) + 3))
 
 # --- Events and news ---------------------------------------------------------------------------------------
 e_col, n_col = st.columns(2)

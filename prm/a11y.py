@@ -6,6 +6,7 @@
   from Find (see keep_focus)
 - Material icons, which Streamlit draws as ligature text ("public", "compare_arrows"), hidden from screen readers
   so links read "Global overview" rather than "public Global overview"
+- on phones, the open tab scrolled into view in its sideways-scrolling tab row (e.g. a profile opened at ?tab=map)
 """
 
 from __future__ import annotations
@@ -47,13 +48,23 @@ export default function (component) {
   const hide = () => document.querySelectorAll(
     '[data-testid="stIconMaterial"]:not([aria-hidden]), span[role="img"][translate="no"][aria-label$=" icon"]:not([aria-hidden])'
   ).forEach((e) => e.setAttribute("aria-hidden", "true"));
+  // Phones: a tab row scrolls sideways inside itself, so a tab opened from a link (?tab=map) may sit out of view.
+  // Each newly selected tab is scrolled into its row once; a row the visitor scrolls is then left alone.
+  const showTab = () => document.querySelectorAll('[data-testid="stTabs"] [role="tablist"]').forEach((list) => {
+    const tab = list.querySelector('[role="tab"][aria-selected="true"]');
+    if (!tab || list.sgShown === tab || list.scrollWidth <= list.clientWidth) return;
+    list.sgShown = tab;
+    const r = tab.getBoundingClientRect(), box = list.getBoundingClientRect();
+    if (r.left < box.left || r.right > box.right) list.scrollLeft += r.left - box.left - (box.width - r.width) / 2;
+  });
   hide();
+  showTab();
   if (!window.sgIconWatch) {
     let queued = false;
     window.sgIconWatch = new MutationObserver(() => {
       if (queued) return;
       queued = true;
-      requestAnimationFrame(() => { queued = false; hide(); });
+      requestAnimationFrame(() => { queued = false; hide(); showTab(); });
     });
     window.sgIconWatch.observe(document.body, { childList: true, subtree: true });
   }

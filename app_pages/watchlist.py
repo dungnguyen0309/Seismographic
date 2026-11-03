@@ -14,8 +14,7 @@ table = ui.master_table(core, values, scores, hist)
 options, names = ui.country_options(core["countries"])
 MAINTAINER = os.environ.get("SEISMOGRAPHIC_MAINTAINER") == "1"  # shows the tools for editing data/events.csv
 
-ui.hero("Events watchlist", "Elections, referendums, debt deadlines, summits, court rulings and other dated "
-                             "events that could move a country's risk.")
+ui.hero("Events watchlist", "Elections and other dated events that could move a country's risk.")
 
 events = content.load_events()
 if MAINTAINER and (undated := events.attrs.get("undated")):
@@ -27,22 +26,12 @@ if not events.empty:
     upcoming = events[events["date"] >= today]
     past = events[events["date"] < today]
 
-    k1, k2, k3 = st.columns(3)
-    k1.metric("Upcoming events", len(upcoming), border=True)
-    k2.metric("Next 90 days", int((upcoming["date"] <= today + pd.Timedelta(days=90)).sum()), border=True)
-    k3.metric("High significance", int((upcoming["significance"].str.title() == "High").sum()), border=True)
-
-    window = st.segmented_control(
-        "Show", ["Next 90 days", "Next 12 months", "All upcoming", "Past"], default="Next 12 months",
-    )
-    if window == "Next 90 days":
-        shown = upcoming[upcoming["date"] <= today + pd.Timedelta(days=90)]
-    elif window == "All upcoming":
-        shown = upcoming
-    elif window == "Past":
-        shown = past.sort_values("date", ascending=False)
-    else:
-        shown = upcoming[upcoming["date"] <= today + pd.Timedelta(days=365)]
+    windows = {"Next 90 days": upcoming[upcoming["date"] <= today + pd.Timedelta(days=90)],
+               "Next 12 months": upcoming[upcoming["date"] <= today + pd.Timedelta(days=365)],
+               "All upcoming": upcoming, "Past": past.sort_values("date", ascending=False)}
+    window = st.segmented_control("Show", list(windows), default="Next 12 months",
+                                  format_func=lambda w: f"{w} ({len(windows[w])})")
+    shown = windows[window or "Next 12 months"]
 
     if shown.empty:
         st.info("No events in this window.")
@@ -50,16 +39,17 @@ if not events.empty:
         st.plotly_chart(charts.events_timeline(shown), config={"displayModeBar": False})
         st.dataframe(
             shown.assign(date=shown["date"].dt.strftime("%d %b %Y"))[
-                ["date", "country", "event", "category", "significance", "notes", "source_url"]
+                ["country", "date", "event", "category", "significance", "notes", "source_url"]
             ],
             hide_index=True,
             column_config={
-                "date": "Date",
-                "country": "Country",
+                "country": ui.NAME_COLUMN,
+                "date": st.column_config.TextColumn("Date", width=120),  # fixed: auto widths cut the date and the header below
                 "event": st.column_config.TextColumn("Event", width="large"),
-                "category": "Category",
-                "significance": "Significance",
-                "notes": "Why it matters",
+                # one category in every row says nothing
+                "category": "Category" if shown["category"].nunique() > 1 else None,
+                "significance": st.column_config.TextColumn("Significance", width=130),
+                "notes": "Notes",
                 "source_url": st.column_config.LinkColumn("Source", display_text="Link"),
             },
         )
@@ -76,10 +66,8 @@ if not events.empty:
             notes={iso3: f"{e.event} · {e.date:%d %b %Y} · {e.significance} significance"
                    for iso3, e in next_event.iterrows()},
             empty_label="no event in the next year", layers={"spin": True, "extrude": False, "flows": False,
-                                                             "conflict": False},
+                                                             "conflict": False}, height=360,
         )
-        st.caption("The brighter the country, the sooner its next event. Hover or click for the event and the "
-                   "country's risk index.")
         ui.cite("ifes", "natural_earth")
 elif MAINTAINER:
     st.info(

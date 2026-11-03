@@ -33,8 +33,8 @@ stats = [
     (n_scored, "countries scored"), (len(config.SCORED_INDICATORS), "indicators"), (len(PILLARS), "pillars"),
     (len(config.INDEX_SOURCES), "open datasets"), (year - config.HISTORY_START + 1, f"years of history ({config.HISTORY_START}–{year})"),
 ]
-grid([f'<div style="{CARD}"><div style="font-size:1.8rem;font-weight:700;line-height:1.1">{n}</div>'
-      f'<div style="font-size:0.8rem;color:var(--sg-muted);margin-top:2px">{html.escape(label)}</div></div>'
+grid([f'<div style="{CARD}"><div style="font-size:1.5rem;font-weight:700;line-height:1.1">{n}</div>'
+      f'<div style="font-size:0.75rem;color:var(--sg-muted);margin-top:2px">{html.escape(label)}</div></div>'
       for n, label in stats], min_width=140)
 
 # --- How the score is built ----------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ steps = [
 ]
 grid([f'<div style="{CARD}">'
       f'<div style="font-weight:700;margin:0 0 6px">{n}. {html.escape(title)}</div>'
-      f'<div style="font-size:0.86rem;color:var(--sg-soft);line-height:1.5">{html.escape(text)}</div></div>'
+      f'<div style="font-size:0.875rem;color:var(--sg-soft);line-height:1.5">{html.escape(text)}</div></div>'
       for n, title, text in steps])
 st.markdown(f"Tiers: {tiers}", unsafe_allow_html=True)
 st.markdown(
@@ -75,8 +75,8 @@ for p in PILLARS:
         f'<div style="{CARD}">'
         f'<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">'
         f'<span style="font-weight:700;color:{color}">{html.escape(p.label)}</span>'
-        f'<span style="font-size:0.8rem;color:var(--sg-muted);white-space:nowrap">{share:.0%} of the score</span></div>'
-        f'<div style="font-size:0.86rem;color:var(--sg-text);margin:6px 0;line-height:1.5">{html.escape(p.question)}</div>'
+        f'<span style="font-size:0.75rem;color:var(--sg-muted);white-space:nowrap">{share:.0%} of the score</span></div>'
+        f'<div style="font-size:0.875rem;color:var(--sg-text);margin:6px 0;line-height:1.5">{html.escape(p.question)}</div>'
         f'<div style="font-size:0.75rem;color:var(--sg-faint);line-height:1.5">{html.escape(inds)}</div></div>'
     )
 grid(cards, min_width=260)
@@ -86,7 +86,7 @@ st.header("Quick start")
 st.markdown(
     "1. Open the Global overview and click any country on the globe to see its score.\n"
     "2. Open its Country profile and read the In real life tab: what the numbers mean on the ground.\n"
-    "3. Use the bar at the bottom of every page to jump between Home, Compare, Live and Guide; Find searches "
+    "3. Use the sidebar, or the bar at the bottom of every page, to move between pages; Find in the bar searches "
     "every country and every page. The country on the left of the bar is the last one you opened in this visit "
     "(on a new visit, the first country you follow).\n"
     "4. Press ☆ Follow on the countries you care about: they stay at the top of the Global overview, in this browser.\n"

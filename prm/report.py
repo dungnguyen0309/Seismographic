@@ -148,7 +148,7 @@ def _draw(reading: interpret.Reading, row: pd.Series, rows: pd.DataFrame, flags:
     rank = row.get("rank_label", "")
     change = row.get("delta_1y")
     pdf.multi_cell(80, 4.6, _t(f"Global rank: {rank}\nChange vs {year - 1}: "
-                               + ("-" if pd.isna(change) else f"{change:+.1f} points")),
+                               + ("-" if pd.isna(change) else f"{interpret.signed(change)} points")),
                    new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     # Pillar bars

@@ -3,7 +3,7 @@
 import pandas as pd
 import streamlit as st
 
-from prm import charts, config, data, stress, ui
+from prm import charts, config, data, interpret, stress, ui
 
 core, year, values, scores = ui.load()
 hist = ui.history(core)
@@ -91,12 +91,12 @@ result = data.get_stress(core, year, ui.weights_tuple(), tuple(sorted(shocks.ite
 summary = stress.summary(result)
 
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Countries hit", summary["countries"], border=True)
-k2.metric("Move up a tier", summary["tier_up"], border=True,
+k1.metric("Countries hit", summary["countries"])
+k2.metric("Move up a tier", summary["tier_up"],
           help=f"Severe tier: {summary['severe_before']} today → {summary['severe_after']} under stress")
-k3.metric("New red flags", summary["new_flags"], border=True,
+k3.metric("New red flags", summary["new_flags"],
           help=f"New or more severe, in {summary['with_new_flags']} countries")
-k4.metric("Average change", "—" if pd.isna(summary["mean_delta"]) else f"{summary['mean_delta']:+.1f}", border=True,
+k4.metric("Average change", "—" if pd.isna(summary["mean_delta"]) else interpret.signed(summary["mean_delta"]),
           help="Composite score points, countries hit")
 
 # --- Globe -------------------------------------------------------------------------------------------------------
@@ -132,17 +132,18 @@ if rows.empty:
     st.caption("No country crosses a tier or a red-flag line under these shocks.")
 else:
     event = st.dataframe(
-        # What crossed a line comes first; the scores behind it follow
-        rows[["iso3", "flag", "name", "tier_change", "delta", "flags_text", "composite_before", "composite_after"]]
-        .round({"delta": 1, "composite_before": 0, "composite_after": 0}),
-        hide_index=True, on_select="rerun", selection_mode="single-row", key="stress_table",
-        height=min(520, 36 * (len(rows) + 1) + 4),
+        # The pinned name, then the figures (the change first, so a phone shows it), then the flag and what crossed
+        rows[["iso3", "name", "delta", "composite_before", "composite_after", "flag", "tier_change", "flags_text"]]
+        .round({"delta": 1, "composite_before": 0, "composite_after": 0})
+        .style.format(interpret.signed, subset=["delta"], na_rep="—"),  # signed, and still sorts as a number
+        hide_index=True, on_select="rerun", selection_mode="single-row", key="stress_table", placeholder="—",
+        height=min(520, 35 * (len(rows) + 1) + 3),
         column_config={
-            "iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country",
+            "iso3": None, "flag": ui.FLAG_COLUMN, "name": ui.NAME_COLUMN,
             "composite_before": st.column_config.NumberColumn("Today", format="%.0f"),
             "composite_after": st.column_config.ProgressColumn("Under stress", min_value=0, max_value=100,
                                                                format="%.0f", color=config.TIER_COLORS["Elevated"]),
-            "delta": st.column_config.NumberColumn("Change", format="%+.1f"),
+            "delta": st.column_config.NumberColumn("Change", width=100),
             "tier_change": st.column_config.TextColumn("Tier", width="medium"),
             "flags_text": st.column_config.TextColumn("New or worse red flags", width="large"),
         },

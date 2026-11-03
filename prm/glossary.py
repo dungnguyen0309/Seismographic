@@ -23,8 +23,8 @@ TERMS: dict[str, list[tuple[str, str]]] = {
         ("Log scale", "Used for battle deaths and displacement, which are zero for most countries: 'none' scores 0 and "
                       "the score rises steeply from the first deaths or displacements, then flattens."),
         ("Global rank", "A country's position among all scored countries; 1 = the highest risk."),
-        ("Tier", "Five bands of the composite score: Low (0–20), Moderate (20–40), Elevated (40–60), High (60–80) and "
-                 "Severe (80–100)."),
+        ("Tier", "Five bands of the composite score: Low (under 20), Moderate (20 to under 40), Elevated (40 to under "
+                 "60), High (60 to under 80) and Severe (80 to 100)."),
         ("Pillar", "One of four groups of indicators: Political Stability & Violence, Governance & Institutions, "
                    "Macroeconomic & Financial, and Social & Humanitarian Pressure."),
         ("Indicator", "A single measured data series, such as inflation or rule of law. The index uses 17."),
@@ -183,8 +183,7 @@ TERMS: dict[str, list[tuple[str, str]]] = {
         ("Map of change", "Blue = safer than last year, grey = little change, red = riskier; brighter and taller = "
                           "a bigger move."),
         ("3D (height)", "On the globe, countries are raised by their score: the taller, the riskier."),
-        ("Conflict rings", "Rings mark active armed conflict; bigger and faster = more battle deaths. With reduced "
-                           "motion turned on, each is a still dot sized by battle deaths."),
+        ("Conflict rings", "Rings mark active armed conflict; the wider the ring, the more battle deaths."),
         ("Flows (arcs)", "Animated arcs run from refugees' country of origin (dim end) to the host country (bright "
                          "end); thicker = more people."),
         ("Year slider / ▶", "Replays the index on the globe year by year since 2015."),

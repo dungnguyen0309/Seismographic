@@ -18,7 +18,7 @@ PILLAR_KEYS = [p.key for p in PILLARS]
 TABLES: dict[str, str] = {
     "index": "The index today: one row per economy",
     "indicators": "Every indicator behind the index: value, year and 0–100 risk score (one row per economy and indicator)",
-    "red_flags": "Absolute warning thresholds crossed (one row per flag)",
+    "red_flags": "Red flags: the warning thresholds crossed and a falling political stability trend (one row per flag)",
     "history": "The index for every year since " + str(config.HISTORY_START),
     "conflict_outlook": "Chance of a new armed conflict next year, for countries at peace",
     "dictionary": "What every column means",
@@ -36,7 +36,7 @@ DICTIONARY: list[tuple[str, str, str]] = [
     ("index, history", "tier", "Risk tier: " + ", ".join(f"{t.label} ({t.lower:g}+)" for t in config.TIERS)),
     ("index, history", "rank", "Rank by composite score (1 = highest risk)"),
     ("index", "coverage", "Share of the indicators with data, %"),
-    ("index", "red_flags", "Number of absolute warning thresholds crossed"),
+    ("index", "red_flags", "Number of red flags: the warning thresholds crossed, plus a falling political stability trend"),
     ("index", "change_1y", "Change in the composite score since last year, points"),
     ("index", "population", "Population (World Bank; IMF where the World Bank has none)"),
     ("index", "gdp_per_person", "GDP per person, current US$ (IMF)"),
@@ -48,10 +48,10 @@ DICTIONARY: list[tuple[str, str, str]] = [
     ("indicators", "year", "Year of the value"),
     ("indicators", "risk_score", "The value turned into a 0–100 risk score (percentile or log scale)"),
     ("indicators", "source", "Publisher of the data"),
-    ("red_flags", "flag", "Indicator that crosses the threshold"),
+    ("red_flags", "flag", "Indicator behind the flag"),
     ("red_flags", "severity", "Critical, Serious or Watch"),
-    ("red_flags", "description", "The threshold crossed"),
-    ("red_flags", "value", "The country's value"),
+    ("red_flags", "description", "The threshold crossed, or the fall in political stability"),
+    ("red_flags", "value", "The country's value (for the stability trend, the change in points)"),
     ("history", "year", "Year the scores describe"),
     ("history", "battle_deaths", "Battle-related deaths that year (UCDP)"),
     ("conflict_outlook", "probability", "Estimated chance that an armed conflict (25+ battle deaths) starts next year"),
@@ -67,7 +67,7 @@ def _names(core: dict) -> pd.DataFrame:
 
 def index_table(core: dict, values: pd.DataFrame, scores: pd.DataFrame, hist: pd.DataFrame | None) -> pd.DataFrame:
     out = _names(core).join(scores[["composite", *PILLAR_KEYS, "tier", "rank", "coverage"]], how="left")
-    out["red_flags"] = scoring.flag_counts(values).reindex(out.index).fillna(0).astype(int)
+    out["red_flags"] = scoring.flag_counts(values, core["series"]).reindex(out.index).fillna(0).astype(int)
     if hist is not None and not hist.empty:
         prev = hist[hist["year"] == int(hist["year"].max()) - 1].set_index("iso3")["composite"]
         out["change_1y"] = out["composite"] - prev.reindex(out.index)
@@ -100,7 +100,8 @@ def red_flags_table(core: dict, values: pd.DataFrame) -> pd.DataFrame:
     names = _names(core)["name"]
     rows = [{"iso3": iso3, "name": names.get(iso3, iso3), "flag": f["key"],
              "severity": config.SEVERITY_LABEL[f["severity"]], "description": f["label"], "value": f["value"]}
-            for iso3 in values.index for f in scoring.red_flags(values.loc[iso3])]
+            for iso3 in values.index
+            for f in scoring.red_flags(values.loc[iso3]) + scoring.stability_flags(core["series"], iso3)]
     return pd.DataFrame(rows, columns=["iso3", "name", "flag", "severity", "description", "value"])
 
 

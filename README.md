@@ -39,7 +39,7 @@ watchlist, and written analyst assessments with probabilistic key judgments and 
 | Briefings | **Regions** | One region at a time: headline numbers with trends, zoomed map, tier mix since 2015, risers and fallers, ranking, upcoming events and regional news |
 |  | **Conflict & displacement** | Battle deaths worldwide and by conflict, a table of active wars and conflicts, displacement over time, largest origin and host countries, the 25 largest refugee corridors, and the Outlook: the chance of new armed conflict next year in every country at peace, from a small statistical model tested out of time |
 |  | **Economic stress** | A heatmap of inflation, growth, debt, deficits, current account and reserves, a growth-vs-inflation (stagflation) chart, the IMF outlook, and countries crossing several warning thresholds |
-|  | **Events watchlist** | Elections, deadlines and other dated events on a timeline |
+|  | **Events watchlist** | Elections and other dated events on a timeline and a globe, counted for the next 90 days, the next 12 months and the past |
 |  | **Case studies** | Eight shocks since 2020 (the coups in Myanmar and Niger, the wars in Tigray and Sudan, the fall of Kabul, Russia's invasion of Ukraine, Sri Lanka's default and Bangladesh's uprising) and what the index said about each country the year before, with a verdict from a fixed, published rule and room for analyst commentary |
 | Tools | **Indicator explorer** | Any of the 17 indicators on the 3D globe, with its distribution and the riskiest and safest 10 countries |
 |  | **Stress test** | Hit many countries at once with one economic shock (a 2009-style recession, a 2020-style pandemic, a 2022-style price surge, higher-for-longer rates, or your own) and see who crosses a risk tier or a red flag, on the globe and in a table; filter by region and income group, share the link, download the results |
@@ -47,20 +47,21 @@ watchlist, and written analyst assessments with probabilistic key judgments and 
 |  | **Data downloads** | Every table behind the index (the index, all 17 indicators with years and scores, red flags, history since 2015, the conflict outlook) as CSV, one Excel workbook or JSON, with a data dictionary; when the app runs as an ASGI app (see *Run it yourself*), a read-only JSON API too |
 | Reference | **Introduction** | What the tool is, how the score is built (indicators, risk scores, pillars, then the composite and tiers), the four pillars and their weights, a quick start and the caveats |
 |  | **Guide** | A plain-language reading of any country: what each tier, pillar and warning threshold looks like on the ground, what it means for business, NGOs, travel and research, and the tool's limits. Each country profile has the same reading in its *In real life* tab |
-|  | **Methodology** | Every indicator, normalisation, weight, threshold and limitation, plus two tests of the model: its track record before new armed conflicts and a benchmark against the Fragile States Index |
+|  | **Methodology** | Three tabs: how the index is built (every indicator, normalisation, weight and threshold), two tests of the model (its track record before new armed conflicts and a benchmark against the Fragile States Index) and its limits |
 |  | **Glossary & legend** | 123 terms in nine colour-coded categories, searchable, most of them linked to the organisation that defines or publishes them; plus a visual legend for tiers, pillars, symbols and colour scales |
 |  | **Sources** | Every dataset, definition and feed behind the tool, with links, update dates and the status of the data loaded now; where each warning threshold comes from; independent indices to cross-check the scores; who owns each video channel; how to cite the tool; and further reading |
 
 Most pages have their own 3D globe: the overview (with a live news column and hotspots to watch), regions
-(turned to the region), conflict & displacement (conflict rings and refugee arcs), economic stress, a
-diverging *map of change* on *Score changes*, the compared countries on *Compare*, upcoming events on the
-watchlist, and each country's own refugee links on its profile. Charts, maps and tables name their sources on
+(turned to the region), conflict & displacement (conflict rings and refugee arcs, beside the deadliest
+conflicts), economic stress, a diverging *map of change* on *Score changes*, upcoming events on the watchlist, and
+each country's own refugee links on its profile. Charts, maps and tables name their sources on
 the same page or tab, with links.
 
-A console bar along the bottom of every page keeps the tracked country one tap away (flag, score, tier,
-change and a small seismogram of its risk since 2015) next to tabs for Home, Compare, Live and Guide and a
-*Find* sheet that searches every country and every page (press / or Ctrl+K). On the country profile, whose
-header already shows the country, the bar keeps only the tabs and *Find*.
+A console bar along the bottom of every page keeps the tracked country one tap away (flag, score, tier and
+change) next to tabs for Home, Compare, Live and Guide and a *Find* sheet that searches every country and every
+page (press / or Ctrl+K). On a wide screen with the sidebar open, the bar drops the page tabs, since the sidebar
+lists the pages, and keeps the tracked country and *Find*. On the country profile, whose header already shows the
+country, the bar leaves the tracked country out.
 
 ## Method in brief
 
@@ -70,8 +71,8 @@ header already shows the country, the bar keeps only the tabs and *Find*.
   displacement use a capped log scale so that "no conflict" scores zero.
 * Pillars are the plain mean of their indicators and the composite is the weighted mean of the pillars. A pillar
   needs half of its indicators, and a country three of its four pillars, to be scored.
-* The composite falls into one of five tiers of 20 points each: Low (0-20), Moderate, Elevated, High and
-  Severe (80-100).
+* The composite falls into one of five tiers of 20 points each: Low (0 to under 20), Moderate, Elevated, High
+  and Severe (80 to 100).
 * Every profile has a sensitivity check (the score with equal weights and with each pillar's weight set to zero),
   and changes in the World Bank governance scores (WGI) are tested against their 90% confidence intervals.
 * Red flags use absolute thresholds (e.g. UCDP's 25 battle-death threshold for armed conflict, reserves below

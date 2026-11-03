@@ -214,6 +214,11 @@ def _shown(ind: config.Indicator, raw) -> str:
     return f" ({ind.fmt(raw)}{'' if ind.unit.startswith('%') else ' '}{ind.unit})"
 
 
+def signed(v, digits: int = 1) -> str:
+    """A change with its sign: +1.2 / -0.4, and a plain 0.0 (0 with digits=0) when it rounds to nothing."""
+    return f"{v:+,.{digits}f}" if round(v, digits) else f"{0:.{digits}f}"
+
+
 def countdown(days: int) -> str:
     return "today" if days == 0 else "tomorrow" if days == 1 else f"in {days} days"
 
@@ -294,7 +299,7 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
         elif delta <= -1:
             direction.append(f"Edging safer: {delta:+.1f} points since {year - 1}{moved}.")
         else:
-            direction.append(f"Roughly flat since {year - 1} ({delta:+.1f} points).")
+            direction.append(f"Roughly flat since {year - 1} ({signed(delta)} points).")
     ch = hist[(hist["iso3"] == iso3)].dropna(subset=["composite"]).sort_values("year")
     if len(ch) >= 3:
         first = ch.iloc[0]

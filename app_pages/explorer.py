@@ -9,8 +9,7 @@ core, year, values, scores = ui.load()
 hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 
-ui.hero("Indicator explorer", "Any indicator behind the index around the world: where it is worst, how countries "
-                               "are spread, and the riskiest and safest countries.")
+ui.hero("Indicator explorer", "Any indicator behind the index, country by country.")
 
 options = [i.key for i in config.SCORED_INDICATORS]
 labels = {i.key: f"{config.PILLAR_BY_KEY[i.pillar].short} · {i.label}" for i in config.SCORED_INDICATORS}
@@ -19,7 +18,6 @@ key = c1.selectbox("Indicator", options, format_func=labels.get, key="exp_indica
 regions = sorted(table["region"].dropna().unique())
 region = c2.selectbox("Region", ["All regions", *regions], key="exp_region")
 ind = config.INDICATOR_BY_KEY[key]
-pillar = config.PILLAR_BY_KEY[ind.pillar]
 
 frame = table[["iso3", "flag", "name", "region"]].copy()
 frame["value"] = frame["iso3"].map(values[key])
@@ -28,40 +26,35 @@ frame["risk"] = frame["iso3"].map(scores[f"n_{key}"])
 view = frame if region == "All regions" else frame[frame["region"] == region]
 known = view.dropna(subset=["value"])
 
-st.markdown(
-    f"{ui.pillar_chip(ind.pillar)} &nbsp; **{ind.label}** · {ind.unit} · "
-    f"{'higher' if ind.higher_is_riskier else 'lower'} = riskier · source: [{ind.source}]({ind.source_url}) · "
-    f"[see the data ↗]({config.indicator_url(ind)})",
-    unsafe_allow_html=True,
+median = ind.fmt(known["value"].median()) if len(known) else "—"
+st.caption(  # one caption and no KPI row, so on a phone the first list starts on the first screen
+    f"{ind.description}  \n{ind.unit} · {'higher' if ind.higher_is_riskier else 'lower'} = riskier · "
+    f"{len(known)} countries with data, median {median} · source: [{ind.source}]({ind.source_url})"
+    f" · [see the data ↗]({config.indicator_url(ind)})"
 )
-st.caption(ind.description)
 source = config.indicator_source(ind)
 
-k1, k2, k3, k4 = st.columns(4)
-k1.metric("Countries with data", len(known), border=True)
-k2.metric("Median", ind.fmt(known["value"].median()) if len(known) else "—", border=True, help=ind.unit)
-worst = known.nlargest(1, "risk")
-best = known.nsmallest(1, "risk")
-k3.metric("Riskiest", worst["name"].iloc[0] if len(worst) else "—", border=True,
-          help=None if worst.empty else f"{ind.fmt(worst['value'].iloc[0])} {ind.unit}")
-k4.metric("Safest", best["name"].iloc[0] if len(best) else "—", border=True,
-          help=None if best.empty else f"{ind.fmt(best['value'].iloc[0])} {ind.unit}")
-
 # --- Leaders ----------------------------------------------------------------------------------------
-for title, rows in (("Riskiest 10", known.nlargest(10, "risk")), ("Safest 10", known.nsmallest(10, "risk"))):
+n = min(10, len(known) // 2)  # a small region splits in two, so no country shows in both lists
+lists = ((("risky", f"Riskiest {n}", known.nlargest(n, "risk")), ("safe", f"Safest {n}", known.nsmallest(n, "risk")))
+         if n >= 2 else (("all", f"All {len(known)} countries", known.sort_values("risk", ascending=False)),))
+for part, title, rows in lists:
+    if rows.empty:
+        break
     st.header(title)  # stacked: side by side, the half-width tables hid the risk score behind a sideways scroll
     rows = rows.assign(shown=rows["value"].map(ind.fmt)).reset_index(drop=True)
     event = st.dataframe(
-        rows[["iso3", "flag", "name", "shown", "year", "risk"]].round({"risk": 0}), hide_index=True, on_select="rerun",
-        selection_mode="single-row", key=f"exp_{title}",
+        rows[["iso3", "name", "shown", "risk", "flag", "year"]].round({"risk": 0}), hide_index=True, on_select="rerun",
+        selection_mode="single-row", key=f"exp_{part}",
         column_config={
-            "iso3": None, "flag": ui.FLAG_COLUMN, "name": "Country", "shown": ind.unit,
-            "year": st.column_config.NumberColumn("Year", format="%d"),
+            "iso3": None, "flag": ui.FLAG_COLUMN, "name": ui.NAME_COLUMN,
+            "shown": st.column_config.TextColumn(ind.unit, alignment="right", width=100, help=ind.unit),
             "risk": st.column_config.ProgressColumn("Risk score", min_value=0, max_value=100, format="%.0f",
                                                     color=config.PILLAR_COLORS[ind.pillar]),
+            "year": st.column_config.NumberColumn("Year", format="%d"),
         },
     )
-    ui.open_selected(event, rows, f"exp_{title}")
+    ui.open_selected(event, rows, f"exp_{part}")
 
 # --- Globe ------------------------------------------------------------------------------------------
 st.header("On the globe")
@@ -75,8 +68,6 @@ ui.globe_panel(
     custom=frame.set_index("iso3")["risk"], colorscale=config.map_colorscale(ind.pillar), notes=notes,
     layers={"spin": True, "flows": False, "conflict": False},
 )
-st.caption(f"Colour and height = risk score for this indicator (0 = safest country, 100 = riskiest), in the "
-           f"{pillar.short} pillar's colours. Hover for the actual value.")
 ui.cite(source, "natural_earth")
 
 # --- Distribution ----------------------------------------------------------------------------------------

@@ -221,12 +221,19 @@ DOCK_CSS = f"""
   position: fixed !important; z-index: 1000; left: 0; right: 0; bottom: 0; width: auto !important;
   container-type: inline-size; container-name: sgdock;
   background: var(--sg-bar); border-top: 1px solid var(--sg-line);
-  padding: 7px max(12px, calc((100% - 980px) / 2)) calc(7px + env(safe-area-inset-bottom)) !important;
+  padding: 7px 1rem calc(7px + env(safe-area-inset-bottom)) !important;
   gap: 8px 14px !important; align-items: center !important; justify-content: space-between !important;
   transition: left .25s ease;
 }}
+/* the same side padding as the page (Streamlit's wide layout switches to 5rem at 864px), so the edges line up */
+@media (min-width: 864px) {{ .st-key-sg_dock {{ padding-left: 5rem !important; padding-right: 5rem !important; }} }}
 @media (min-width: 768px) {{
   body:has(section[data-testid="stSidebar"][aria-expanded="true"]) .st-key-sg_dock {{ left: 300px; }}
+}}
+/* desktop with the sidebar open: the sidebar already lists the pages, so the dock keeps only the readout and Find */
+@media (min-width: 1024px) {{
+  body:has(section[data-testid="stSidebar"][aria-expanded="true"])
+    .st-key-sg_tabs > [data-testid="stLayoutWrapper"]:not(:has(> .st-key-sg_tab_off_find)) {{ display: none !important; }}
 }}
 /* never fade or flash while the page re-runs */
 .st-key-sg_dock [data-stale], [data-stale]:has(> .st-key-sg_dock) {{ opacity: 1 !important; transition: none !important; }}
@@ -249,11 +256,10 @@ DOCK_CSS = f"""
 .sg-read img {{ width: 26px; height: 19px; object-fit: cover; border-radius: 3px; flex: none;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.14); }}
 .sg-read-text {{ min-width: 0; flex: 1; line-height: 1.25; }}
-.sg-read-name {{ font-weight: 700; font-size: 0.86rem; color: var(--sg-strong); white-space: nowrap; overflow: hidden;
+.sg-read-name {{ font-weight: 700; font-size: 0.875rem; color: var(--sg-strong); white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; }}
 .sg-read-meta {{ font-size: 0.75rem; color: var(--sg-muted); white-space: nowrap; }}
-.sg-read-meta b {{ color: var(--sg-strong); font-size: 0.8rem; }}
-.sg-spark {{ flex: none; width: 92px; height: 26px; }}
+.sg-read-meta b {{ color: var(--sg-strong); }}
 
 /* tabs */
 {_wrap("sg_tabs")} {{ flex: 0 0 auto !important; margin-left: auto; }}  /* right-aligned, with or without the readout */
@@ -269,16 +275,17 @@ DOCK_CSS = f"""
 }}
 .st-key-sg_tabs [data-testid="stElementContainer"], .st-key-sg_tabs a {{ margin: 0 !important; }}
 .st-key-sg_tabs a:hover, .st-key-sg_tabs button:hover {{ background: var(--sg-hover) !important; }}
-.st-key-sg_tabs a p, .st-key-sg_tabs button p {{ font-size: 0.72rem !important;
+.st-key-sg_tabs a p, .st-key-sg_tabs button p {{ font-size: 0.75rem !important;
   margin: 0 !important; white-space: nowrap; line-height: 1.2 !important; }}
 .st-key-sg_tabs a span, .st-key-sg_tabs a p, .st-key-sg_tabs button p, .st-key-sg_tabs button span {{ color: var(--sg-faint) !important; }}
 .st-key-sg_tabs [data-testid="stIconMaterial"] {{ font-size: 1.3rem !important; }}
 .st-key-sg_tabs button [aria-hidden="true"], .st-key-sg_tabs button [data-testid="stIconMaterial"],
 .st-key-sg_tabs button span:has(> [data-testid="stIconMaterial"]) {{ display: none !important; }}
-.st-key-sg_tabs button::before {{ content: ""; width: 1.3rem; height: 1.3rem; flex: none; background: var(--sg-faint);
+/* margin: drawn at 1.3rem in the 1rem slot the font icons take, so icon and label line up with the links */
+.st-key-sg_tabs button::before {{ content: ""; width: 1.3rem; height: 1.3rem; margin: -0.15rem 0; flex: none;
+  background: var(--sg-faint);
   -webkit-mask: url("{_SEARCH_ICON}") center / contain no-repeat; mask: url("{_SEARCH_ICON}") center / contain no-repeat; }}
 .st-key-sg_tabs button[aria-expanded="true"]::before {{ background: {ACCENT}; }}
-.st-key-sg_tabs button {{ padding-top: 4px !important; }}  /* drawn icon is a touch shorter than the font icons */
 .st-key-sg_tabs button span[data-has-shortcut] {{ display: flex !important; flex-direction: column; align-items: center;
   gap: 2px; }}
 /* active tab: bright ink and a short needle line on top */
@@ -296,14 +303,18 @@ DOCK_CSS = f"""
   color: var(--sg-faint) !important; }}
 .st-key-sg_dock:has(a:focus:not(:focus-visible)) {_ON}:not(:focus)::before {{ display: none; }}
 
-/* narrow screens: the readout on top, the tabs spread across a row underneath */
+/* narrow screens: the readout on one line on top, the tabs spread across a row underneath */
 @container sgdock (max-width: 640px) {{
   {_wrap("sg_read")} {{ flex: 1 1 100% !important; max-width: none; }}
+  .st-key-sg_read {{ min-height: 0; padding: 5px 10px 5px 8px !important; }}
+  .sg-tier {{ min-height: 18px; }}
+  .sg-read img {{ width: 22px; height: 16px; }}
+  .sg-read-text {{ display: flex; align-items: baseline; gap: 10px; }}
+  .sg-read-name {{ min-width: 0; }}
   {_wrap("sg_tabs")} {{ flex: 1 1 100% !important; }}
   .st-key-sg_tabs > [data-testid="stLayoutWrapper"] {{ flex: 1 1 0 !important; }}
   .st-key-sg_tabs a, .st-key-sg_tabs button {{ height: 50px; }}
 }}
-@container sgdock (max-width: 300px) {{ .sg-spark {{ display: none; }} }}
 """
 
 
@@ -313,8 +324,8 @@ GLOBAL_CSS = """
 /* page frame: less dead space above the content, but clear of the 3.75rem top bar */
 [data-testid="stMainBlockContainer"] { padding-top: 4.6rem !important; }
 @media (max-width: 640px) {
-  [data-testid="stMainBlockContainer"] { padding-top: 4.4rem !important; padding-left: 0.9rem !important;
-                                         padding-right: 0.9rem !important; }
+  [data-testid="stMainBlockContainer"] { padding-top: 4.4rem !important; padding-left: 1rem !important;
+                                         padding-right: 1rem !important; }
 }
 /* video cards: titles read like the news cards (no link underline, at most three lines) */
 [class*="st-key-vidcard_"] [data-testid="stMarkdownContainer"] a { color: var(--sg-text) !important; text-decoration: none;
@@ -323,9 +334,8 @@ GLOBAL_CSS = """
 /* Rows reflow by their own width, not the window's (the sidebar takes 300px of a laptop screen):
    - headline numbers (a metric in the first and last column): 3 per line, 2 for a row of four, then 2 on phones
    - filter rows (a selectbox, multiselect or slider first, no charts or tables): 2 per line when narrow
-   - split views (containers keyed split_*): the two sides stack when narrow */
-[data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child [data-testid="stMetric"]):has(> [data-testid="stColumn"]:last-child [data-testid="stMetric"]) {
-  container: sgkpi / inline-size; flex-wrap: wrap !important; }
+   - split views (containers keyed split_*): the two sides stack when narrow
+   (the headline row itself, the sgkpi container, is set up with _KPI_ROW below) */
 @container sgkpi (max-width: 880px) {
   [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
     min-width: calc(33.333% - 11px) !important; flex: 1 1 calc(33.333% - 11px) !important; }
@@ -367,7 +377,7 @@ GLOBAL_CSS = """
     position: sticky; top: 3.75rem; z-index: 5; padding: 8px 0; background: var(--sg-bg); border-bottom: 1px solid var(--sg-line); }
 }
 .st-key-split_whatif [data-testid="stElementContainer"]:has(.sg-whatif-live) { display: none; }  /* side by side, the full result shows */
-.sg-whatif-live { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 0.85rem; color: var(--sg-soft); }
+.sg-whatif-live { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 0.875rem; color: var(--sg-soft); }
 [data-testid="stMarkdownContainer"]:has(> .sg-whatif-live) { margin-bottom: 0 !important; }  /* its backdrop covers all of it */
 /* keyboard focus scrolls clear of the top bar and the dock, and of the What-if line while it sticks */
 [data-testid="stMain"] { scroll-padding: 3.75rem 0 6rem; }
@@ -379,10 +389,6 @@ GLOBAL_CSS = """
   /* under the globe, the news needs less height (its wrapper fixes the height as a flex-basis) */
   [data-testid="stLayoutWrapper"]:has(> .st-key-ov_news) { flex: 0 0 440px !important; height: 440px !important; }
 }
-@media (max-width: 640px) {
-  [data-testid="stMetric"] { padding: 10px 12px !important; }
-  [data-testid="stMetricValue"] { font-size: 1.55rem !important; }
-}
 /* Markdown tables (e.g. the assessment preview) scroll inside themselves instead of widening the page */
 [data-testid="stMarkdownContainer"] table { display: block; max-width: 100%; overflow-x: auto; }
 /* the remove (x) on multiselect chips: a 24px target (it is drawn about 15x7) without making the chip taller */
@@ -392,6 +398,15 @@ GLOBAL_CSS = """
 [data-testid="stHeaderActionElements"] { display: none !important; }
 /* tabs: a little tighter, and they wrap onto a second line instead of hiding behind a sideways scroll */
 [data-testid="stTabs"] [role="tablist"] { gap: 2px 12px; flex-wrap: wrap; overflow-x: visible !important; }
+@media (min-width: 641px) {  /* wrapped tabs never overflow, so the scroll arrows have nothing to do */
+  [data-testid="stTabsScrollLeft"], [data-testid="stTabsScrollRight"] { display: none !important; }
+}
+@media (max-width: 640px) {  /* phones: one row that scrolls sideways inside itself */
+  [data-testid="stTabs"] [role="tablist"] { flex-wrap: nowrap; overflow-x: auto !important; }
+  [data-testid="stTabs"] [role="tab"] { flex: none; }
+}
+/* touch screens show the grid toolbar all the time: room above the grid, so it covers no text */
+@media (hover: none) { [data-testid="stElementContainer"]:has([data-testid="stDataFrame"]) { margin-top: 2.25rem; } }
 /* the accent is bright ink, like body text: unselected tabs, segments and pills step down to muted ink */
 [data-testid="stTabs"] [role="tab"][aria-selected="false"] :is(p, span),
 [data-testid="stButtonGroup"] button:is([aria-checked="false"], [aria-pressed="false"]) { color: var(--sg-muted) !important; }
@@ -411,14 +426,21 @@ GLOBAL_CSS = """
 /* metrics: labels wrap between words instead of being cut off or split mid-word */
 [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * { white-space: normal !important; overflow: visible !important;
   text-overflow: clip !important; word-break: normal !important; overflow-wrap: normal !important; hyphens: none; }
-[data-testid="stMetricLabel"] p { font-size: 0.8rem !important; color: var(--sg-muted); line-height: 1.3; }
-[data-testid="stMetricValue"] p { font-size: clamp(1.4rem, 2.4vw, 2.1rem); }
-/* sidebar: long page names wrap, the glossary link too */
+[data-testid="stMetricLabel"] p { font-size: 0.75rem !important; color: var(--sg-muted); line-height: 1.3; }
+/* figures stay below the page title (1.85rem) */
+[data-testid="stMetricValue"] p { font-size: 1.5rem; }
+/* sidebar: long page names wrap, the glossary link too; rows on a 30px pitch (the line-height of 2 made the icon's
+   line 28px) and less room above the sidebar's own controls, so the list and Index weights fit a laptop screen */
 section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] p,
 section[data-testid="stSidebar"] [data-testid="stPageLink"] p { white-space: normal !important; overflow: visible !important;
   text-overflow: clip !important; line-height: 1.3; }
-section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] { min-height: 2rem; height: auto !important;
-  align-items: center !important; padding-top: 3px !important; padding-bottom: 3px !important; }
+section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] { min-height: 1.75rem; height: auto !important; margin: 0 !important;
+  line-height: 1.3; align-items: center !important; padding-top: 2px !important; padding-bottom: 2px !important; }
+section[data-testid="stSidebar"] [data-testid="stSidebarNavSeparator"] { padding-top: 0.5rem; }
+section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] { padding-top: 0.75rem; }
+/* group names read as labels, not as pages */
+section[data-testid="stSidebar"] [data-testid="stNavSectionHeader"],
+section[data-testid="stSidebar"] [data-testid="stNavSectionHeader"] p { font-size: 0.75rem; font-weight: 500; color: var(--sg-faint); }
 section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="stMarkdownContainer"] p { margin: 0 !important; }
 /* links and focus */
 [data-testid="stMain"] a { text-underline-offset: 3px; text-decoration-thickness: 1px; }
@@ -429,7 +451,7 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
 .sg-head { margin: 0 0 18px; }
 [data-testid="stMain"] h1.sg-head-title { font-size: clamp(1.5rem, 3vw, 1.85rem); font-weight: 700; line-height: 1.2;
   padding: 0; margin: 0; color: var(--sg-strong); }
-.sg-head-sub { margin: 6px 0 0; font-size: 0.98rem; color: var(--sg-soft); max-width: 70ch; }
+.sg-head-sub { margin: 6px 0 0; font-size: 1rem; color: var(--sg-soft); max-width: 70ch; }
 /* figures: digits line up and read as data */
 [data-testid="stMetricValue"], .sg-cs-num, .sg-read-meta b, .sg-fol-meta b { font-variant-numeric: tabular-nums; }
 /* follow: the sync slot renders nothing */
@@ -439,7 +461,7 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
 .sg-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
   clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 /* accessibility: the skip link appears when a keyboard user reaches it */
-.sg-skip { position: fixed; left: 12px; top: 12px; z-index: 1000001; padding: 8px 14px; font-size: 0.9rem;
+.sg-skip { position: fixed; left: 12px; top: 12px; z-index: 1000001; padding: 8px 14px; font-size: 0.875rem;
   color: var(--sg-strong); background: var(--sg-panel); border: 1px solid var(--sg-accent); border-radius: 8px; text-decoration: none;
   transform: translateY(-160%); }
 .sg-skip:focus { transform: none; }
@@ -453,25 +475,25 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
 .sg-swatch { display: inline-block; width: 16px; height: 4px; border-radius: 2px; margin-right: 8px;
   vertical-align: middle; background: var(--c); }
 .sg-cmp-score { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 6px 0 4px; }
-.sg-cmp-score .sg-cs-num { font-size: 2.3rem; }
-.sg-cmp-meta { font-size: 0.8rem; color: var(--sg-muted); line-height: 1.45; }
+.sg-cmp-score .sg-cs-num { font-size: 2rem; }
+.sg-cmp-meta { font-size: 0.75rem; color: var(--sg-muted); line-height: 1.45; }
 /* red-flag severity: a small drawn dot before the text */
 .sg-sev { display: inline-block; width: 0.62em; height: 0.62em; border-radius: 50%; background: var(--c);
   margin-right: 0.5em; vertical-align: 0.02em; }
 /* bold in the mono face barely differs from regular at body size: full weight and the brightest ink */
 [data-testid="stMarkdownContainer"] :is(strong, b) { font-weight: 700; color: var(--sg-strong); }
 /* following strip */
-.sg-follow-head { font-size: 0.95rem; font-weight: 600; color: var(--sg-strong); margin: 4px 0 -4px; }
+.sg-follow-head { font-size: 0.875rem; font-weight: 600; color: var(--sg-strong); margin: 4px 0 -4px; }
 [class*="st-key-fol_"]:not([class*="st-key-fol_open"]) { position: relative; background: var(--sg-raised); border: 1px solid var(--sg-line);
   border-radius: 10px; padding: 8px 10px !important; }
 [class*="st-key-fol_"]:not([class*="st-key-fol_open"]):hover { border-color: var(--sg-line-strong); background: var(--sg-panel); }
 [class*="st-key-fol_"] [data-testid="stMarkdownContainer"] { margin-bottom: 0 !important; }
 .sg-fol { display: flex; align-items: center; gap: 10px; }
 .sg-fol img { width: 30px; height: 22px; object-fit: cover; border-radius: 3px; box-shadow: 0 0 0 1px rgba(255,255,255,0.14); }
-.sg-fol-name { font-weight: 700; font-size: 0.86rem; color: var(--sg-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.sg-fol-name { font-weight: 700; font-size: 0.875rem; color: var(--sg-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   max-width: 140px; }
-.sg-fol-meta { font-size: 0.72rem; color: var(--sg-muted); }
-.sg-fol-meta b { color: var(--sg-strong); font-size: 0.84rem; }
+.sg-fol-meta { font-size: 0.75rem; color: var(--sg-muted); }
+.sg-fol-meta b { color: var(--sg-strong); font-size: 0.875rem; }
 [class*="st-key-fol_open_"] { position: absolute !important; inset: 0; margin: 0 !important; }
 [class*="st-key-fol_open_"] button { position: absolute !important; inset: 0; width: 100%; height: 100%; opacity: 0; }
 [data-testid="stElementContainer"]:has([class*="st-key-fol_open_"]) { position: absolute; inset: 0; }
@@ -481,20 +503,18 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
 .sg-country-id { display: flex; align-items: center; gap: 16px; min-width: 0; flex: 1 1 320px; }
 .sg-country-id img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; flex: none;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.14); }
-.sg-country-name { margin: 0 !important; padding: 0 !important; font-size: clamp(1.7rem, 4.4vw, 2.4rem) !important;
-  line-height: 1.1 !important; }
-.sg-country-meta { color: var(--sg-muted); font-size: 0.84rem; margin-top: 6px; line-height: 1.45; }
+.sg-country-name { margin: 0 !important; padding: 0 !important; font-size: clamp(1.5rem, 3vw, 1.85rem) !important;
+  line-height: 1.15 !important; }
+.sg-country-meta { color: var(--sg-muted); font-size: 0.875rem; margin-top: 6px; line-height: 1.45; }
 .sg-country-score { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; flex: 0 1 auto; }
-.sg-cs-num { font-size: 3rem; font-weight: 700; line-height: 1; color: var(--sg-strong); }
-.sg-cs-num span { font-size: 0.95rem; color: var(--sg-faint); font-weight: 400; margin-left: 2px; }
-.sg-cs-side { display: flex; flex-direction: column; gap: 5px; font-size: 0.8rem; color: var(--sg-soft); }
+.sg-cs-num { font-size: 2.25rem; font-weight: 700; line-height: 1; color: var(--sg-strong); }
+.sg-cs-num span { font-size: 0.875rem; color: var(--sg-faint); font-weight: 400; margin-left: 2px; }
+.sg-cs-side { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; font-size: 0.875rem; color: var(--sg-soft); }
 .sg-cs-line:empty { display: none; }
-.sg-cs-spark { width: 150px; height: 46px; flex: none; }
 @media (max-width: 640px) {
   .sg-country { padding: 14px; }
   .sg-country-id img { width: 48px; height: 36px; }
-  .sg-cs-num { font-size: 2.4rem; }
-  .sg-cs-spark { width: 110px; }
+  .sg-cs-num { font-size: 2rem; }
 }
 /* news cards */
 .sg-news { list-style: none; padding: 0; margin: 0 0 6px; }
@@ -503,16 +523,28 @@ section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] [data-testid="
   border-radius: 8px; color: inherit !important; text-decoration: none !important; }
 .sg-news li > a:hover { background: var(--sg-panel); }
 .sg-news-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.sg-news-title { color: var(--sg-text); font-size: 0.85rem; line-height: 1.38; display: -webkit-box; -webkit-line-clamp: 3;
+.sg-news-title { color: var(--sg-text); font-size: 0.875rem; line-height: 1.38; display: -webkit-box; -webkit-line-clamp: 3;
   -webkit-box-orient: vertical; overflow: hidden; }
 .sg-news li > a:hover .sg-news-title { color: var(--sg-strong); text-decoration: underline; text-underline-offset: 3px; }
-.sg-news-meta { color: var(--sg-faint); font-size: 0.72rem; }
+.sg-news-meta { color: var(--sg-faint); font-size: 0.75rem; }
 /* reduced motion: transitions become instant; loading spinners keep turning (they are status, not decoration) */
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; } }
 """
 # The face comes from Google Fonts: if that is blocked, text falls back to a system mono, not Streamlit's sans.
 # Streamlit marks every Material icon (and nothing else) translate="no"; those keep their icon font.
 GLOBAL_CSS += 'body, body :not([translate="no"]) { font-family: ' + config.MONO_FONT + "; }\n"
+# Headline numbers (a metric in the first and last column of a row) form one bordered strip split by 1px rules: the
+# line colour shows through 1px gaps, so the rules follow the row however it wraps.
+_KPI_ROW = ('[data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child [data-testid="stMetric"])'
+            ':has(> [data-testid="stColumn"]:last-child [data-testid="stMetric"])')
+GLOBAL_CSS += f"""
+{_KPI_ROW} {{ container: sgkpi / inline-size; flex-wrap: wrap !important; gap: 1px !important;
+  background: var(--sg-line); border: 1px solid var(--sg-line); border-radius: 0.5rem; overflow: hidden; }}
+{_KPI_ROW} > [data-testid="stColumn"] {{ background: var(--sg-bg); }}
+{_KPI_ROW} [data-testid="stMetric"] {{ padding: 0.75rem 1rem; }}
+{_KPI_ROW} [data-testid="stMetric"] > div:first-child {{ padding: 0 !important; }}
+@media (max-width: 640px) {{ {_KPI_ROW} [data-testid="stMetric"] {{ padding: 0.625rem 0.75rem; }} }}
+"""
 
 
 def _on_dock_search() -> None:
@@ -520,27 +552,8 @@ def _on_dock_search() -> None:
     st.session_state["dock_search"] = None
 
 
-def _sparkline(values: pd.Series, color: str, w: int = 92, h: int = 26, css: str = "sg-spark") -> str:
-    """The country's risk since 2015 as a small seismogram (SVG)."""
-    v = values.dropna()
-    if len(v) < 2:
-        return ""
-    lo, hi = float(v.min()), float(v.max())
-    if hi - lo < 10:  # small moves stay small
-        mid = (hi + lo) / 2
-        lo, hi = mid - 5, mid + 5
-    pad = 3
-    xs = [pad + i * (w - 2 * pad) / (len(v) - 1) for i in range(len(v))]
-    ys = [h - pad - (val - lo) / (hi - lo) * (h - 2 * pad) for val in v]
-    points = " ".join(f"{x:.1f},{y:.1f}" for x, y in zip(xs, ys))
-    return (f'<svg class="{css}" viewBox="0 0 {w} {h}" aria-hidden="true">'
-            f'<polyline points="{points}" fill="none" stroke="{color}" stroke-width="1.6" stroke-linejoin="round" '
-            f'stroke-linecap="round" opacity="0.9"/><circle cx="{xs[-1]:.1f}" cy="{ys[-1]:.1f}" r="2.6" '
-            f'fill="{color}"/></svg>')
-
-
 def _readout() -> None:
-    """The tracked country: flag, score, tier, change and its risk since 2015. Tap to open it."""
+    """The tracked country: flag, score, tier and change since last year. Tap to open it."""
     try:
         core = data.load_core()
         scores = data.get_scores(core, data.analysis_year(), weights_tuple(), core["version"])
@@ -568,7 +581,7 @@ def _readout() -> None:
             '<span class="sg-tier"></span>'
             + (f'<img src="{flag}" alt="">' if flag else "")
             + f'<div class="sg-read-text"><div class="sg-read-name">{html.escape(str(row["name"]))}</div>'
-            f'<div class="sg-read-meta">{meta}</div></div>{_sparkline(years, color)}</div>',
+            f'<div class="sg-read-meta">{meta}</div></div></div>',
             unsafe_allow_html=True,
         )
         with st.container(key="sg_read_link"):
@@ -723,7 +736,7 @@ def master_table(core: dict, values: pd.DataFrame, scores: pd.DataFrame, hist: p
         table["prev_tier"] = prev["tier"].reindex(table.index)
         table["delta_1y"] = (table["composite"] - table["prev_composite"]).round(1)  # the shown 1-dp change picks the arrow
         table["trend"] = table["delta_1y"].map(trend_label)
-    table["flags"] = scoring.flag_counts(values).reindex(table.index).fillna(0).astype(int)
+    table["flags"] = scoring.flag_counts(values, core["series"]).reindex(table.index).fillna(0).astype(int)
     a = assessments()
     table["assessment"] = table.index.map(lambda i: "✓" if i in a else "")
     table["analyst_rating"] = table.index.map(lambda i: a.get(i, {}).get("meta", {}).get("analyst_rating", ""))
@@ -739,15 +752,18 @@ def master_table(core: dict, values: pd.DataFrame, scores: pd.DataFrame, hist: p
 TREND_THRESHOLD = 1.0  # score points; smaller year-on-year moves count as steady
 
 
+def median_delta(median_now, last) -> dict:
+    """st.metric delta args for a median score vs last year's row: no "-0.0", and a move under a point stays grey."""
+    d = None if last is None or median_now is None else (round(float(median_now - last["median"]), 1) or 0.0)
+    return {"delta": d, "delta_color": "inverse" if d is not None and abs(d) >= TREND_THRESHOLD else "off"}
+
+
 def trend_label(delta) -> str:
     """Arrow + change vs last year. Up = riskier."""
     if delta is None or pd.isna(delta):
         return "—"
-    if delta >= TREND_THRESHOLD:
-        return f"▲ {delta:+.1f}"
-    if delta <= -TREND_THRESHOLD:
-        return f"▼ {delta:+.1f}"
-    return f"■ {delta:+.1f}"
+    arrow = "▲" if delta >= TREND_THRESHOLD else "▼" if delta <= -TREND_THRESHOLD else "■"
+    return f"{arrow} {interpret.signed(delta)}"
 
 
 def flag_img(iso2, height: str = "1em") -> str:
@@ -758,20 +774,18 @@ def flag_img(iso2, height: str = "1em") -> str:
             f'vertical-align:-0.12em;margin-right:0.35em;box-shadow:0 0 0 1px var(--sg-line)">')
 
 
-def country_header(name: str, row: pd.Series, years: pd.Series, delta, year: int, meta: str,
-                   analyst_rating: str | None = None) -> None:
-    """The top of a country profile: identity on the left, the score with tier, rank, change and trend on the right."""
+def country_header(name: str, row: pd.Series, delta, year: int, meta: str, analyst_rating: str | None = None) -> None:
+    """The top of a country profile: identity on the left, the score with tier, rank and change on the right."""
     tier = row.get("tier")
-    color = config.TIER_COLORS.get(tier, config.INK["faint"])
     score = row.get("composite")
     flag = config.flag_url(row.get("iso2"))
     rank = "" if pd.isna(row.get("rank")) else f"#{int(row['rank'])} of {int(row['n_ranked'])}"
     if delta is None or pd.isna(delta):
         change = ""
     else:
-        arrow, tone = ("▲", "var(--sg-worse)") if delta >= TREND_THRESHOLD else (
-            ("▼", "var(--sg-better)") if delta <= -TREND_THRESHOLD else ("■", "var(--sg-faint)"))
-        change = f'<span style="color:{tone}">{arrow} {delta:+.1f}</span> vs {year - 1}'
+        tone = ("var(--sg-worse)" if delta >= TREND_THRESHOLD else
+                "var(--sg-better)" if delta <= -TREND_THRESHOLD else "var(--sg-faint)")
+        change = f'<span style="color:{tone}">{trend_label(delta)}</span> vs {year - 1}'
     analyst = (f'<div class="sg-cs-line">Analyst: {tier_badge(analyst_rating)}</div>' if analyst_rating else "")
     st.markdown(
         '<div class="sg-country">'
@@ -782,8 +796,7 @@ def country_header(name: str, row: pd.Series, years: pd.Series, delta, year: int
         '<div class="sg-country-score">'
         f'<div class="sg-cs-num">{"—" if pd.isna(score) else f"{score:.0f}"}<span>/100</span></div>'
         f'<div class="sg-cs-side">{tier_badge(tier)}<div class="sg-cs-line">{rank}</div>'
-        f'<div class="sg-cs-line">{change}</div>{analyst}</div>'
-        f'{_sparkline(years, color, w=150, h=46, css="sg-cs-spark")}</div></div>',
+        f'<div class="sg-cs-line">{change}</div>{analyst}</div></div></div>',
         unsafe_allow_html=True,
     )
 
@@ -844,16 +857,16 @@ def _time_ago(ts) -> str:
 THUMB = "width:78px;height:52px;flex:none;border-radius:6px;object-fit:cover;background:var(--sg-hover)"
 
 
-def news_list(query_name: str | None, limit: int = 10, iso2=None) -> None:
-    """Latest risk-related headlines with photos where the feed has one (the country flag otherwise).
+def news_list(query_name: str | None, limit: int = 10) -> None:
+    """Latest risk-related headlines with photos where the feed has one.
 
     Bing News + Google News, GDELT as backup; cached for 10 minutes.
     """
     with guard("The news"):
-        _news_list(query_name, limit, iso2)
+        _news_list(query_name, limit)
 
 
-def _news_list(query_name: str | None, limit: int, iso2) -> None:
+def _news_list(query_name: str | None, limit: int) -> None:
     news = data.load_news(query_name)
     articles = news["articles"]
     if news["error"]:
@@ -862,20 +875,17 @@ def _news_list(query_name: str | None, limit: int, iso2) -> None:
     if articles is None or articles.empty:
         st.info("No matching headlines in the last 7 days.")
         return
-    fallback = config.flag_url(iso2)
     items = []
     for row in articles.head(limit).itertuples(index=False):
         url = str(row.url or "")
         title = html.escape(str(row.title or ""))
-        meta = " · ".join(x for x in (html.escape(str(row.domain or "")), _time_ago(row.seen)) if x)
+        domain = html.escape(str(row.domain or ""))
+        # <bdi>: a right-to-left source name can't pull "1 d ago" into its own direction
+        meta = " · ".join(x for x in (domain and f"<bdi>{domain}</bdi>", _time_ago(row.seen).replace(" ", "\u00a0")) if x)
         image = row.image if isinstance(row.image, str) and row.image.startswith("https://") else None
-        if image:
-            thumb = f'<img class="sg-news-thumb" src="{html.escape(image)}" alt="" loading="lazy" style="{THUMB}">'
-        elif fallback:
-            thumb = (f'<span class="sg-news-thumb" style="{THUMB};display:flex;align-items:center;justify-content:center">'
-                     f'<img src="{fallback}" alt="" style="width:40px;border-radius:3px;opacity:0.85"></span>')
-        else:  # no picture: no empty placeholder either, the headline takes the room
-            thumb = ""
+        # no picture: no placeholder either (a flag repeated down the list), the headline takes the room
+        thumb = (f'<img class="sg-news-thumb" src="{html.escape(image)}" alt="" loading="lazy" style="{THUMB}">'
+                 if image else "")
         body = (f'{thumb}<span class="sg-news-text"><span class="sg-news-title">{title}</span>'
                 f'<span class="sg-news-meta">{meta}</span></span>')
         items.append(f'<li><a href="{html.escape(url)}" target="_blank" rel="noopener">{body}</a></li>'
@@ -891,12 +901,12 @@ def tier_badge(tier: str | None, prefix: str = "") -> str:
     t = next(t for t in TIERS if t.label == tier)
     return (
         f'<span style="background:{t.color};color:{t.text_on};padding:3px 12px;border-radius:999px;'
-        f'font-weight:600;font-size:0.9rem;white-space:nowrap">{prefix}{tier}</span>'
+        f'font-weight:600;font-size:0.875rem;white-space:nowrap">{prefix}{tier}</span>'
     )
 
 
 def tier_legend() -> str:
-    parts = [tier_badge(t.label) + f'<span style="color:var(--sg-faint);font-size:0.8rem;margin:0 10px 0 4px">'
+    parts = [tier_badge(t.label) + f'<span style="color:var(--sg-faint);font-size:0.75rem;margin:0 10px 0 4px">'
              f'{int(t.lower)}+</span>' for t in TIERS]
     return '<div style="line-height:2.2">' + "".join(parts) + "</div>"
 
@@ -970,7 +980,9 @@ def fmt_population(p) -> str:
     return f"{p / 1e3:.0f} k"
 
 
-FLAG_COLUMN = st.column_config.ImageColumn(" ", width="small")
+FLAG_COLUMN = st.column_config.ImageColumn(" ", width=50)  # narrow and not pinned: on a phone the figures get the room
+# at most 200px: the grid unpins every column once pinned ones take over 60% of its width (phones)
+NAME_COLUMN = st.column_config.TextColumn("Country", pinned=True, width="medium")
 SOURCES_PAGE = "app_pages/sources.py"
 
 
@@ -1031,33 +1043,33 @@ def movers_lists(df: pd.DataFrame, n: int = 5, key: str = "movers") -> None:
         frame = frame.assign(tier_text=[f"{a} → {b}" if isinstance(a, str) and a != b else b
                                         for a, b in zip(frame["prev_tier"], frame["tier"])])
         event = st.dataframe(
-            frame[["iso3", "flag", "name", "composite", "trend", "tier_text"]].round(), hide_index=True,
+            frame[["iso3", "name", "composite", "trend", "flag", "tier_text"]].round(), hide_index=True,
             on_select="rerun", selection_mode="single-row", key=f"{key}_{part}",
             column_config={
-                "iso3": None, "flag": FLAG_COLUMN, "name": "Country",
+                "iso3": None, "flag": FLAG_COLUMN, "name": NAME_COLUMN,
                 "composite": st.column_config.NumberColumn("Score", format="%.0f"),
-                "trend": "Change", "tier_text": "Tier",
+                "trend": st.column_config.TextColumn("Change", alignment="right"), "tier_text": "Tier",
             },
         )
         open_selected(event, frame, f"{key}_{part}")
 
 
-def country_table(df: pd.DataFrame, key: str, height: int | None = None, extra: dict | None = None,
+def country_table(df: pd.DataFrame, key: str, height: int | str | None = None, extra: dict | None = None,
                   sort: str = "rank", ascending: bool = True) -> None:
     """A ranking table (flag, score, change, tier, pillars); a ticked row offers its profile."""
-    # Score and change right after the name, so they stay on screen when the table is narrower than its columns
-    cols = ["iso3", "flag", "name", "composite", "trend", "tier", "rank", *[p.key for p in PILLARS], *(extra or {})]
+    # The name is pinned and the figures follow it (extra ones such as a group rank first), then the flag, so a
+    # phone's first view shows the name and the figures
+    cols = ["iso3", "name", *(extra or {}), "composite", "trend", "flag", "tier", "rank", *[p.key for p in PILLARS]]
     frame = df.sort_values(sort, ascending=ascending, na_position="last")[[c for c in cols if c in df.columns]]
     frame = frame.reset_index(drop=True)
     event = st.dataframe(  # every number here shows whole, so screen readers get them rounded too
         frame.round(), hide_index=True, on_select="rerun", selection_mode="single-row", key=key, height=height,
-        column_config={
-            "iso3": None, "flag": st.column_config.ImageColumn(" ", width="small", pinned=True),
-            "name": st.column_config.TextColumn("Country", pinned=True, width="medium"),
+        placeholder="—", column_config={
+            "iso3": None, "flag": FLAG_COLUMN, "name": NAME_COLUMN,
             "rank": st.column_config.NumberColumn("Global rank", format="%d"),
             "composite": st.column_config.ProgressColumn("Composite", min_value=0, max_value=100, format="%.0f",
-                                                         color=config.TIER_COLORS["Elevated"]),
-            "trend": "1-yr change", "tier": "Tier",
+                                                         width="small", color=config.TIER_COLORS["Elevated"]),
+            "trend": st.column_config.TextColumn("1-yr change", alignment="right"), "tier": "Tier",
             **{p.key: st.column_config.ProgressColumn(p.short, min_value=0, max_value=100, format="%.0f",
                                                       color=config.PILLAR_COLORS[p.key]) for p in PILLARS},
             **(extra or {}),
@@ -1076,15 +1088,16 @@ def upcoming_events(events: pd.DataFrame, limit: int = 8) -> None:
     rows = []
     for e in upcoming.itertuples(index=False):
         when = interpret.countdown((e.date - today).days)
-        colour = {"High": "#fd8078", "Medium": "#e19f3f"}.get(str(e.significance).title(), "var(--sg-faint)")
+        # significance in ink, not a tier colour: high stands out in the brightest ink
+        colour = "var(--sg-strong)" if str(e.significance).title() == "High" else "var(--sg-faint)"
         source = (f' · <a href="{html.escape(e.source_url)}" target="_blank" rel="noopener">source</a>'
                   if str(e.source_url).startswith("http") else "")
         rows.append(
             f'<li style="margin:0 0 0.6em 0;line-height:1.35"><b>{html.escape(str(e.event))}</b><br>'
-            f'<span style="color:var(--sg-faint);font-size:0.82em">{html.escape(str(e.country))} · {e.date:%d %b %Y} · '
-            f'<span style="color:{colour}">{when}</span> · {html.escape(str(e.significance))} significance{source}</span></li>'
+            f'<span style="color:var(--sg-faint);font-size:0.75rem">{html.escape(str(e.country))} · {e.date:%d %b %Y} · '
+            f'<span style="color:{colour}">{when} · {html.escape(str(e.significance))} significance</span>{source}</span></li>'
         )
-    st.markdown(f'<ul style="list-style:none;padding:0;margin:0;font-size:0.9rem">{"".join(rows)}</ul>',
+    st.markdown(f'<ul style="list-style:none;padding:0;margin:0;font-size:0.875rem">{"".join(rows)}</ul>',
                 unsafe_allow_html=True)
 
 

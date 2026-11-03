@@ -706,12 +706,13 @@ INK = {
     "accent": "#f4f3ee",       # selection, focus, current page, primary action
     "on-accent": "#000000",
     "worse": "#fd8078",        # riskier: rising scores, red flags
-    "better": "#5ac698",       # safer: falling scores (green, as in the metric deltas)
+    "better": "#74b1fe",       # safer: falling scores (blue, as in the charts and metric deltas)
 }
 
-# Compared countries (fixed order, never cycled): hues the pillars and tiers don't use, validated on black
-# for colour-blind separation of neighbours and of the first three as a set; black text reads on all six
-COUNTRY_COLORS = ["#16a6c1", "#9163d5", "#af930d", "#c454b0", "#7fa51b", "#149483"]
+# Compared countries (fixed order, never cycled): hues the pillars and tiers don't use, no violet, validated on
+# black for colour-blind separation of neighbours and of the first three as a set (CIEDE2000 under simulated
+# deuteranopia, protanopia and tritanopia); black text reads on all six
+COUNTRY_COLORS = ["#16a6c1", "#90bc80", "#af930d", "#c454b0", "#7fa51b", "#149483"]
 MAX_COMPARE = len(COUNTRY_COLORS)
 FORECAST_GREY = INK["faint"]
 MONO_FONT = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
@@ -835,3 +836,16 @@ NEWS_NAMES = {
     "CIV": "Ivory Coast", "COD": "DR Congo", "COG": "Republic of Congo",
     "PSE": "Palestinian", "TUR": "Turkey", "STP": "Sao Tome", "MKD": "North Macedonia",
 }
+# Search names a neighbour's news also matches, as (neighbour pattern, names only the neighbour has, the neighbour's
+# outlets by source name or domain, names only the country has). Headlines that name only the neighbour are dropped,
+# and so are headlines with a neighbour-only name (even beside the search name) and stories from the neighbour's own
+# outlets, unless the headline names something only the country has.
+# shortcut: a handful of outlets, not a full register; add one when its Niger State stories still get through
+NEWS_NEIGHBOURS = {"Niger": (
+    r"\bNigeria\w*|\bNiger[ -](?:Delta|State|Assembly|govt|governor|community)\b",
+    r"\b(?:Tinubu|Abuja|Lagos|APC)\b",
+    r"Nigeria|\bNG\b|\.ng\b|\b(?:punchng|vanguardngr|premiumtimesng|elanhub|Punch|Vanguard|Premium Times|Daily ?Trust|"
+    r"TheCable|Channels ?(?:Television|TV)|TVC ?News|Sahara ?Reporters|Dubawa|Leadership News)\b",
+    r"\b(?:Niamey|Nigerien|Tiani|Tchiani|Bazoum|Agadez|Niger Republic|Republic of Niger|junta|uranium|Orano|"
+    r"Tillab[eé]ri|Tahoua|Zinder|Maradi|Diffa|Dosso)",
+)}

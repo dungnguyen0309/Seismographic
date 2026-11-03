@@ -19,9 +19,9 @@ _page_drawn = False
 _deferred_news: list = []
 
 
-def _fill_news(slot, query: str | None, iso2) -> None:
+def _fill_news(slot, query: str | None) -> None:
     with slot.container():
-        ui.news_list(query, limit=12, iso2=iso2)
+        ui.news_list(query, limit=12)
 
 
 @st.fragment(run_every="10m")
@@ -43,18 +43,16 @@ def globe_with_news(metric: str, map_title: str, in_view: set[str], region: str 
         if selected in names:
             row = table.set_index("iso3").loc[selected]
             ui.country_heading(names[selected], row["iso2"], level=2, css="sg-panel-title")
-            st.caption("Latest news · click another country to switch")
-            news = (config.NEWS_NAMES.get(selected, names[selected]), row["iso2"])
+            news = config.NEWS_NAMES.get(selected, names[selected])
         else:
             st.markdown('<h2 class="sg-panel-title">Global risk news</h2>', unsafe_allow_html=True)
-            st.caption("Click a country on the globe for its news")
-            news = (None, None)
+            news = None
         slot = st.empty()
         slot.caption("Loading headlines…")
         st.page_link("app_pages/video.py", label="Watch live TV news", icon=":material/live_tv:")
         ui.cite("news", "gdelt")
     if _page_drawn:
-        _fill_news(slot, *news)
+        _fill_news(slot, news)
     else:
         _deferred_news.append((slot, news))
 
@@ -67,9 +65,9 @@ def _pick_region() -> None:
         st.session_state["ov_region"] = full.get(points[0]["y"], points[0]["y"])
 
 
-ui.hero("Global overview")
+head = st.empty()  # the line under the title counts the filtered view, so it is drawn once the filters below are read
 if not st.session_state.get("_explored"):  # until the visitor opens any other page
-    st.page_link("app_pages/intro.py", label="Introduction: how the index works", icon=":material/waving_hand:")
+    st.page_link("app_pages/intro.py", label="Introduction: how the index works", icon=":material/info:")
 ui.following_strip(table)
 
 # --- Map controls: what the map shows, and one filter for the whole page ---------------------------------------
@@ -97,21 +95,24 @@ if region != "All regions":
 if income:
     view = view[view["income"].isin(income)]
 scored = view.dropna(subset=["composite"])
+n_high = int(scored["tier"].isin(["High", "Severe"]).sum())
+with head:
+    ui.hero("Global overview",
+            f"{year} · {n_high} of {len(scored)} countries High or Severe" if len(scored) else str(year))
 
 # --- Map ---------------------------------------------------------------------
 map_title = "Composite" if metric == "composite" else config.PILLAR_BY_KEY[metric].short
 if map_style == "3D globe":
     globe_with_news(metric, map_title, set(view["iso3"]), None if region == "All regions" else region)
     picked_iso3 = None
-    caption = (f"Click a country for its index and news. ▶ replays the index since {config.HISTORY_START}. "
-               "Dim = outside your filters; grey = not enough data.")
+    caption = "Grey = not enough data." + (" Dimmed = outside your filters." if active else "")
 else:
     map_event = st.plotly_chart(
         charts.choropleth(view, metric, map_title, zoom_to_data=region != "All regions"),
         config={"displayModeBar": False}, on_select="rerun", selection_mode="points", key="map_click",
     )
     picked_iso3 = ui.clicked_iso3(map_event)
-    caption = "Grey = not enough data. Hover over a country for its score; click it to open its profile."
+    caption = "Grey = not enough data."
 if picked_iso3:
     ui.go_to_country(picked_iso3)
 if metric == "composite":
@@ -129,29 +130,26 @@ yearly = hist[hist["iso3"].isin(view["iso3"])].groupby("year").agg(
 )
 last = yearly.loc[year - 1] if year - 1 in yearly.index else None
 vs = f"vs {year - 1}"
-n_high = int(scored["tier"].isin(["High", "Severe"]).sum())
 n_conflict = int((scored["battle_deaths_raw"] >= 25).sum())
 median_now = scored["composite"].median() if len(scored) else None
 k1, k2, k3, k4, k5 = st.columns(5)
-k1.metric("Countries scored", f"{len(scored)}", border=True, height="stretch")
-k2.metric("High or Severe risk", n_high, border=True, height="stretch",
+k1.metric("Countries scored", f"{len(scored)}")
+k2.metric("High or Severe risk", n_high,
           delta=None if last is None else int(n_high - last["high"]), delta_color="inverse", delta_description=vs)
-k3.metric("Median score", "—" if median_now is None else f"{median_now:.0f}", border=True, height="stretch",
-          delta=None if last is None or median_now is None else round(float(median_now - last["median"]), 1),
-          delta_color="inverse", delta_description=vs)
-k4.metric("In armed conflict", n_conflict, border=True, height="stretch",
+k3.metric("Median score", "—" if median_now is None else f"{median_now:.0f}", **ui.median_delta(median_now, last),
+          delta_description=vs)
+k4.metric("In armed conflict", n_conflict,
           delta=None if last is None else int(n_conflict - last["conflict"]), delta_color="inverse",
           delta_description=vs, help="Countries with at least 25 battle-related deaths in the latest UCDP year.")
 n_assessed = int((view["assessment"] == "✓").sum())
 if n_assessed:
-    k5.metric("Analyst assessments", n_assessed, border=True, height="stretch",
-              help="Countries with a written assessment in the assessments/ folder.")
+    k5.metric("Assessments", n_assessed, help="Countries with a written assessment in the assessments/ folder.")
 else:  # until assessments are written, the most severe warnings (most countries have some lesser flag)
     critical = sum(any(f["severity"] == "critical" for f in scoring.red_flags(values.loc[i]))
                    for i in scored["iso3"])
-    k5.metric("With a critical red flag", critical, border=True, height="stretch",
+    k5.metric("Critical red flag", critical,
               help="War-level violence (1,000+ battle deaths in a year) or inflation of 50% or more. "
-                   f"{int((scored['flags'] > 0).sum())} of {len(scored)} cross at least one lesser warning line.")
+                   f"{int((scored['flags'] > 0).sum())} of {len(scored)} have at least one red flag.")
 ui.cite("index", "natural_earth")
 
 # --- The rest, one tab at a time (only the open tab is computed) -----------------------------------------------
@@ -185,29 +183,32 @@ with tab_hot:
                 e = soon.loc[r.iso3]
                 reasons.append(f"{e['event']} {interpret.countdown((e['date'] - today).days)}")
             if reasons:
-                hotspots.append({"iso3": r.iso3, "flag": r.flag, "name": r.name, "composite": r.composite,
+                hotspots.append({"iso3": r.iso3, "name": r.name, "composite": r.composite,
                                  "tier": r.tier, "signals": len(reasons), "why": " · ".join(reasons)})
-        hotspots = pd.DataFrame(hotspots, columns=["iso3", "flag", "name", "composite", "why", "tier", "signals"])
+        hotspots = pd.DataFrame(hotspots, columns=["iso3", "name", "composite", "why", "tier", "signals"])
         if hotspots.empty:
             st.info("No hotspots with the current filters.")
         else:
-            hotspots = hotspots.sort_values(["signals", "composite"], ascending=False).head(12).reset_index(drop=True)
+            hotspots = hotspots.sort_values(["signals", "composite"], ascending=False).head(6).reset_index(drop=True)
             hot_event = st.dataframe(
                 hotspots.round({"composite": 0}), hide_index=True, on_select="rerun", selection_mode="single-row",
                 key="ov_hotspots", row_height=66, height=38 + 66 * len(hotspots),  # over 64 px, text wraps
                 # Fixed widths that fit the 810 px table at 1280 px; auto-sized columns get squeezed and cut mid-word.
-                # The signal count is hidden: the reasons list them, and it still sets the order.
+                # No flag: at this row height it was the loudest mark. The signal count is hidden: the reasons list
+                # them, and it still sets the order.
                 column_config={
-                    "iso3": None, "flag": ui.FLAG_COLUMN, "signals": None,
-                    "name": st.column_config.TextColumn("Country", width=190),
+                    "iso3": None, "signals": None,
+                    "name": st.column_config.TextColumn("Country", width=190, pinned=True),
                     "composite": st.column_config.ProgressColumn("Score", min_value=0, max_value=100, format="%.0f",
                                                                  color=COMPOSITE_COLOR, width=100),
-                    "why": st.column_config.TextColumn("Why it is on the list", width=290),
+                    "why": st.column_config.TextColumn("Why it is on the list", width=365),
                     "tier": st.column_config.TextColumn("Tier", width=100),
                 },
             )
             ui.open_selected(hot_event, hotspots, "overview_hotspots")
             ui.cite("index", "ifes")
+            st.page_link("app_pages/overview.py", label="Full ranking", icon=":material/format_list_numbered:",
+                         query_params={"tab": "ranking"})
 
 with tab_changes:
     if tab_changes.open:
@@ -229,7 +230,7 @@ with tab_changes:
             st.caption(
                 f"Change in the World Bank's *Political Stability & Absence of Violence* score, {y0} → {y1}. "
                 "Red = worse, blue = better. Small changes may be within the margin of error, shown on each country "
-                "profile. Click a bar to open the country."
+                "profile."
             )
             movers_event = st.plotly_chart(charts.movers(changes), config={"displayModeBar": False},
                                            on_select="rerun", selection_mode="points", key="movers_click")
@@ -239,10 +240,8 @@ with tab_changes:
 
 with tab_rank:
     if tab_rank.open:
-        st.caption(f"Tick a row to open the country. Sort by any column. *1-yr change* compares the composite "
-                   f"with {year - 1}: ▲ = riskier, ▼ = safer, ■ = little change (under 1 point).")
         ranking = view.sort_values("rank", na_position="last")[
-            ["iso3", "flag", "name", "composite", "trend", "tier", "rank", *[p.key for p in PILLARS], "flags", "region",
+            ["iso3", "name", "composite", "trend", "flag", "tier", "rank", *[p.key for p in PILLARS], "flags", "region",
              "coverage", "assessment", "analyst_rating"]
         ].reset_index(drop=True)
         pillar_cols = {
@@ -254,22 +253,25 @@ with tab_rank:
             ranking.round().assign(region=ranking["region"].map(config.region_short)),  # the CSV keeps full values
             hide_index=True,
             height=460,
+            placeholder="—",
             on_select="rerun",
             selection_mode="single-row",
             column_config={
                 "iso3": None,
-                "flag": st.column_config.ImageColumn(" ", width="small", pinned=True),
-                "name": st.column_config.TextColumn("Country", pinned=True, width="medium"),
+                # after the figures and not pinned: on a phone the score sits next to the pinned name
+                "flag": ui.FLAG_COLUMN,
+                "name": ui.NAME_COLUMN,
                 "region": st.column_config.TextColumn("Region", width="medium"),
                 "rank": st.column_config.NumberColumn("Rank", format="%d"),
                 "composite": st.column_config.ProgressColumn("Composite", min_value=0, max_value=100, format="%.0f",
-                                                             color=COMPOSITE_COLOR),
-                "trend": st.column_config.TextColumn("1-yr change",
-                                                     help=f"Composite score vs {year - 1}. ▲ = riskier, ▼ = safer"),
+                                                             color=COMPOSITE_COLOR, width="small"),
+                "trend": st.column_config.TextColumn(
+                    "1-yr change", alignment="right",
+                    help=f"Composite score vs {year - 1}. ▲ = riskier, ▼ = safer, ■ = under 1 point"),
                 "tier": "Tier",
                 **pillar_cols,
                 "flags": st.column_config.NumberColumn("Red flags", format="%d",
-                                                       help="Absolute warning thresholds crossed"),
+                                                       help="Warning thresholds crossed, plus a falling political stability trend"),
                 "coverage": st.column_config.NumberColumn("Data coverage", format="%.0f%%"),
                 "assessment": st.column_config.TextColumn("Assessment", help="A written analyst assessment exists"),
                 "analyst_rating": "Analyst rating",
@@ -299,26 +301,24 @@ with tab_matrix:
             )
             if iso3 := ui.clicked_iso3(matrix_event):
                 ui.go_to_country(iso3)
-            st.caption("Bubble size = population. Top-right = high risk on both dimensions. "
-                       "Click a bubble to open the country.")
+            st.caption("Bubble size = population.")
             ui.cite("index")
         with right:
             if region == "All regions":
                 st.header("Risk tiers by region")
                 st.plotly_chart(charts.tier_distribution(scored), config={"displayModeBar": False},
                                 on_select=_pick_region, selection_mode="points", key="tier_click")
-                st.caption("Regions sorted by the share of countries rated High or Severe. "
-                           "Click a bar to filter the page to that region.")
+                st.caption("Regions sorted by the share of countries rated High or Severe.")
                 ui.cite("index")
             else:
                 st.header(f"Highest risk in {region}")
                 top = scored.nsmallest(12, "rank").copy()
                 st.dataframe(
-                    top[["flag", "name", "composite", "tier", "flags"]].round(),
+                    top[["name", "composite", "flag", "tier", "flags"]].round(),
                     hide_index=True,
                     column_config={
-                        "flag": st.column_config.ImageColumn(" ", width="small"),
-                        "name": "Country",
+                        "flag": ui.FLAG_COLUMN,
+                        "name": ui.NAME_COLUMN,
                         "composite": st.column_config.ProgressColumn("Score", min_value=0, max_value=100,
                                                                      format="%.0f", color=COMPOSITE_COLOR),
                         "tier": "Tier",
@@ -330,6 +330,6 @@ ui.data_status(core)
 ui.footer()
 
 for _slot, _news in _deferred_news:
-    _fill_news(_slot, *_news)
+    _fill_news(_slot, _news)
 _deferred_news.clear()
 _page_drawn = True

@@ -372,6 +372,22 @@ def fetch_bing_news(name: str | None, max_records: int = 15) -> pd.DataFrame:
     return _news_frame(rows, max_records)
 
 
+def _drop_neighbours(df: pd.DataFrame, name: str | None) -> pd.DataFrame:
+    """Drops headlines that match the search name only through a neighbour, that name something only the neighbour
+    has or that come from the neighbour's outlets, unless the headline names something only the country has
+    (config.NEWS_NEIGHBOURS)."""
+    rule = config.NEWS_NEIGHBOURS.get(name or "")
+    if not rule or df.empty:
+        return df
+    pattern, neighbour_names, outlets, keep = rule
+    titles = df["title"].fillna("")
+    names_it = titles.str.replace(pattern, "", regex=True, case=False).str.contains(rf"\b{re.escape(name)}", case=False)
+    outlet = df.get("domain", pd.Series("", index=df.index)).fillna("")
+    neighbour = outlet.str.contains(outlets, case=False) | titles.str.contains(neighbour_names, case=False)
+    own = titles.str.contains(keep, case=False)
+    return df[own | ((names_it | ~titles.str.contains(pattern, case=False)) & ~neighbour)]
+
+
 def _title_key(title: str) -> str:
     return "".join(ch for ch in str(title).lower() if ch.isalnum())[:60]
 
@@ -394,7 +410,8 @@ def fetch_news(name: str | None) -> tuple[pd.DataFrame, str]:
         merged = pd.concat(frames, ignore_index=True)
         # The same story often appears in both feeds: keep one copy, preferring the one with a photo
         merged = merged.assign(key=merged["title"].map(_title_key), has_image=merged["image"].notna())
-        merged = on_topic(merged.sort_values("has_image", ascending=False).drop_duplicates("key"))
+        merged = merged.sort_values("has_image", ascending=False).drop_duplicates("key")
+        merged = on_topic(_drop_neighbours(merged, name))
         # Newest day first; within a day, stories with a photo first
         merged = merged.assign(day=merged["seen"].dt.floor("D")).sort_values(
             ["day", "has_image", "seen"], ascending=[False, False, False], na_position="last"
@@ -402,7 +419,7 @@ def fetch_news(name: str | None) -> tuple[pd.DataFrame, str]:
         return merged[NEWS_COLUMNS].head(30).reset_index(drop=True), " + ".join(used)
     if name:
         try:
-            return fetch_gdelt_articles(name), "GDELT"
+            return _drop_neighbours(fetch_gdelt_articles(name), name), "GDELT"
         except SourceError as exc:
             errors.append(str(exc))
     if errors:

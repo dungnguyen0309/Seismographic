@@ -4,6 +4,7 @@ import html
 import re
 
 import streamlit as st
+from plotly.colors import sample_colorscale
 
 from prm import config, glossary, ui
 
@@ -14,10 +15,12 @@ def slug(name: str) -> str:
     return "g-" + re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
-def gradient(scale: list[list], title: str, low: str, high: str) -> str:
-    stops = ", ".join(f"{c} {round(t * 100)}%" for t, c in scale)
-    return (f'<div style="margin:0 0 14px 0"><div style="font-size:0.85rem;margin-bottom:4px">{html.escape(title)}</div>'
-            f'<div style="height:12px;border-radius:6px;background:linear-gradient(90deg, {stops})"></div>'
+def scale_blocks(scale: list[list], title: str, low: str, high: str, score: bool = False) -> str:
+    """A colour scale as flat blocks, as in the globe legend: one per tier for scores, else one per colour stop."""
+    colours = sample_colorscale(scale, [0.2, 0.4, 0.6, 0.8, 1]) if score else [c for _, c in scale]
+    blocks = "".join(f'<i style="flex:1;background:{c}"></i>' for c in colours)
+    return (f'<div style="margin:0 0 14px 0"><div style="font-size:0.875rem;margin-bottom:4px">{html.escape(title)}</div>'
+            f'<div style="display:flex;gap:2px;height:8px">{blocks}</div>'
             f'<div style="display:flex;justify-content:space-between;color:var(--sg-faint);font-size:0.75rem;margin-top:3px">'
             f'<span>{html.escape(low)}</span><span>{html.escape(high)}</span></div></div>')
 
@@ -37,7 +40,7 @@ def band(name: str, color: str, blurb: str, count: int | None = None,
     count_html = (f'<span style="font-size:0.75rem;color:{color};border:1px solid {color}88;border-radius:999px;'
                   f'padding:1px 9px;white-space:nowrap">{count} term{"s" if count != 1 else ""}</span>'
                   if count is not None else "")
-    backed = (f'<div style="font-size:0.76rem;color:var(--sg-faint);margin-top:6px">Backed by: '
+    backed = (f'<div style="font-size:0.75rem;color:var(--sg-faint);margin-top:6px">Backed by: '
               f'{" · ".join(ui.source_link(k) for k in sources)}</div>' if sources else "")
     st.markdown(
         f'<div id="{slug(name)}" style="scroll-margin-top:72px;display:flex;gap:14px;align-items:flex-start;'
@@ -47,14 +50,14 @@ def band(name: str, color: str, blurb: str, count: int | None = None,
         '<div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">'
         f'<span style="font-size:{"1.05rem" if compact else "1.3rem"};font-weight:700;color:var(--sg-strong)">'
         f'{html.escape(name)}</span>{count_html}</div>'
-        f'<div style="color:var(--sg-soft);font-size:0.9rem;margin-top:3px">{html.escape(blurb)}</div>{backed}</div></div>',
+        f'<div style="color:var(--sg-soft);font-size:0.875rem;margin-top:3px">{html.escape(blurb)}</div>{backed}</div></div>',
         unsafe_allow_html=True,
     )
 
 
 def term_card(t: glossary.Term, color: str, query: str = "") -> str:
     color = config.PILLAR_COLORS[t.pillar] if t.pillar else color
-    tags = "".join(f'<span style="display:inline-block;font-size:0.7rem;color:var(--sg-soft);background:#ffffff0f;'
+    tags = "".join(f'<span style="display:inline-block;font-size:0.75rem;color:var(--sg-soft);background:#ffffff0f;'
                    f'border:1px solid #ffffff1a;border-radius:999px;padding:0 8px;margin:6px 4px 0 0">'
                    f'{highlight(tag, query)}</span>' for tag in t.tags)
     link = ""
@@ -65,8 +68,8 @@ def term_card(t: glossary.Term, color: str, query: str = "") -> str:
                 f'rel="noopener">{html.escape(label)} ↗</a></div>')
     return (f'<div style="background:var(--sg-raised);border:1px solid var(--sg-line);'
             f'border-radius:8px;padding:11px 13px">'
-            f'<div style="font-weight:700;color:{color};font-size:0.95rem;line-height:1.35">{highlight(t.term, query)}'
-            f'</div><div style="color:var(--sg-text);font-size:0.86rem;line-height:1.5;margin-top:4px">'
+            f'<div style="font-weight:700;color:{color};font-size:1rem;line-height:1.35">{highlight(t.term, query)}'
+            f'</div><div style="color:var(--sg-text);font-size:0.875rem;line-height:1.5;margin-top:4px">'
             f'{highlight(t.definition, query)}</div>{tags}{link}</div>')
 
 
@@ -123,7 +126,7 @@ st.markdown(
         f'<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:0 8px">'
         f'<span style="font-weight:700;color:var(--sg-strong);line-height:1.3">{html.escape(name)}</span>'
         f'<span style="font-size:0.75rem;color:var(--sg-muted);white-space:nowrap">{"" if n is None else f"{n} terms"}</span></div>'
-        f'<div style="font-size:0.76rem;color:var(--sg-muted);margin-top:3px;line-height:1.4">{html.escape(blurb)}</div>'
+        f'<div style="font-size:0.75rem;color:var(--sg-muted);margin-top:3px;line-height:1.4">{html.escape(blurb)}</div>'
         "</div></a>"
         for name, color, blurb, n in tiles
     )
@@ -152,12 +155,12 @@ with left:
     )
 with right:
     st.markdown("**Colour scales**")
-    scales = gradient(config.MAP_COLORSCALE, "Composite risk", "0 · lower risk", "higher risk · 100")
-    scales += "".join(gradient(config.map_colorscale(p.key), f"{p.short} pillar risk", "lower", "higher")
-                      for p in config.PILLARS)
-    scales += gradient(config.CHANGE_COLORSCALE, "Change since last year (map of change)", "▼ safer", "riskier ▲")
-    scales += gradient(config.reversed_scale(config.map_colorscale("social")), "Next event (watchlist globe)",
-                       "now", "in a year")
+    scales = scale_blocks(config.MAP_COLORSCALE, "Composite risk", "0 · lower risk", "higher risk · 100", score=True)
+    scales += "".join(scale_blocks(config.map_colorscale(p.key), f"{p.short} pillar risk", "lower", "higher",
+                                   score=True) for p in config.PILLARS)
+    scales += scale_blocks(config.CHANGE_COLORSCALE, "Change since last year (map of change)", "▼ safer", "riskier ▲")
+    scales += scale_blocks(config.reversed_scale(config.map_colorscale("social")), "Next event (watchlist globe)",
+                           "now", "in a year")
     st.markdown(scales, unsafe_allow_html=True)
     st.caption("On a black background, dim = low and bright = high. Dark grey = not enough data; near-black = "
                "outside your filters.")

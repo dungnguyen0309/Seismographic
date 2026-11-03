@@ -238,3 +238,49 @@ def test_news_filter_drops_sport():
     risk = [f"Troops clash with rebels in region {i}" for i in range(sources.MIN_ON_TOPIC)]
     sport = "Former Purdue basketball player finds home in transfer portal after court battle"
     assert sport not in set(sources.on_topic(pd.DataFrame({"title": [*risk, sport]}))["title"])
+
+
+def test_niger_news_drops_nigeria_only_headlines():
+    from prm import sources
+    df = pd.DataFrame({"title": ["Floods hit Niger State", "Tinubu meets governors in Abuja", "Niger junta expels envoy",
+                                 "Nigeria and Niger reopen the border", "Coup leaders in Niamey extend transition",
+                                 "Niger Assembly seeks more military bases", "Terrorists kidnap school children in Niger",
+                                 "Tiani meets Tinubu in Abuja"],
+                       "domain": ["Reuters", "Reuters", "AP News", "Reuters", "Al Jazeera", "Daily Post Nigeria",
+                                  "Chronicle NG", "Punch Newspapers"]})
+    assert list(sources._drop_neighbours(df, "Niger")["title"]) == [
+        "Niger junta expels envoy", "Nigeria and Niger reopen the border", "Coup leaders in Niamey extend transition",
+        "Tiani meets Tinubu in Abuja"]  # Chronicle NG goes on its source alone; a Nigerian outlet's real Niger story stays
+    assert len(sources._drop_neighbours(df, "Mali")) == len(df)
+    more = pd.DataFrame({"title": ["Orano loses control of Niger uranium mine", "Niger River floods kill 30 in Tillaberi",
+                                   "Niger: bandits kill 12 in Mariga", "Tinubu: Niger to get new rail line",
+                                   "Gold price slips as Niger tensions ease",
+                                   "ECOWAS Court orders Nigeria to pay N30m to protesters",
+                                   "Christianity under attack as gunmen raid church in Niger State",
+                                   "Niger-Delta militants blow up pipeline"],
+                         "domain": ["MINING.COM", "Reuters", "TVC News", "Reuters", "Investing.com", "Premium Times",
+                                    "Reuters", "Reuters"]})
+    assert list(sources._drop_neighbours(more, "Niger")["title"]) == [
+        "Orano loses control of Niger uranium mine", "Niger River floods kill 30 in Tillaberi",
+        "Gold price slips as Niger tensions ease"]
+
+
+def test_flag_counts_match_the_profile_and_the_downloads(core, values):
+    from prm import export, ui
+    scores, hist = scoring.compute_scores(values), core["history_default"]
+    counts = scoring.flag_counts(values, core["series"])
+    for iso3 in values.index:  # the profile lists the absolute flags plus a falling political stability trend
+        trend = scoring.wgi_trend(core["series"], iso3, "pv")
+        falling = bool(trend and trend["change"] <= -config.WGI_TREND_THRESHOLD)
+        assert counts[iso3] == len(scoring.red_flags(values.loc[iso3])) + falling, iso3
+    app_flags = ui.master_table(core, values, scores, hist).set_index("iso3")["flags"]
+    downloads = export.index_table(core, values, scores, hist).set_index("iso3")["red_flags"]
+    assert (downloads == app_flags.reindex(downloads.index)).all()
+    rows = export.red_flags_table(core, values).groupby("iso3").size().reindex(values.index, fill_value=0)
+    assert (rows == counts.reindex(values.index)).all()  # every counted flag has its own row in red_flags.csv
+
+
+def test_signed_prints_a_zero_change_without_a_sign():
+    from prm import interpret
+    assert [interpret.signed(x) for x in (-0.04, 0.04, 1.25, -3)] == ["0.0", "0.0", "+1.2", "-3.0"]
+    assert interpret.signed(-0.4, 0) == "0" and interpret.signed(12345, 0) == "+12,345"
