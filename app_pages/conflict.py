@@ -81,10 +81,7 @@ with g2:
 ui.cite("index", "ucdp", "ucdp_def", "unhcr", "natural_earth")
 
 TABS = {"conflict": ":material/swords: Armed conflict", "displacement": ":material/luggage: Displacement & refugees",
-        "outlook": ":material/insights: Outlook"}
-if st.query_params.get("tab") in TABS:  # e.g. ?tab=outlook, from the country profile and the Methodology page
-    st.session_state["conflict_tab"] = TABS[st.query_params["tab"]]
-    del st.query_params["tab"]
+        "outlook": ":material/insights: Outlook"}  # ?tab=outlook comes from the country profile and Methodology
 
 
 # --- Armed conflict ------------------------------------------------------------------------------------------
@@ -237,7 +234,7 @@ def outlook_tab() -> None:
 @st.fragment
 def conflict_tabs() -> None:
     """The tabs in their own fragment: switching tabs re-runs only the open tab, not the globe above."""
-    tabs = st.tabs(list(TABS.values()), key="conflict_tab", on_change="rerun")
+    tabs = ui.url_tabs(TABS, key="conflict_tab")
     for tab, draw in zip(tabs, (armed_conflict, displacement, outlook_tab)):
         if tab.open:
             with tab:

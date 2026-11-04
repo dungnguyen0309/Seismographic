@@ -66,11 +66,19 @@ for col, iso3, colour in zip(cols, picked, COUNTRY_COLORS):
             st.markdown(f'<span class="sg-swatch" style="--c:{colour}"></span>{ui.flag_img(r["iso2"])}'
                         f"<b>{html.escape(names[iso3])}</b>", unsafe_allow_html=True)
             score = "—" if pd.isna(r["composite"]) else f"{r['composite']:.0f}"
-            rank = "—" if pd.isna(r["rank"]) else f"#{int(r['rank'])}"
+            rank = ("—" if pd.isna(r["rank"]) else
+                    f'<span title="1 is the highest risk">#{int(r["rank"])}</span>')
+            trend = r.get("trend", "—")
+            if pd.notna(r.get("delta_1y")):
+                said = ui.trend_said(r["delta_1y"], year)
+                trend = (f'<span title="{said}"><span aria-hidden="true" style="white-space:nowrap">'
+                         f'{trend} in a year</span><span class="sg-sr">{said}</span></span>')
+            else:
+                trend += " in a year"
             st.markdown(f'<div class="sg-cmp-score"><span class="sg-cs-num">{score}</span>'
                         f'{ui.tier_badge(r["tier"])}</div>'
                         f'<div class="sg-cmp-meta">Rank {rank} · {int(r["flags"])} red flag'
-                        f'{"" if int(r["flags"]) == 1 else "s"} · {r.get("trend", "—")} in a year</div>',
+                        f'{"" if int(r["flags"]) == 1 else "s"} · {trend}</div>',
                         unsafe_allow_html=True)
 
 st.header("Risk index over time")

@@ -82,7 +82,7 @@ workflows = {
          "app_pages/overview.py"),
         ("Look for countries getting riskier on *Score changes*: a mid-tier country sliding fast "
          "can be a bigger worry than a stable high-tier one.", "app_pages/changes.py"),
-        ("Open each profile's *In real life* tab, then *Peers* to compare with neighbours.",
+        ("Open *What it means in real life* on each profile's Summary, then *Peers* to compare with neighbours.",
          ui.COUNTRY_PAGE),
         ("Use the What-if simulator to see how a currency crisis or conflict would change the picture.",
          ui.COUNTRY_PAGE),
@@ -91,21 +91,22 @@ workflows = {
     "Planning a programme (NGOs & humanitarian)": [
         ("Conflict & displacement shows where people are being killed and displaced, and where "
          "refugees are hosted.", "app_pages/conflict.py"),
-        ("The *In real life* tab spells out access, safety and price pressures.", ui.COUNTRY_PAGE),
+        ("*What it means in real life*, on each profile's Summary, spells out access, safety and price pressures.",
+         ui.COUNTRY_PAGE),
         ("Economic stress flags inflation and currency problems that erode cash assistance.",
          "app_pages/economy.py"),
         ("Check the watchlist for elections and deadlines; plan field movements around them.",
          "app_pages/watchlist.py"),
     ],
     "Preparing a trip, posting or study abroad": [
-        ("Read the country's *In real life* tab and its latest news.", ui.COUNTRY_PAGE),
+        ("Read *What it means in real life* on the country's Summary, then its latest news.", ui.COUNTRY_PAGE),
         ("Confirm with your government's current travel advice, which changes faster "
          "than this data.", None),
         ("Avoid travelling around high-significance events in the watchlist.",
          "app_pages/watchlist.py"),
     ],
     "Writing an analysis (policy, journalism, research)": [
-        ("The profile's Summary and Indicators tabs show exactly what pushes the score.",
+        ("The profile's Summary and Data tabs show exactly what pushes the score.",
          ui.COUNTRY_PAGE),
         ("Governance trends show whether a change is outside the margin of error.",
          ui.COUNTRY_PAGE),

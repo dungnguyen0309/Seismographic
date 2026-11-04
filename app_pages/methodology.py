@@ -8,15 +8,15 @@ from prm.config import INDICATORS, PILLARS, RED_FLAGS, SEVERITY_LABEL, TIERS
 
 ui.hero("Methodology")
 st.markdown(
-    """
-Seismographic follows the standard recipe for composite indicators set out in the
-[OECD/JRC *Handbook on Constructing Composite Indicators*](https://www.oecd.org/en/publications/handbook-on-constructing-composite-indicators-methodology-and-user-guide_9789264043466-en.html):
-choose indicators that answer a clear question, normalise them to a common scale, aggregate them into
-pillars and a composite with explicit weights, and test how sensitive the result is to those choices.
-Every step is shown below, so you can disagree with a specific choice.
-"""
+    "Seismographic follows the [OECD/JRC *Handbook on Constructing Composite Indicators*]"
+    "(https://www.oecd.org/en/publications/handbook-on-constructing-composite-indicators-methodology-and-user-guide_9789264043466-en.html): "
+    "a clear question, indicators on a common scale, explicit weights, and a test of how much those choices matter."
 )
-built, tests, limits = st.tabs(["How it is built", "Tests", "Limits"])
+# the page's top level: its tab labels take the h2 size (prm/ui.py), so they never read smaller than the sections inside
+st.html('<style>.st-key-method_tabs [role="tab"] { height: 3rem; }'
+        '.st-key-method_tabs [role="tab"], .st-key-method_tabs [role="tab"] p {'
+        ' font-size: clamp(1.12rem, 2.2vw, 1.32rem) !important; font-weight: 600; letter-spacing: -0.01em; }</style>')
+built, tests, limits = st.tabs(["How it is built", "Tests", "Limits"], key="method_tabs")
 
 with built:
     st.header("The question")
@@ -53,7 +53,7 @@ with built:
 WGI scores come from the latest annual release (perception data collected during the previous year).
 IMF figures are the current-year estimate from the latest World Economic Outlook, which makes the economic
 pillar the most forward-looking part of the index. World Bank figures use the most recent year available within
-a look-back window (shown in the *Indicators* tab of each profile). Battle deaths use the latest UCDP year;
+a look-back window (shown in the *Data* tab of each profile). Battle deaths use the latest UCDP year;
 displacement uses the latest UNHCR annual statistics. The app downloads every dataset live through its public API.
 """
     )

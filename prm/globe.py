@@ -40,18 +40,23 @@ _HTML = """
   <div class="rg-canvas"></div>
   <button class="rg-lock" type="button" hidden><span>Tap to explore the globe</span></button>
   <div class="rg-toast" role="status" aria-live="polite"></div>
-  <div class="rg-status">Loading the 3D globe…</div>
+  <div class="rg-status" role="status">Loading the 3D globe…</div>
   <div class="rg-controls">
     <div class="rg-group" role="group" aria-label="View">
       <button data-act="in" title="Zoom in" aria-label="Zoom in">+</button>
       <button data-act="out" title="Zoom out" aria-label="Zoom out">−</button>
       <button data-act="reset" title="Reset the view" aria-label="Reset the view">↺</button>
     </div>
+    <!-- the name says what each switch does (the tooltip says the same, so it is not read twice); aria-pressed its state -->
     <div class="rg-group" role="group" aria-label="Layers">
-      <button data-act="spin" title="Turn auto-rotation on or off">Spin</button>
-      <button data-act="extrude" title="Raise each country by its risk score">3D</button>
-      <button data-act="flows" title="Show the largest refugee flows (origin → host)">Flows</button>
-      <button data-act="conflict" title="Ring the countries where battle deaths are high (≥ 25 a year)">Conflict</button>
+      <button data-act="spin" aria-label="Spin: turn the globe slowly on its own"
+        title="Spin: turn the globe slowly on its own">Spin</button>
+      <button data-act="extrude" aria-label="3D: raise each country by the value shown"
+        title="3D: raise each country by the value shown">3D</button>
+      <button data-act="flows" aria-label="Flows: show the largest refugee flows, from origin to host country"
+        title="Flows: show the largest refugee flows, from origin to host country">Flows</button>
+      <button data-act="conflict" aria-label="Conflict: ring the countries with 25 or more battle deaths a year"
+        title="Conflict: ring the countries with 25 or more battle deaths a year">Conflict</button>
     </div>
     <div class="rg-group rg-done-group" hidden>
       <button data-act="lock" title="Lock the globe so swiping scrolls the page again">Done</button>
@@ -85,6 +90,7 @@ _CSS = """
 .rg-retry { font: inherit; font-size: 0.75rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; color: var(--sg-text);
   background: var(--sg-panel); border: 1px solid var(--sg-line-strong); }
 .rg-retry:hover { border-color: var(--sg-accent); }
+.rg-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 /* touch screens: the globe is still until tapped, so swipes scroll the page */
 .rg-lock { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center;
   padding: 0; border: 0; background: transparent; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -97,19 +103,27 @@ _CSS = """
   font-size: 0.75rem; color: var(--sg-text); background: rgba(10,10,10,0.9); border: 1px solid var(--sg-line-strong); border-radius: 8px;
   pointer-events: none; opacity: 0; transition: opacity 0.2s ease-out; }
 .rg-toast.on { opacity: 1; }
+/* the toolbar matches the page's control row above the globe: 40px, 0.5rem corners, panel fill, muted ink until on */
 .rg-controls { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 2; display: flex; flex-wrap: wrap;
-  gap: 6px; pointer-events: none; }
-.rg-group { display: flex; pointer-events: auto; background: rgba(10,10,10,0.82); border: 1px solid var(--sg-line);
-  border-radius: 8px; overflow: hidden; }
-.rg-group button, .rg-play { font: inherit; font-size: 0.75rem; min-width: 34px; height: 30px; padding: 0 10px;
-  cursor: pointer; background: transparent; color: var(--sg-soft); border: 0; }
+  gap: 8px; pointer-events: none; }
+.rg-group { display: flex; pointer-events: auto; background: var(--sg-panel); border: 1px solid var(--sg-line);
+  border-radius: 0.5rem; overflow: hidden; }
+.rg-group button { font: inherit; font-size: 0.875rem; min-width: 40px; height: calc(2.5rem - 2px); padding: 0 12px;
+  cursor: pointer; background: transparent; color: var(--sg-muted); border: 0; }
 .rg-group button + button { border-left: 1px solid var(--sg-line); }
-.rg-group button:hover { background: rgba(255,255,255,0.06); color: var(--sg-strong); }
+.rg-group button:hover:not(:disabled) { background: var(--sg-hover); color: var(--sg-text); }
 .rg-group button.on { background: rgba(244,243,238,0.16); color: var(--sg-strong); font-weight: 600; }
-.rg-play { background: rgba(20,20,20,0.85); color: var(--sg-text); border: 1px solid var(--sg-line-strong); border-radius: 8px; }
+.rg-group button:disabled { color: var(--sg-faint); cursor: default; }
+/* inset rings: the group and the globe clip anything drawn outside them */
+.rg-group button:focus-visible, .rg-canvas:focus-visible { outline-offset: -3px; }
+.rg-play { font: inherit; font-size: 0.75rem; min-width: 34px; height: 30px; padding: 0 10px; cursor: pointer;
+  background: rgba(20,20,20,0.85); color: var(--sg-text); border: 1px solid var(--sg-line-strong); border-radius: 8px; }
 .rg-play:hover { border-color: var(--sg-accent); }
-.rg-hint { position: absolute; top: 50px; left: 14px; z-index: 1; color: var(--sg-faint); font-size: 0.75rem;
+.rg-hint { position: absolute; top: 62px; left: 14px; z-index: 1; color: var(--sg-faint); font-size: 0.75rem;
   pointer-events: none; }
+/* the globe stopped or never started: the note replaces it, the toolbar stays but is switched off */
+.rg-failed .rg-canvas, .rg-failed .rg-lock, .rg-failed .rg-hint, .rg-failed .rg-legend, .rg-failed .rg-time,
+.rg-failed .rg-panel { display: none; }
 .rg-legend { position: absolute; left: 12px; bottom: 12px; z-index: 2; width: 240px; padding: 8px 10px;
   background: rgba(10,10,10,0.82); border: 1px solid var(--sg-line); border-radius: 8px; font-size: 0.75rem; }
 .rg-legend-bar { display: flex; gap: 2px; height: 8px; margin: 6px 0 4px; }
@@ -118,14 +132,19 @@ _CSS = """
 .rg-legend-keys { margin-top: 6px; color: var(--sg-soft); line-height: 1.5; }
 .rg-legend-keys i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px;
   vertical-align: -1px; }
+/* where the page draws the colour key itself, the globe keeps only its layer keys */
+.rg-noramp .rg-legend-title, .rg-noramp .rg-legend-bar, .rg-noramp .rg-legend-ticks { display: none; }
+.rg-noramp .rg-legend-keys { margin-top: 0; }
+.rg-legend[hidden] { display: none; }
 .rg-time { position: absolute; left: 266px; right: 12px; bottom: 12px; z-index: 2; display: flex; align-items: center;
   gap: 10px; padding: 8px 12px; background: rgba(10,10,10,0.82); border: 1px solid var(--sg-line); border-radius: 8px; }
+.rg-wrap:has(.rg-legend[hidden]) .rg-time { left: 12px; }
 .rg-time[hidden] { display: none; }
 .rg-time input { flex: 1; accent-color: var(--sg-accent); min-width: 60px; }
 .rg-custom { margin-top: 10px; font-size: 0.875rem; }
 .rg-custom b { font-size: 1.05rem; }
 .rg-year { font-weight: 700; min-width: 3.2em; text-align: right; }
-.rg-panel { position: absolute; top: 50px; right: 12px; z-index: 3; width: 300px; max-height: calc(100% - 122px);
+.rg-panel { position: absolute; top: 62px; right: 12px; z-index: 3; width: 300px; max-height: calc(100% - 134px);
   overflow: auto; padding: 14px 16px; background: rgba(12,12,12,0.95); border: 1px solid var(--sg-line-strong);
   border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
 .rg-close { position: absolute; top: 6px; right: 8px; background: none; border: 0; color: var(--sg-faint);
@@ -162,9 +181,9 @@ _CSS = """
   .rg-wrap { height: var(--rg-mobile-h, 520px) !important; }
   .rg-hint { display: none; }
   .rg-controls { gap: 4px; }
-  .rg-group button { min-width: 32px; height: 30px; padding: 0 8px; }
+  .rg-group button { min-width: 32px; padding: 0 8px; font-size: 0.75rem; }  /* both groups on one row at 375px */
   .rg-legend { left: 12px; right: 12px; width: auto; bottom: 62px; padding: 6px 8px; }
-  .rg-legend-keys { display: none; }
+  .rg-legend-keys, .rg-noramp .rg-legend { display: none; }
   .rg-time { left: 12px; right: 12px; }
   .rg-panel { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; max-height: 72%; }
 }
@@ -553,11 +572,14 @@ function renderLegend(root, ctx) {
   root.querySelector(".rg-legend-title").textContent =
     data.custom ? data.metricLabel : data.metricLabel + " risk · " + data.years[ctx.yearIndex];
   root.querySelector(".rg-legend-ticks").innerHTML = data.ticks.map((t) => "<span>" + esc(t) + "</span>").join("");
-  root.querySelector(".rg-legend-keys").innerHTML =
+  const keys =
     (ctx.showConflict ? '<div><i style="border:2px solid ' + data.ink + ';box-sizing:border-box"></i>Armed conflict (≥ ' +
       data.conflictThreshold + " battle deaths)</div>" : "") +
     (ctx.showFlows && data.flows.length ? '<div><i style="background:#b9d7fe"></i>Refugee flows, origin → host (' +
       data.flowsYear + ")</div>" : "");
+  root.querySelector(".rg-legend-keys").innerHTML = keys;
+  root.classList.toggle("rg-noramp", !data.ramp);
+  root.querySelector(".rg-legend").hidden = !data.ramp && !keys;  // nothing left to explain
 }
 
 function customLine(ctx, c) {
@@ -680,6 +702,7 @@ function syncButtons(root, ctx) {
 
 function control(root, ctx, action) {
   const g = ctx.globe;
+  if (!g) return;  // being rebuilt after a failure
   const view = g.pointOfView();
   if (action === "in") g.pointOfView({ ...view, altitude: Math.max(0.2, view.altitude * 0.65) }, flyMs(450));
   if (action === "out") g.pointOfView({ ...view, altitude: Math.min(5.5, view.altitude / 0.65) }, flyMs(450));
@@ -707,7 +730,22 @@ function build(root, ctx, Globe, features) {
   let g;
   try { g = new Globe(el, options); } catch (err) { g = Globe(options)(el); }
   ctx.globe = g;
-  g.renderer().setPixelRatio(PIXEL_RATIO);  // sharp enough on high-DPI screens without rendering 4-9x the pixels
+  // The graphics card can drop the drawing context (a driver reset, too many 3D views open) or refuse a shader:
+  // the globe then says so instead of freezing or going blank, and redraws itself if the context comes back
+  const renderer = g.renderer();
+  const broke = (err) => {
+    if (ctx.globe !== g || ctx.failed) return;
+    if (err instanceof Error) console.error("3D globe:", err);
+    fail(root, ctx, "The 3D globe stopped drawing.");
+  };
+  renderer.domElement.addEventListener("webglcontextlost", broke);
+  renderer.domElement.addEventListener("webglcontextrestored", () => {
+    if (ctx.globe === g && ctx.failed) { teardown(root, ctx); startGlobe(root, ctx); }
+  });
+  if (renderer.debug) renderer.debug.onShaderError = () => broke(new Error("a shader did not compile"));
+  const draw = renderer.render.bind(renderer);
+  renderer.render = (scene, camera) => { try { draw(scene, camera); } catch (err) { broke(err); } };
+  renderer.setPixelRatio(PIXEL_RATIO);  // sharp enough on high-DPI screens without rendering 4-9x the pixels
   g.backgroundColor("rgba(0,0,0,0)")
     .globeImageUrl(EARTH_IMAGE)
     .showAtmosphere(false)
@@ -750,7 +788,7 @@ function build(root, ctx, Globe, features) {
   ctx.active = true;
   ctx.visible = true;
   ctx.setActive = () => {
-    const on = !!ctx.globe && ctx.visible && !document.hidden;
+    const on = !!ctx.globe && !ctx.failed && ctx.visible && !document.hidden;
     if (on === ctx.active) return;
     ctx.active = on;
     if (on) { g.resumeAnimation(); if (!ctx.frame) ctx.tick(); } else { g.pauseAnimation(); }
@@ -821,6 +859,8 @@ function build(root, ctx, Globe, features) {
   };
   syncButtons(root, ctx);
   setYear(root, ctx, ctx.yearIndex);
+  setControls(root, true);
+  if (renderer.getContext().isContextLost()) broke();  // it never got a working context
 }
 
 export default function (component) {
@@ -846,35 +886,80 @@ export default function (component) {
   root.querySelector('[data-act="flows"]').hidden = !data.flows.length;
   root.querySelector(".rg-hint").textContent = data.hint || defaultHint();
 
-  if (ctx.globe) {
+  if (ctx.failed) {
+    // the note stays until Try again, or until the graphics card hands the context back
+  } else if (ctx.globe) {
     ctx.points = data.countries.filter((c) => !ctx.featureByIso.has(c.iso3) && c.lat != null && c.lng != null);
     setYear(root, ctx, ctx.yearIndex);
     const key = JSON.stringify([data.centre, data.focus]);
     if (key !== ctx.centreKey) { ctx.centreKey = key; ctx.globe.pointOfView(startView(ctx), flyMs(1200)); }
   } else if (!ctx.loading && !webglAvailable()) {
-    const status = root.querySelector(".rg-status");
-    status.hidden = false;
-    status.textContent = "This browser can't draw the 3D globe (WebGL is off or not supported). " +
-      "Everything else on the page still works.";
+    fail(root, ctx, "This browser can't draw the 3D globe (WebGL is off or not supported).", false);
   } else if (!ctx.loading) {
     startGlobe(root, ctx);
   }
   return () => {
     // Streamlit may call this on a re-render too: only tear down once the globe has left the page
-    setTimeout(() => {
-      if (!root.isConnected && ctx.globe) {
-        lastViews[ctx.data.key] = ctx.globe.pointOfView();
-        if (ctx.timer) clearInterval(ctx.timer);
-        if (ctx.frame) cancelAnimationFrame(ctx.frame);
-        if (ctx.resize) ctx.resize.disconnect();
-        if (ctx.watch) ctx.watch.disconnect();
-        if (ctx.setActive) document.removeEventListener("visibilitychange", ctx.setActive);
-        if (ctx.motion) REDUCED.removeEventListener("change", ctx.motion);
-        if (ctx.globe._destructor) ctx.globe._destructor();
-        ctx.globe = null;
-      }
-    }, 0);
+    setTimeout(() => { if (!root.isConnected && ctx.globe) teardown(root, ctx); }, 0);
   };
+}
+
+function setControls(root, on) {
+  root.querySelectorAll(".rg-controls button").forEach((b) => { b.disabled = !on; });
+}
+
+function teardown(root, ctx) {
+  // Stop and release the globe (it left the page, or a new one is about to replace it); its camera is kept
+  const g = ctx.globe;
+  ctx.globe = null;  // first, so the context loss that releasing it fires is not taken for a failure
+  if (ctx.timer) { clearInterval(ctx.timer); ctx.timer = null; }
+  if (ctx.frame) { cancelAnimationFrame(ctx.frame); ctx.frame = null; }
+  if (ctx.resize) ctx.resize.disconnect();
+  if (ctx.watch) ctx.watch.disconnect();
+  if (ctx.setActive) document.removeEventListener("visibilitychange", ctx.setActive);
+  if (ctx.motion) REDUCED.removeEventListener("change", ctx.motion);
+  ctx.shapeKey = ctx.pointsKey = ctx.dotsKey = ctx.ringsKey = ctx.arcsKey = null;  // a new globe draws every layer
+  if (g) {
+    try { lastViews[ctx.data.key] = g.pointOfView(); } catch (err) { /* keep the last saved view */ }
+    try {
+      if (g._destructor) g._destructor();
+      const renderer = g.renderer();
+      renderer.dispose();
+      // browsers allow only a few WebGL contexts at once: give this one back now (unless it is already gone)
+      if (!renderer.getContext().isContextLost()) renderer.forceContextLoss();
+    } catch (err) { /* already gone */ }
+  }
+  const el = root.querySelector(".rg-canvas");
+  el.replaceWith(el.cloneNode(false));  // an empty holder, without the old canvas or its key and wheel listeners
+}
+
+function fail(root, ctx, cause, retry = true) {
+  // The note says what happened and where else to see the data; the canvas, hints and legend go, the toolbar stays off
+  ctx.failed = true;
+  ctx.active = false;
+  if (ctx.timer) { clearInterval(ctx.timer); ctx.timer = null; }
+  if (ctx.globe) { try { ctx.globe.pauseAnimation(); } catch (err) { /* nothing left to pause */ } }
+  const hadFocus = root.contains(document.activeElement);
+  root.classList.add("rg-failed");
+  setControls(root, false);
+  const status = root.querySelector(".rg-status");
+  status.textContent = cause + " " + ctx.data.fallback;
+  status.hidden = false;
+  const acts = document.createElement("div");
+  acts.className = "rg-acts";
+  const act = (label, run) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "rg-retry";
+    b.textContent = label;
+    b.onclick = run;
+    acts.append(b);
+  };
+  if (ctx.data.flatLink) act("Show the flat map", () => ctx.trigger("flat", true));  // Python switches the map style
+  if (retry) act("Try again", () => { teardown(root, ctx); startGlobe(root, ctx); });
+  if (!acts.firstChild) return;
+  status.append(acts);
+  if (hadFocus) acts.firstChild.focus();  // focus was on the globe or its toolbar, which are gone
 }
 
 function webglAvailable() {
@@ -888,11 +973,15 @@ function webglAvailable() {
 
 function startGlobe(root, ctx) {
   const status = root.querySelector(".rg-status");
+  ctx.failed = false;
+  root.classList.remove("rg-failed");
+  setControls(root, false);  // until there is a globe to drive
   status.hidden = false;
   status.textContent = "Loading the 3D globe…";
   ctx.loading = Promise.all([loadLibrary(), loadCountries(COUNTRIES)])
     .then(([Globe, features]) => {
       build(root, ctx, Globe, features);
+      if (ctx.failed) return;  // it stopped drawing straight away: the note is up
       status.hidden = true;
       if (ctx.selected) {  // re-mounted with a country already picked: fly back to it
         const at = locate(ctx, ctx.selected);
@@ -910,13 +999,10 @@ function startGlobe(root, ctx) {
         })
         .catch(() => {});
     })
-    .catch((err) => {
+    .catch((err) => {  // a download failed, or the globe could not be set up (no WebGL context, for one)
       ctx.loading = null;
-      ctx.globe = null;
-      root.querySelector(".rg-canvas").replaceChildren();  // drop a half-built globe
-      status.innerHTML = "The 3D globe could not load (" + esc(err && err.message ? err.message : err) +
-        "). Everything else on the page still works. <button type='button' class='rg-retry'>Try again</button>";
-      status.querySelector(".rg-retry").onclick = () => startGlobe(root, ctx);
+      teardown(root, ctx);  // drop a half-built globe
+      fail(root, ctx, "The 3D globe could not load (" + (err && err.message ? err.message : err) + ").");
     });
 }
 """.replace("__GLOBE_JS__", GLOBE_JS_URL).replace("__COUNTRIES_DETAILED__", COUNTRIES_DETAILED_URL) \
@@ -962,16 +1048,26 @@ def risk_globe(table: pd.DataFrame, hist: pd.DataFrame, flows: pd.DataFrame | No
                value_range: tuple[float, float] = (0, 100), value_format: str = "score",
                ticks: list[str] | None = None, notes: dict | None = None, empty_label: str = "No data",
                extrude_abs: bool = False, layers: dict | None = None, height: int = HEIGHT, focus: str | None = None,
-               hint: str | None = None) -> tuple[str | None, str | None]:
+               hint: str | None = None, fallback: str | None = None,
+               on_flat=None) -> tuple[str | None, str | None]:
     """Draw the globe.
 
     By default countries are coloured by `metric` (composite or a pillar key) with the year slider. Pass `custom`
     ({iso3: value}) to colour by anything else instead — with its own `colorscale`, `value_range` and
     `value_format` ("score", "signed", "days" or plain); `notes` adds a line per country to the tooltip and panel.
     Countries outside `in_view` are dimmed; `region` or `focus` (a country) turns the camera; `layers` sets which
-    of spin / extrude / flows / conflict start switched on.
+    of spin / extrude / flows / conflict start switched on. `fallback` is the sentence after "The 3D globe stopped
+    drawing." (or could not load): where else on the page the same data is. `on_flat`, a callback, adds a
+    "Show the flat map" button to that note.
     Returns (country to open, selected country): the first is set only when "Open full profile" is clicked.
     """
+    # shortcut: the Overview, the one caller on the default key, has its own tier legend; a new direct caller on that
+    # key would lose the colour key drawn on the globe
+    overview = key == "risk_globe"
+    if fallback is None:
+        fallback = ("The flat map shows the same data." if on_flat
+                    else "The charts below show the same refugee flows." if focus  # the country profile
+                    else "Everything else on the page still works.")
     years = sorted(int(y) for y in hist["year"].unique())
     composite = _by_year(hist, "composite", years, 6)  # tiers, the yearly change and the shown 0-dp score all need it unrounded
     rank = _by_year(hist, "rank", years)
@@ -1029,6 +1125,9 @@ def risk_globe(table: pd.DataFrame, hist: pd.DataFrame, flows: pd.DataFrame | No
         "centre": list(centre) if centre else None,
         "focus": focus,
         "hint": hint,
+        "fallback": fallback,
+        "flatLink": on_flat is not None,
+        "ramp": not overview,  # the Overview shows the tiers under the map, so the globe keeps only its layer keys
         "layers": {**DEFAULT_LAYERS, **(layers or {})},
         "selected": selected,
         "pillars": [{"key": p.key, "short": p.short, "color": config.PILLAR_COLORS[p.key]} for p in config.PILLARS],
@@ -1040,5 +1139,6 @@ def risk_globe(table: pd.DataFrame, hist: pd.DataFrame, flows: pd.DataFrame | No
         "countries": countries,
     }
     result = _component(key=key, data=data, default={"selected": selected},
-                        on_open_change=lambda: None, on_selected_change=lambda: None)
+                        on_open_change=lambda: None, on_selected_change=lambda: None,
+                        on_flat_change=on_flat or (lambda: None))
     return getattr(result, "open", None), getattr(result, "selected", None)

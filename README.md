@@ -46,7 +46,7 @@ written analyst assessments with probabilistic key judgments and scenarios.
 |  | **Assessment builder** | A form that turns your analysis into a structured assessment file: BLUF (bottom line up front), key judgments in the estimative language of ICD 203 (the US intelligence community's analytic standards), drivers, scenarios and signposts; [assessments/README.md](assessments/README.md) says how to add it |
 |  | **Data downloads** | Every table behind the index (the index, all 17 indicators with years and scores, red flags, history since 2015, the conflict outlook) as CSV, one Excel workbook or JSON, with a data dictionary; when the app runs as an ASGI app (see *Run it yourself*), a read-only JSON API too |
 | Reference | **Introduction** | What the tool is, how the score is built (indicators, risk scores, pillars, then the composite and tiers), the four pillars and their weights, a quick start and the caveats |
-|  | **Guide** | A plain-language reading of any country: what each tier, pillar and warning threshold looks like on the ground, what it means for business, NGOs, travel and research, and the tool's limits. Each country profile has the same reading in its *In real life* tab |
+|  | **Guide** | A plain-language reading of any country: what each tier, pillar and warning threshold looks like on the ground, what it means for business, NGOs, travel and research, and the tool's limits. Each country profile has the same reading under *What it means in real life* on its Summary tab |
 |  | **Methodology** | Three tabs: how the index is built (every indicator, normalisation, weight and threshold), two tests of the model (its track record before new armed conflicts and a benchmark against the Fragile States Index) and its limits |
 |  | **Glossary & legend** | 123 terms in nine colour-coded categories, searchable, most of them linked to the organisation that defines or publishes them; plus a visual legend for tiers, pillars, symbols and colour scales |
 |  | **Sources** | Every dataset, definition and feed behind the tool, with links, update dates and the status of the data loaded now; where each warning threshold comes from; independent indices to cross-check the scores; who owns each video channel; how to cite the tool; and further reading |
@@ -141,7 +141,7 @@ prm/config.py                indicators, pillars, weights, tiers, thresholds
 prm/sources.py               clients for the APIs and feeds (World Bank, IMF, UNHCR, GDELT, news, YouTube, FSI)
 prm/data.py                  caching and snapshot fallback
 prm/scoring.py               normalisation, aggregation, red flags, automatic brief
-prm/interpret.py             the plain-language reading on the Guide and the In real life tab
+prm/interpret.py             the plain-language reading on the Guide and the profile's Summary tab
 prm/validation.py            track record: did high scores come before armed conflict?
 prm/forecast.py              conflict outlook model and its out-of-time test
 prm/stress.py                stress test: shocks, scenarios and re-scoring

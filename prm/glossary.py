@@ -22,7 +22,8 @@ TERMS: dict[str, list[tuple[str, str]]] = {
                             "safest (0) to riskiest (100)."),
         ("Log scale", "Used for battle deaths and displacement, which are zero for most countries: 'none' scores 0 and "
                       "the score rises steeply from the first deaths or displacements, then flattens."),
-        ("Global rank", "A country's position among all scored countries; 1 = the highest risk."),
+        ("Global rank", "A country's position among all scored countries; 1 = the highest risk. Ranks within a "
+                        "region or peer group count the same way."),
         ("Tier", "Five bands of the composite score: Low (under 20), Moderate (20 to under 40), Elevated (40 to under "
                  "60), High (60 to under 80) and Severe (80 to 100)."),
         ("Pillar", "One of four groups of indicators: Political Stability & Violence, Governance & Institutions, "
@@ -79,10 +80,12 @@ TERMS: dict[str, list[tuple[str, str]]] = {
     "Warnings": [
         ("Red flag", "An absolute warning threshold, such as inflation of 20% or more. Unlike the relative score, it "
                      "applies wherever the country ranks."),
+        ("Red-flag mark (⚑)", "A red-flag threshold the country crosses today. '⚑ New' means it was crossed since "
+                              "last year."),
         ("Critical / Serious / Watch", "Red-flag severities, from most to least severe: Critical (e.g. war, inflation ≥ 50%), Serious "
                                        "(e.g. active conflict, inflation ≥ 20%), Watch (e.g. debt ≥ 90% of GDP)."),
         ("Close to a red line", "An indicator within reach of a threshold, for example inflation between 15% and "
-                                "20%. Shown on the In real life tab."),
+                                "20%. Shown on each country's Summary."),
         ("Political stability deteriorating", "A Watch flag raised when the WGI political-stability score falls by "
                                               f"{config.WGI_TREND_THRESHOLD:g}+ points over "
                                               f"{config.WGI_TREND_YEARS} years."),

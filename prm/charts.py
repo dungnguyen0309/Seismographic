@@ -278,10 +278,49 @@ def history_marks(hist: pd.DataFrame) -> dict[int, list[str]]:
     return marks
 
 
+def _drawn_marks(hist: pd.DataFrame) -> dict[int, list[str]]:
+    """history_marks for the years that have a composite score (the ones risk_history can put on its line)."""
+    at = hist.set_index("year")["composite"]
+    return {y: m for y, m in sorted(history_marks(hist).items()) if pd.notna(at.get(y))}
+
+
+# Mark labels are laid out for a phone, the narrowest plot (about 200 px for the years and 270 px for 0-100); a wider
+# screen only spreads them further apart. A label with no free spot is left off: its dot and hover line stay.
+_PHONE_W, _PHONE_H, _CHAR_W, _LABEL_H = 200, 270, 7.2, 20
+
+
+def _place_marks(at: pd.Series, found: dict[int, list[str]], first: int, last: int) -> list[tuple[int, str, int, str]]:
+    """(year, text, ay, xanchor) for each label that fits: wars first, then rises, then new conflicts, then the rest,
+    later years before earlier ones. Each tries its own side of the line (rises above, falls below), near then far,
+    then the other side."""
+    per_year = _PHONE_W / max(last - first, 1)
+    boxes, placed = [], []
+    order = sorted(found.items(), key=lambda kv: ("war" not in kv[1], not any(m.startswith("▲") for m in kv[1]),
+                                                  "armed conflict" not in kv[1], -kv[0]))
+    for year, labels in order:
+        text = " · ".join(labels)
+        w, x = len(text) * _CHAR_W + 8, (year - first) * per_year
+        anchor = "left" if x < w / 2 else "right" if x > _PHONE_W - w / 2 else "center"  # kept inside the plot
+        x0 = {"left": x, "right": x - w, "center": x - w / 2}[anchor]
+        y = (100 - at[year]) / 100 * _PHONE_H  # px down from the top of the plot
+        down = all(m.startswith("▼") or m == "conflict ends" for m in labels)
+        for ay in (30, 62, -30, -62) if down else (-30, -62, 30, 62):
+            top = y + ay - _LABEL_H / 2
+            box = (x0, top, x0 + w, top + _LABEL_H)
+            if top < -30 or box[3] > _PHONE_H:  # past the top margin, or down into the axis
+                continue
+            if all(box[2] <= b[0] or box[0] >= b[2] or box[3] + 4 <= b[1] or box[1] >= b[3] + 4 for b in boxes):
+                boxes.append(box)
+                placed.append((year, text, ay, anchor))
+                break
+    return placed
+
+
 def risk_history(hist: pd.DataFrame, marks: bool = False) -> go.Figure:
     """One country's composite (bold) and pillar scores per year, over the tier bands (labelled outside the plot, on
     the right). With marks=True it reads as a seismogram: the trace leads (pillars start hidden in the legend) and the
-    years where something changed are marked on it, rises above the line and falls below."""
+    years where something changed get a dot on it and, where there is room, a label (rises above the line, falls
+    below). Every mark is also in that year's hover line; history_summary says the same in words."""
     fig = go.Figure()
     for tier, upper in zip(config.TIERS, [t.lower for t in config.TIERS[1:]] + [100]):
         fig.add_hrect(y0=tier.lower, y1=upper, fillcolor=tier.color, opacity=0.06, line_width=0, layer="below")
@@ -293,29 +332,67 @@ def risk_history(hist: pd.DataFrame, marks: bool = False) -> go.Figure:
             line=dict(color=PILLAR_COLORS[p.key], width=1.5), opacity=0.85,
             hovertemplate=p.short + " %{x}: %{y:.0f}<extra></extra>", visible="legendonly" if marks else True,
         ))
-    if marks:
-        at = hist.set_index("year")["composite"]
-        side = {True: 0, False: 0}  # marks so far below / above the line: each side alternates its own offset
-        for year, labels in sorted(history_marks(hist).items()):
-            if pd.isna(at.get(year)):
-                continue
-            # a fall goes below the line, unless the line is too low to leave room under it
-            down = at[year] >= 35 and all(m.startswith("▼") or m == "conflict ends" for m in labels)
-            fig.add_annotation(x=year, y=at[year], text=" · ".join(labels), showarrow=True, arrowhead=0,
-                               arrowcolor=INK["faint"], arrowwidth=1, ax=0,
-                               ay=(30 if side[down] % 2 == 0 else 66) * (1 if down else -1),
-                               font=dict(color=INK["soft"], size=12), bgcolor="rgba(0,0,0,0.7)")
-            side[down] += 1
+    found = _drawn_marks(hist) if marks else {}
+    at = hist.set_index("year")["composite"]
+    placed = _place_marks(at, found, int(hist["year"].min()), int(hist["year"].max())) if found else []
+    for year, text, ay, anchor in placed:
+        fig.add_annotation(x=year, y=at[year], text=text, showarrow=True, arrowhead=0, arrowcolor=INK["faint"],
+                           arrowwidth=1, ax=0, ay=ay, xanchor=anchor,
+                           font=dict(color=INK["soft"], size=12), bgcolor="rgba(0,0,0,0.7)")
     tiers = hist["tier"].fillna("—")
+    events = hist["year"].map(lambda y: "<br>" + " · ".join(found[y]) if y in found else "")
+    # With marks the bold line is the page's headline score, named in its hover, and the legend only switches the
+    # pillars on and off; without (the case studies) the pillars are drawn too, so the legend names the bold line
     fig.add_trace(go.Scatter(
         x=hist["year"], y=hist["composite"], name="Composite", mode="lines", line=dict(color="#ffffff", width=3),
-        customdata=np.column_stack([tiers, hist["rank"].fillna(0).astype(int)]),
-        hovertemplate="<b>%{x}</b>: %{y:.0f} · %{customdata[0]} · rank %{customdata[1]}<extra></extra>",
+        showlegend=not marks, customdata=np.column_stack([tiers, hist["rank"].fillna(0).astype(int), events]),
+        hovertemplate="<b>Composite %{x}: %{y:.0f}</b> · %{customdata[0]} · rank %{customdata[1]}%{customdata[2]}"
+                      "<extra></extra>",
     ))
+    if found:  # a dot on every marked year, labelled or not (not clipped, so a dot in the last year stays whole)
+        fig.add_trace(go.Scatter(x=list(found), y=[at[y] for y in found], mode="markers", showlegend=False,
+                                 hoverinfo="skip", cliponaxis=False,
+                                 marker=dict(size=7, color=config.INK["strong"], line=dict(color=SURFACE, width=1.5))))
+        fig.update_xaxes(range=[hist["year"].min(), hist["year"].max()])  # markers would pad the axis past the years
     fig.update_yaxes(range=[0, 100], title="Risk score (0–100)")
     fig.update_xaxes(dtick=2, tickformat="d", tickangle=0)
     fig.update_layout(hovermode="x unified")
-    return _base(fig, height=380, legend=True).update_layout(margin_r=72)  # room for the band labels
+    # The legend sits under the plot with fixed entry widths (plotly measures the fallback font before the mono one
+    # loads): one row on a laptop, two on a phone, where it used to take five. x just below 0 lets plotly wrap it at
+    # the plot plus its left margin rather than at the plot alone, which fits only one entry per row on a phone
+    return _base(fig, height=400, legend=True).update_layout(
+        margin_r=72,  # room for the band labels
+        legend=dict(x=-0.001, xanchor="left", y=-0.1, yanchor="top", itemwidth=30, entrywidth=70, font_size=11),
+    )
+
+
+def history_summary(country_hist: pd.DataFrame) -> str:
+    """What risk_history(country_hist, marks=True) shows, in words: the first and latest scored years with score and
+    tier, then every marked year in order (for a screen reader, beside the chart)."""
+    scored = country_hist.dropna(subset=["composite"]).sort_values("year")
+    if scored.empty:
+        return "No composite score in any year."
+    first, latest = scored.iloc[0], scored.iloc[-1]
+
+    def point(r) -> str:
+        return f"{r['composite']:.0f} ({r['tier']})" if isinstance(r["tier"], str) else f"{r['composite']:.0f}"
+
+    words = {"war": "war began", "armed conflict": "armed conflict began", "conflict ends": "armed conflict ended"}
+
+    def say(mark: str) -> str:  # the chart's ▲ / ▼ in words
+        if mark[:1] in ("▲", "▼"):
+            return ("rose to " if mark[0] == "▲" else "fell to ") + mark[2:]
+        return words.get(mark, mark)
+
+    text = f"Composite risk score {int(first['year'])}: {point(first)}."
+    if latest["year"] != first["year"]:
+        text += f" {int(latest['year'])}: {point(latest)}."
+    found = _drawn_marks(country_hist)
+    if found:
+        text += " Marked years: " + "; ".join(f"{y} {' and '.join(say(m) for m in ms)}" for y, ms in found.items()) + "."
+    else:
+        text += " No tier changes or conflict events marked."
+    return text
 
 
 def case_history(hist: pd.DataFrame, event_date: str, label: str) -> go.Figure:
@@ -525,16 +602,21 @@ def events_timeline(df: pd.DataFrame) -> go.Figure:
 # Briefing pages (Score changes, Regions, Conflict & displacement, Economic stress)
 # ---------------------------------------------------------------------------
 def change_bars(df: pd.DataFrame, n: int = 10) -> go.Figure:
-    """Largest rises (red) and falls (blue) in the composite vs last year. df: iso3, name, delta_1y."""
+    """Largest rises (red) and falls (blue) in the composite vs last year. df: iso3, name, delta_1y, and optionally
+    thin (True where the score rests on limited data: the bar is hatched and its hover says so)."""
     valid = df.dropna(subset=["delta_1y"])
     d = pd.concat([valid.nsmallest(n, "delta_1y"), valid.nlargest(n, "delta_1y")]).drop_duplicates("iso3")
     d = d.sort_values("delta_1y")
+    thin = d["thin"].fillna(False).astype(bool) if "thin" in d else pd.Series(False, index=d.index)
     fig = go.Figure(go.Bar(
         x=d["delta_1y"], y=d["name"], orientation="h",
-        marker=dict(color=[WORSE if c > 0 else BETTER for c in d["delta_1y"]], line=dict(color=SURFACE, width=1)),
+        marker=dict(color=[WORSE if c > 0 else BETTER for c in d["delta_1y"]], line=dict(color=SURFACE, width=1),
+                    pattern=dict(shape=["/" if t else "" for t in thin], fgcolor=SURFACE)),
         text=[interpret.signed(c) for c in d["delta_1y"]], textposition="outside", cliponaxis=False,
-        customdata=np.column_stack([d["prev_composite"].round(0), d["composite"].round(0), d["iso3"]]),
-        hovertemplate="<b>%{y}</b><br>%{customdata[0]} → %{customdata[1]} (%{x:+.1f})"
+        customdata=np.column_stack([  # iso3 last: ui.clicked_iso3 reads it there
+            d["prev_composite"].round(0), d["composite"].round(0),
+            thin.map({True: "<br>Limited data: under 75% of the indicators, or a pillar missing", False: ""}), d["iso3"]]),
+        hovertemplate="<b>%{y}</b><br>%{customdata[0]} → %{customdata[1]} (%{x:+.1f})%{customdata[2]}"
                       "<br><i>Click to open the profile</i><extra></extra>",
     ))
     fig.add_vline(x=0, line=dict(color=MUTED, width=1))

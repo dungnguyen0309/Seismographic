@@ -85,7 +85,7 @@ grid(cards, min_width=260)
 st.header("Quick start")
 st.markdown(
     "1. Open the Global overview and click any country on the globe to see its score.\n"
-    "2. Open its Country profile and read the In real life tab: what the numbers mean on the ground.\n"
+    "2. Open its Country profile and read What it means in real life, under the Summary: the numbers on the ground.\n"
     "3. Use the sidebar, or the bar at the bottom of every page, to move between pages; Find in the bar searches "
     "every country and every page. The country on the left of the bar is the last one you opened in this visit "
     "(on a new visit, the first country you follow).\n"

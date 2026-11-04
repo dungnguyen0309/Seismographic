@@ -284,3 +284,17 @@ def test_signed_prints_a_zero_change_without_a_sign():
     from prm import interpret
     assert [interpret.signed(x) for x in (-0.04, 0.04, 1.25, -3)] == ["0.0", "0.0", "+1.2", "-3.0"]
     assert interpret.signed(-0.4, 0) == "0" and interpret.signed(12345, 0) == "+12,345"
+
+
+def test_history_summary_says_what_the_chart_marks(core):
+    from prm import charts
+    hist = core["history_default"]
+    text = charts.history_summary(hist[hist["iso3"] == "SDN"].sort_values("year"))
+    assert text.startswith("Composite risk score ") and "Marked years:" in text
+    assert not any(ch in text for ch in "▲▼—–")  # in words, for a screen reader
+    assert charts.history_summary(hist.iloc[:0]) == "No composite score in any year."
+
+
+def test_head_counts_are_rounded():
+    assert [scoring._about(n) for n in (12_900_343, 345_678, 999_499, 999_500, 512)] == [
+        "12.9 million", "346,000", "999,000", "1 million", "512"]

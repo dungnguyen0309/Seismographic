@@ -411,7 +411,7 @@ def country_reading(iso3: str, table: pd.DataFrame, values: pd.DataFrame, scores
         research.append(f"Put it in context: {name} ranks {_ordinal(region_pos)} of {len(peers)} in {row['region']} "
                         "and the Peers tab shows who is close.")
     research.append("Check whether changes are real: governance moves inside the WGI confidence intervals may be "
-                    "noise (Governance tab).")
+                    "noise (Data tab, Governance).")
     research.append("Test the drivers: the What-if simulator shows which indicators would move the score most.")
     research.append("Write it up: the Assessment builder turns this into a structured brief with probabilities.")
 

@@ -351,6 +351,13 @@ def _ordinal(n: int) -> str:
     return f"{n}{suffix}"
 
 
+def _about(n: float) -> str:
+    """A head count as a person would say it: 12.9 million, 345,000, or the exact figure below a thousand."""
+    if n >= 999_500:  # anything that rounds to a million or more
+        return f"{n / 1e6:.1f}".removesuffix(".0") + " million"
+    return f"{round(n, -3) if n >= 1000 else n:,.0f}"
+
+
 def country_brief(
     iso3: str,
     name: str,
@@ -428,7 +435,7 @@ def country_brief(
     share = v.get("displaced_share")
     if pd.notna(share) and share >= 0.5:
         lines.append(
-            f"About {v['displaced_total']:,.0f} people ({share:.1f}% of the population) from {name} were "
+            f"About {_about(v['displaced_total'])} people ({share:.1f}% of the population) from {name} were "
             f"forcibly displaced in {int(v['displaced_share__year'])} (UNHCR)."
         )
 

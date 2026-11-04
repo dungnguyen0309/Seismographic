@@ -5,7 +5,8 @@
 - focus put back on a control that Streamlit redraws after it is used, or on the new page's title after a jump
   from Find (see keep_focus)
 - Material icons, which Streamlit draws as ligature text ("public", "compare_arrows"), hidden from screen readers
-  so links read "Global overview" rather than "public Global overview"
+  so links read "Global overview" rather than "public Global overview"; the sidebar's icon-only open and close
+  buttons get a name ("Open sidebar", "Close sidebar") instead of "keyboard_double_arrow_left"
 - on phones, the open tab scrolled into view in its sideways-scrolling tab row (e.g. a profile opened at ?tab=map)
 """
 
@@ -44,10 +45,23 @@ export default function (component) {
     step();
   }
   // Icons drawn as ligature text are decoration: hide them from assistive tech, also as Streamlit redraws the page
-  // (two forms: icon elements, and icons inside Markdown labels, e.g. tab names, which carry an "x icon" label)
-  const hide = () => document.querySelectorAll(
-    '[data-testid="stIconMaterial"]:not([aria-hidden]), span[role="img"][translate="no"][aria-label$=" icon"]:not([aria-hidden])'
-  ).forEach((e) => e.setAttribute("aria-hidden", "true"));
+  // (two forms: icon elements, whatever their test id, e.g. stIconMaterial or stHeadingIcon, and icons inside
+  // Markdown labels, e.g. tab names, which carry an "x icon" label)
+  const NAMED = [['[data-testid="stSidebarCollapseButton"] button', "Close sidebar"],
+                 ['button[data-testid="stExpandSidebarButton"], [data-testid="stExpandSidebarButton"] button', "Open sidebar"]];
+  const hide = () => {
+    document.querySelectorAll('[translate="no"]:is([data-testid*="Icon"], [role="img"][aria-label$=" icon"]):not([aria-hidden])')
+      .forEach((e) => e.setAttribute("aria-hidden", "true"));
+    // the sidebar's open and close buttons show only an icon: with it hidden they need a name of their own
+    for (const [sel, name] of NAMED) document.querySelectorAll(sel).forEach((b) => {
+      if (b.getAttribute("aria-label") !== name) b.setAttribute("aria-label", name);
+    });
+    // the dock's readout is one see-through link laid over its text: the link takes the text's tooltip
+    document.querySelectorAll(".st-key-sg_read").forEach((r) => {
+      const a = r.querySelector("a"), t = r.querySelector(".sg-read[title]");
+      if (a && t && a.title !== t.title) a.title = t.title;
+    });
+  };
   // Phones: a tab row scrolls sideways inside itself, so a tab opened from a link (?tab=map) may sit out of view.
   // Each newly selected tab is scrolled into its row once; a row the visitor scrolls is then left alone.
   const showTab = () => document.querySelectorAll('[data-testid="stTabs"] [role="tablist"]').forEach((list) => {
@@ -62,9 +76,10 @@ export default function (component) {
   if (!window.sgIconWatch) {
     let queued = false;
     window.sgIconWatch = new MutationObserver(() => {
+      hide();  // at once, not on the next frame: a background tab draws no frames, and its names would stay wrong
       if (queued) return;
       queued = true;
-      requestAnimationFrame(() => { queued = false; hide(); showTab(); });
+      requestAnimationFrame(() => { queued = false; showTab(); });
     });
     window.sgIconWatch.observe(document.body, { childList: true, subtree: true });
   }
@@ -87,7 +102,8 @@ export default function (component) {
       focusBox(10);
     });
   }
-  // Skip link: the first thing a keyboard user reaches; it moves focus to the page title
+  // Skip link: the first thing a keyboard user reaches; it moves focus to the top of the page content, so the next
+  // Tab reaches the page's first control (on a profile, the country picker above the title)
   if (!document.querySelector(".sg-skip")) {
     const a = document.createElement("a");
     a.className = "sg-skip";
@@ -95,7 +111,7 @@ export default function (component) {
     a.textContent = "Skip to content";
     a.addEventListener("click", (e) => {
       e.preventDefault();
-      const target = document.querySelector('[data-testid="stMain"] h1') || document.querySelector('[data-testid="stMain"]');
+      const target = document.querySelector('[data-testid="stMainBlockContainer"]') || document.querySelector('[data-testid="stMain"]');
       if (!target) return;
       target.setAttribute("tabindex", "-1");
       target.focus();

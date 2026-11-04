@@ -8,12 +8,12 @@ from streamlit.testing.v1 import AppTest  # the `app` fixture comes from conftes
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = re.findall(r'st\.Page\("(app_pages/[^"]+)"', (ROOT / "streamlit_app.py").read_text(encoding="utf-8"))
-COUNTRY_TABS = ["Summary", "In real life", "Peers", "Map & refugees", "What-if", "Indicators", "Governance", "Economy",
-                "News", "Assessment"]
+COUNTRY_TABS = ["Summary", "Peers", "What-if", "Data", "News", "Assessment"]  # Assessment comes second when there is one
 CONFLICT_TABS = [":material/swords: Armed conflict", ":material/luggage: Displacement & refugees",
                  ":material/insights: Outlook"]
 OVERVIEW_TABS = [":material/warning: Hotspots", ":material/trending_up: Changes",
                  ":material/format_list_numbered: Ranking", ":material/scatter_plot: Risk matrix"]
+CHANGES_TABS = ["Moves", "Map", "Tiers", "Drivers", "Red flags"]
 
 
 def errors(at: AppTest) -> list[str]:
@@ -76,6 +76,18 @@ def test_overview_tab_runs(app, tab):
     app.session_state["ov_tab"] = tab
     app.run()
     assert not errors(app), errors(app)
+
+
+@pytest.mark.parametrize("tab", OVERVIEW_TABS)
+def test_overview_tab_runs_with_a_region_filter(app, tab):  # the Risk matrix draws a region table only then
+    app.switch_page("app_pages/overview.py")
+    app.session_state["ov_region"] = "South Asia"
+    app.session_state["ov_tab"] = tab
+    try:
+        app.run()
+        assert not errors(app), errors(app)
+    finally:
+        app.session_state["ov_region"] = "All regions"
 
 
 def page_title(at: AppTest) -> str:
@@ -205,7 +217,7 @@ def test_comparison_link_with_repeats_and_junk(app):
 
 def test_whatif_preset_stays_selected_until_reset(app):
     def run_whatif():  # the test tree can send back an older tab choice, so the tab is set on every run
-        app.session_state["country_tab"] = COUNTRY_TABS[4]
+        app.session_state["country_tab"] = "What-if"
         app.run()
 
     def governance_open():
@@ -239,3 +251,206 @@ def test_ranking_table_shows_rounded_scores_and_short_regions(app):
     shown = next(d.value for d in app.dataframe if "region" in d.value.columns)
     assert "MENA, Afghanistan & Pakistan" in set(shown["region"])  # config.REGION_SHORT
     assert (shown["composite"].dropna() % 1 == 0).all()  # screen readers get the number shown, not 15 digits
+
+
+@pytest.mark.parametrize("tab,key,view", [("Data", "data_view", "Indicators"), ("Data", "data_view", "Governance"),
+                                          ("Data", "data_view", "Economy"), ("Peers", "peers_view", "Map & refugees"),
+                                          ("Summary", "real_life", True)])
+def test_country_view_runs(app, tab, key, view):
+    app.switch_page("app_pages/country.py")
+    app.session_state["country_tab"] = tab
+    app.session_state[key] = view
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.session_state[key] == view
+
+
+@pytest.mark.parametrize("old,tab,slug,key,view", [
+    ("real", "Summary", "summary", "real_life", True), ("map", "Peers", "peers", "peers_view", "Map & refugees"),
+    ("indicators", "Data", "data", "data_view", "Indicators"), ("governance", "Data", "data", "data_view", "Governance"),
+    ("economy", "Data", "data", "data_view", "Economy")])
+def test_old_tab_link_opens_the_merged_tab(app, old, tab, slug, key, view):
+    app.switch_page("app_pages/country.py")
+    app.session_state["country_tab"] = "News"
+    app.run()
+    app.query_params["tab"] = old  # a link made when this was its own tab
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.session_state["country_tab"] == tab
+    assert app.session_state[key] == view  # ?tab=real also opens the real-life reading
+    assert app.query_params["tab"] == slug
+    assert app.query_params.get("view") == (None if old == "real" else old)
+
+
+def test_country_tab_and_view_survive_a_new_country_and_another_tab(app):
+    app.switch_page("app_pages/country.py")
+    app.session_state["country"] = "KEN"  # no assessment
+    app.session_state["country_tab"] = "News"
+    app.run()
+    app.selectbox(key="country_pick").select("SDN").run()  # an assessment moves its tab second: a new tab row
+    assert not errors(app), errors(app)
+    assert app.session_state["country_tab"] == "News" and app.query_params["tab"] == "news"
+    app.session_state["country_tab"] = "Data"
+    app.run()
+    app.session_state["data_view"] = "Governance"
+    app.run()
+    assert app.query_params["view"] == "governance"
+    app.session_state["country_tab"] = "News"
+    app.run()
+    assert "view" not in app.query_params  # ?view belongs to Data and Peers
+    app.session_state["country_tab"] = "Data"
+    app.run()
+    assert app.session_state["data_view"] == "Governance" and app.query_params["view"] == "governance"
+    app.query_params["view"] = "economy"  # a link, or Back
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.session_state["data_view"] == "Economy"
+    app.session_state["country"] = "NGA"
+    app.session_state["country_tab"] = "Summary"
+    app.run()
+
+
+def test_tabs_keep_the_open_tab_in_the_link(app):
+    app.switch_page("app_pages/conflict.py")
+    app.session_state["conflict_tab"] = CONFLICT_TABS[0]
+    app.run()
+    app.query_params["tab"] = "outlook"  # a link opens its tab
+    app.run()
+    assert app.session_state["conflict_tab"] == CONFLICT_TABS[2]
+    app.session_state["conflict_tab"] = CONFLICT_TABS[1]  # opening a tab writes it into the link
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.query_params["tab"] == "displacement"
+    del app.query_params["tab"]  # Back to the plain address: the first tab, and the link stays clean
+    app.run()
+    assert app.session_state["conflict_tab"] == CONFLICT_TABS[0] and "tab" not in app.query_params
+    app.query_params["tab"] = "nonsense"  # junk is ignored, then replaced
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.session_state["conflict_tab"] == CONFLICT_TABS[0] and app.query_params["tab"] == "conflict"
+
+
+@pytest.mark.parametrize("tab", CHANGES_TABS)
+def test_changes_tab_runs(app, tab):
+    app.switch_page("app_pages/changes.py")
+    app.session_state["chg_tab"] = tab
+    app.run()
+    assert not errors(app), errors(app)
+    assert ("chg_globe" in str(app._tree)) == (tab == "Map")  # the page's second globe is built only on its tab
+
+
+def test_changes_link_opens_the_map(app):
+    app.switch_page("app_pages/changes.py")
+    app.session_state["chg_tab"] = CHANGES_TABS[0]
+    app.run()
+    app.query_params["tab"] = "map"
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.session_state["chg_tab"] == "Map" and "chg_globe" in str(app._tree)
+
+
+def test_first_visit_tracks_no_country_and_keeps_the_introduction_link(app):
+    saved = {k: app.session_state[k] for k in ("country", "_following") if k in app.session_state}
+    for key in ("country", "_following", "_explored"):
+        if key in app.session_state:
+            del app.session_state[key]
+    app.query_params.pop("country", None)
+
+    def overview() -> tuple[bool, bool]:
+        app.switch_page("app_pages/overview.py")
+        app.run()
+        assert not errors(app), errors(app)
+        links = [p.proto.label for p in app.get("page_link")]
+        return (any('class="sg-read' in m.value for m in app.markdown),
+                any(label.startswith("Introduction") for label in links))
+
+    assert overview() == (False, True)  # nothing tracked until the visitor picks a country
+    app.switch_page("app_pages/changes.py")
+    app.run()
+    assert overview() == (False, True)  # another page is not the introduction: the link stays
+    app.switch_page("app_pages/intro.py")
+    app.run()
+    assert overview() == (False, False)
+    app.switch_page("app_pages/country.py")
+    app.run()
+    assert overview() == (False, False)  # the profile showed its fallback country; the visitor picked nothing
+    app.switch_page("app_pages/country.py")
+    app.run()
+    app.selectbox(key="country_pick").select("KEN").run()
+    readout, _ = overview()
+    assert readout  # a picked country is tracked in the bottom bar
+    for key, value in saved.items():
+        app.session_state[key] = value
+
+
+def test_tier_badges_rise_in_weight(app):
+    from prm import ui
+
+    low, elevated, severe = ui.tier_badge("Low"), ui.tier_badge("Elevated"), ui.tier_badge("Severe")
+    assert "background:transparent" in low and "border:1px solid" in low and "box-shadow" not in low  # outlined
+    assert "background:transparent" not in elevated and "box-shadow" not in elevated  # filled
+    assert "background:transparent" not in severe and "box-shadow:0 0 0 2px" in severe  # filled, with a ring
+    assert "No data" in ui.tier_legend()
+
+
+@pytest.mark.parametrize("tab", OVERVIEW_TABS)
+def test_overview_has_one_sources_line(app, tab):
+    app.switch_page("app_pages/overview.py")
+    app.session_state["ov_tab"] = tab
+    app.run()
+    assert not errors(app), errors(app)
+    assert "High or Severe" not in next(m.value for m in app.markdown if "sg-head-sub" in m.value)  # the KPIs say it
+    assert sum(c.value.startswith("Sources:") for c in app.caption) == 1
+
+
+def test_thin_data_is_marked(app):
+    app.switch_page("app_pages/overview.py")
+    app.session_state["ov_tab"] = OVERVIEW_TABS[1]  # Changes
+    app.run()
+    names = [n for d in app.dataframe if "name" in d.value.columns for n in d.value["name"]]
+    assert any(str(n).endswith(" (limited data)") for n in names), names  # e.g. Tuvalu: no social pillar
+
+    import pandas as pd
+
+    from prm import charts
+    frame = pd.DataFrame({"iso3": ["TUV", "KEN"], "name": ["Tuvalu", "Kenya"], "delta_1y": [5.0, -2.0],
+                          "prev_composite": [40.0, 50.0], "composite": [45.0, 48.0], "thin": [True, False]})
+    bar = charts.change_bars(frame).data[0]
+    assert list(bar.y) == ["Kenya", "Tuvalu"]  # plain names: the label room stays small on a phone
+    assert list(bar.marker.pattern.shape) == ["", "/"] and bar.customdata[1][-1] == "TUV"  # iso3 last, for clicks
+
+
+def test_overview_flat_map_runs(app):
+    app.switch_page("app_pages/overview.py")
+    app.run()
+    style = next(b for b in app.button_group if b.label == "Map style")
+    style.set_value("Flat map").run()
+    assert not errors(app), errors(app)
+    next(s for s in app.selectbox if s.label == "Map shows").set_value("stability").run()
+    assert not errors(app), errors(app)
+    next(s for s in app.selectbox if s.label == "Map shows").set_value("composite").run()
+    next(b for b in app.button_group if b.label == "Map style").set_value("3D globe").run()
+    assert not errors(app), errors(app)
+
+
+def test_assessment_comes_second_and_the_header_opens_it(app):
+    app.switch_page("app_pages/country.py")
+    before = app.session_state["country"] if "country" in app.session_state else "NGA"
+    app.session_state["country"] = "SDN"  # Sudan has an assessment
+    app.session_state["country_tab"] = "Summary"
+    app.run()
+    app.query_params["tab"] = "assessment"
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.session_state["country_tab"] == "Assessment"
+    assert [t.label for t in app.tabs][:2] == ["Summary", "Assessment"]
+    assert any(c.value.startswith("By ") for c in app.caption)
+    assert not any("assessments/" in c.value for c in app.caption)  # the byline names no file
+    app.session_state["country_tab"] = "Summary"
+    app.run()
+    app.button(key="country_analyst_open").click().run()  # "Analyst: <tier>" in the header
+    assert not errors(app), errors(app)
+    assert app.session_state["country_tab"] == "Assessment"
+    app.session_state["country"] = before
+    app.session_state["country_tab"] = "Summary"
+    app.run()
