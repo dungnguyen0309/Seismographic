@@ -1,0 +1,24 @@
+# Read by Vercel's installer (uv). Keep [project].dependencies the same as requirements.txt, which the tests and the
+# other hosts install from.
+[project]
+name = "seismographic"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "streamlit==1.65.0",
+    "plotly~=7.1.0",
+    "pandas~=3.0.6",
+    "numpy>=2.2,<2.6",
+    "requests>=2.32,<3",
+    "openpyxl~=3.1.5",
+    "fpdf2~=2.8.9",
+]
+
+[tool.uv]
+# Vercel installs these at start-up on a ~512 MB disk, and the full set (about 536 MB unpacked plus downloads) no
+# longer fits. Streamlit requires pydeck and altair, but this app uses neither (plotly charts, its own globe), and the
+# tests pass without them. A marker that never matches drops a package from the install.
+override-dependencies = [
+    "pydeck; sys_platform == 'never'",
+    "altair; sys_platform == 'never'",
+]
