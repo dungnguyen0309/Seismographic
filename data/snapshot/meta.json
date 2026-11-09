@@ -1,5 +1,5 @@
 {
-  "created": "2026-11-02",
+  "created": "2026-11-09",
   "series": {
     "battle_deaths": {
       "provider": "WB",
@@ -15,7 +15,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10555,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "displaced": {
       "provider": "UNHCR",
@@ -23,7 +23,7 @@
       "last_updated": "2025",
       "edition": null,
       "rows": 2613,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "fiscal_balance": {
       "provider": "IMF",
@@ -31,7 +31,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 8813,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "gdp_growth": {
       "provider": "IMF",
@@ -39,7 +39,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10921,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "gdppc": {
       "provider": "IMF",
@@ -47,7 +47,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10834,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "gov_debt": {
       "provider": "IMF",
@@ -55,7 +55,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 8098,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "homicide": {
       "provider": "WB",
@@ -71,7 +71,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10809,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "pop": {
       "provider": "WB",
@@ -87,7 +87,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10973,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "reserves_months": {
       "provider": "WB",
@@ -111,7 +111,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 5161,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "wgi_cc": {
       "provider": "WB",
@@ -127,7 +127,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5435,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "wgi_cc_ub": {
       "provider": "WB",
@@ -135,7 +135,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5435,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "wgi_ge": {
       "provider": "WB",
@@ -151,7 +151,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5400,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "wgi_ge_ub": {
       "provider": "WB",
@@ -159,7 +159,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5400,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "wgi_pv": {
       "provider": "WB",
@@ -175,7 +175,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5489,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "wgi_pv_ub": {
       "provider": "WB",
@@ -183,7 +183,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5489,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "wgi_rl": {
       "provider": "WB",
@@ -199,7 +199,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5530,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "wgi_rl_ub": {
       "provider": "WB",
@@ -207,7 +207,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5530,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "wgi_rq": {
       "provider": "WB",
@@ -223,7 +223,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5401,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "wgi_rq_ub": {
       "provider": "WB",
@@ -231,7 +231,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5401,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "wgi_va": {
       "provider": "WB",
@@ -247,7 +247,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5515,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "wgi_va_ub": {
       "provider": "WB",
@@ -255,7 +255,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5515,
-      "saved": "2026-11-02"
+      "saved": "2026-11-09"
     },
     "youth_unemployment": {
       "provider": "WB",
