@@ -39,6 +39,11 @@ toolbarMode = "viewer"
 # the error type. The full traceback still goes to the server log.
 showErrorDetails = "type"
 
+[global]
+# Streamlit takes itself for a development checkout when its package is not under site-packages (Vercel bundles it
+# in /var/task/_vendor), and then stops serving its own frontend: every page is a 404.
+developmentMode = false
+
 [server]
 runOnSave = false
 headless = true
