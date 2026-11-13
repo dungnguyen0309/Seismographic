@@ -11,7 +11,7 @@ World Bank, IMF, UNHCR and the Uppsala Conflict Data Program (UCDP). It follows 
 models use (indicators, then pillars, then a weighted composite) and shows every step, so a reader can see why a
 country scores the way it does and question the assumptions.
 
-The app adds what the model cannot do: red flags on absolute thresholds, live news, an events watchlist and
+The app adds what the model cannot do: red flags on absolute thresholds, live news, a board of current conflict hotspots, an event calendar and
 written analyst assessments with probabilistic key judgments and scenarios.
 
 <picture>
@@ -39,7 +39,7 @@ written analyst assessments with probabilistic key judgments and scenarios.
 | Briefings | **Regions** | One region at a time: headline numbers with trends, zoomed map, tier mix since 2015, risers and fallers, ranking, upcoming events and regional news |
 |  | **Conflict & displacement** | Battle deaths worldwide and by conflict, a table of active wars and conflicts, displacement over time, largest origin and host countries, the 25 largest refugee corridors, and the Outlook: the chance of new armed conflict next year in every country at peace, from a small statistical model tested out of time |
 |  | **Economic stress** | A heatmap of inflation, growth, debt, deficits, current account and reserves, a growth-vs-inflation (stagflation) chart, the IMF outlook, and countries crossing several warning thresholds |
-|  | **Events watchlist** | Elections and other dated events on a timeline and a globe, counted for the next 90 days, the next 12 months and the past |
+|  | **Hotspots** | Countries with fighting in the last 90 days (UCDP candidate events), a rising share of conflict news (GDELT) or a very high score, as cards with an Escalating, Steady, Easing or Quiet signal; a map of recent events by type of violence, with events by month; and the event calendar: elections and other dated events on a timeline and a globe |
 |  | **Case studies** | Eight shocks since 2020 (the coups in Myanmar and Niger, the wars in Tigray and Sudan, the fall of Kabul, Russia's invasion of Ukraine, Sri Lanka's default and Bangladesh's uprising) and what the index said about each country the year before, with a verdict from a fixed, published rule and room for analyst commentary |
 | Tools | **Indicator explorer** | Any of the 17 indicators on the 3D globe, with its distribution and the riskiest and safest 10 countries |
 |  | **Stress test** | Hit many countries at once with one economic shock (a 2009-style recession, a 2020-style pandemic, a 2022-style price surge, higher-for-longer rates, or your own) and see who crosses a risk tier or a red flag, on the globe and in a table; filter by region and income group, share the link, download the results |
@@ -48,12 +48,12 @@ written analyst assessments with probabilistic key judgments and scenarios.
 | Reference | **Introduction** | What the tool is, how the score is built (indicators, risk scores, pillars, then the composite and tiers), the four pillars and their weights, a quick start and the caveats |
 |  | **Guide** | A plain-language reading of any country: what each tier, pillar and warning threshold looks like on the ground, what it means for business, NGOs, travel and research, and the tool's limits. Each country profile has the same reading under *What it means in real life* on its Summary tab |
 |  | **Methodology** | Three tabs: how the index is built (every indicator, normalisation, weight and threshold), two tests of the model (its track record before new armed conflicts and a benchmark against the Fragile States Index) and its limits |
-|  | **Glossary & legend** | 123 terms in nine colour-coded categories, searchable, most of them linked to the organisation that defines or publishes them; plus a visual legend for tiers, pillars, symbols and colour scales |
+|  | **Glossary & legend** | 127 terms in nine colour-coded categories, searchable, most of them linked to the organisation that defines or publishes them; plus a visual legend for tiers, pillars, symbols and colour scales |
 |  | **Sources** | Every dataset, definition and feed behind the tool, with links, update dates and the status of the data loaded now; where each warning threshold comes from; independent indices to cross-check the scores; who owns each video channel; how to cite the tool; and further reading |
 
 Most pages have their own 3D globe: the overview (with a live news column and hotspots to watch), regions
 (turned to the region), conflict & displacement (conflict rings and refugee arcs, beside the deadliest
-conflicts), economic stress, a diverging *map of change* on *Score changes*, upcoming events on the watchlist, and
+conflicts), economic stress, a diverging *map of change* on *Score changes*, upcoming events on the Hotspots calendar, and
 each country's own refugee links on its profile. Charts, maps and tables name their sources on
 the same page or tab, with links.
 
@@ -119,10 +119,11 @@ benchmark is computed on the Methodology page (`app_pages/methodology.py`).
 | [IMF World Economic Outlook](https://www.imf.org/external/datamapper) | Growth, GDP per capita, inflation, debt, fiscal and current-account balances, projections | Public API |
 | [UNHCR Refugee Data Finder](https://www.unhcr.org/refugee-statistics/) | Forcibly displaced people by origin, and refugee flows between countries | Public API |
 | [Bing News](https://www.bing.com/news) and [Google News](https://news.google.com/) (RSS search) | Live risk-related headlines with photos, refreshed every 10 minutes | Public feeds |
-| [GDELT Project](https://www.gdeltproject.org/) | Backup news source, media tone and protest coverage | Public API |
+| [GDELT Project](https://www.gdeltproject.org/) | Backup news source, media tone, protest coverage and the Hotspots escalation signal | Public API |
+| [UCDP Candidate Events Dataset](https://ucdp.uu.se/downloads/) | Recent conflict events and deaths on the Hotspots page (CC BY 4.0) | Public download |
 | [YouTube](https://www.youtube.com/) channel feeds | The live channels and latest video reports on *Live video* | Public feeds |
 | [Fragile States Index](https://fragilestatesindex.org/) (FSI, The Fund for Peace) | Benchmark on the Methodology page (not used in the score; downloaded from the publisher when needed, not stored here) | Public download |
-| [IFES ElectionGuide](https://www.electionguide.org/) | Dates for the events watchlist | Website |
+| [IFES ElectionGuide](https://www.electionguide.org/) | Dates for the event calendar | Website |
 
 Pages open on the snapshot in `data/snapshot/`, which a GitHub Action saves every Monday, so no visitor waits for
 the 40-60 second download of every source. A snapshot up to 10 days old is used as it is. An older one is shown
@@ -146,7 +147,8 @@ prm/validation.py            track record: did high scores come before armed con
 prm/forecast.py              conflict outlook model and its out-of-time test
 prm/stress.py                stress test: shocks, scenarios and re-scoring
 prm/cases.py                 case studies and their verdict rule
-prm/content.py               reads the assessments and the events watchlist
+prm/content.py               reads the assessments and the event calendar
+prm/hotspots.py              UCDP and GDELT parsing, the escalation signal and the hotspot board
 prm/glossary.py              glossary terms and categories
 prm/charts.py                Plotly charts
 prm/globe.py                 interactive 3D globe (custom Streamlit component)
@@ -159,10 +161,11 @@ prm/export.py                open-data tables, data dictionary, Excel and JSON
 prm/api.py                   read-only JSON API (served by asgi.py)
 assessments/                 analyst assessments, one Markdown file per country
 case_studies/                analyst commentary on the case studies (optional)
-data/events.csv              events watchlist
+data/events.csv              the event calendar on Hotspots
 data/snapshot/               the saved data the app opens on
 scripts/refresh_snapshot.py  saves an offline copy of all data and the index history
-scripts/check_watchlist.py   checks the watchlist still covers the next six months
+scripts/refresh_hotspots.py  saves the daily UCDP events and GDELT conflict news for Hotspots
+scripts/check_watchlist.py   checks the event calendar still covers the next six months
 tests/                       tests for the model and every page
 ```
 
@@ -173,10 +176,13 @@ tests/                       tests for the model and every page
 * A data snapshot is saved every Monday, with the index history ready-made (*Refresh data snapshot*). A
   download that covers under 60% of the countries in the saved copy is rejected, and the new snapshot is only
   committed if the full test suite passes on it.
-* A watchlist check runs every Monday: if fewer than eight events fall in the next six months, or a row has a
+* The Hotspots data (UCDP candidate events and GDELT conflict news) are refreshed every day at 04:41 UTC and
+  committed only when they changed and the tests pass (*Refresh hotspots*). A source that fails keeps its
+  previous files.
+* A calendar check runs every Monday: if fewer than eight events fall in the next six months, or a row has a
   date it cannot read, it opens a reminder issue, and closes it once the list is fixed (*Watchlist check*). To
-  add events, run the app with the `SEISMOGRAPHIC_MAINTAINER` environment variable set to `1`: the watchlist
-  then shows a helper that writes each line for `data/events.csv`.
+  add events, run the app with the `SEISMOGRAPHIC_MAINTAINER` environment variable set to `1`: the Calendar
+  tab on *Hotspots* then shows a helper that writes each line for `data/events.csv`.
 * If a Hugging Face Space is set up (the `HF_SPACE` variable and the `HF_TOKEN` secret), every push to `main`
   and every snapshot refresh is published to it (*Publish to Hugging Face*).
 

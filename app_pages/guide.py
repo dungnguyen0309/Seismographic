@@ -12,22 +12,21 @@ countries = core["countries"]
 options, names = ui.country_options(countries)
 events = content.load_events()
 
-ui.hero("Guide", "What the scores, tiers, pillars and red flags look like in real life, and what businesses, "
-                 "NGOs, travellers and researchers commonly do about them.")
+ui.hero("Guide")
 
 # --- 1. Any country, in plain language ------------------------------------------------------------
-st.header("1 · Read any country in plain language")
+st.header("1 · Any country in plain language")
 iso3 = st.selectbox("Country", options, index=options.index(ui.current_country(countries)),
                     format_func=lambda i: names.get(i, i), key="guide_country")
 reading = interpret.country_reading(iso3, table, values, scores, hist, events, core.get("flows"), year,
                                    core["series"])
 ui.render_reading(reading, key="guide")
 ui.cite("index", "ifes", "ucdp_def", "imf_ara")
-st.page_link(ui.COUNTRY_PAGE, label=f"Open the full {names[iso3]} profile", icon=":material/flag:")
+st.page_link(ui.COUNTRY_PAGE, label=f"Open the {names[iso3]} profile", icon=":material/flag:")
 
 # --- 2. Tiers ---------------------------------------------------------------------------------------------
-st.header("2 · What the scores mean on the ground")
-st.caption("Scores are relative: a tier says how a country compares with the rest of the world this year.")
+st.header("2 · What the scores mean on the ground",
+          help="Scores are relative: a tier says how a country compares with the rest of the world this year.")
 rows = []
 for tier, upper in zip(config.TIERS, [t.lower for t in config.TIERS[1:]] + [100]):
     in_tier = table[table["tier"] == tier.label].sort_values("composite", ascending=False)
@@ -35,7 +34,7 @@ for tier, upper in zip(config.TIERS, [t.lower for t in config.TIERS[1:]] + [100]
     rows.append({
         "Tier": tier.label,
         "Score": f"{int(tier.lower)}–{int(upper)}",
-        "What it usually looks like": f"{summary} {ground}",
+        "What it looks like": f"{summary} {ground}",
         "Countries now": len(in_tier),
         "For example": ", ".join(in_tier["name"].head(3)),
     })
@@ -49,13 +48,13 @@ for i, p in enumerate(config.PILLARS):
     meaning = interpret.PILLAR_MEANING[p.key]
     with cols[i % 2], st.container(border=True):
         st.markdown(ui.pillar_chip(p.key), unsafe_allow_html=True)
-        st.markdown(f"A high score looks like this: {meaning['ground']}")
+        st.markdown(f"When high: {meaning['ground']}")
         st.markdown(f"Felt first by: {meaning['felt_by']}")
         st.caption("Measured with: " + ", ".join(i.short for i in config.indicators_for(p.key)) + ".")
 
 # --- 4. Red flags ---------------------------------------------------------------------------------------
-st.header("4 · Warning thresholds, translated")
-st.caption("Unlike the relative score, these are absolute lines: crossing one is a warning wherever the country ranks.")
+st.header("4 · Warning thresholds",
+          help="Unlike the relative score, these are absolute lines: crossing one is a warning wherever the country ranks.")
 ops = {">=": lambda a, b: a >= b, "<": lambda a, b: a < b, "<=": lambda a, b: a <= b}
 flag_rows = []
 for key, op, threshold, severity, label in config.RED_FLAGS:
@@ -66,15 +65,15 @@ for key, op, threshold, severity, label in config.RED_FLAGS:
     flag_rows.append({
         "Severity": config.SEVERITY_LABEL[severity],
         "Threshold": label,
-        "What it means in real life": meaning,
-        "What people typically do": response,
+        "In real life": meaning,
+        "Common response": response,
         "Countries now": crossing,
     })
 st.table(pd.DataFrame(flag_rows), hide_index=True, border="horizontal")
 ui.cite("ucdp_def", "imf_ara", "imf", "wdi", "unhcr")
 
 # --- 5. Workflows ---------------------------------------------------------------------------------------
-st.header("5 · Putting it to work, step by step")
+st.header("5 · Putting it to work")
 workflows = {
     "Screening a market (business & investors)": [
         ("Rank candidate countries on the Global overview; set the pillar weights in the sidebar to "
@@ -86,7 +85,8 @@ workflows = {
          ui.COUNTRY_PAGE),
         ("Use the What-if simulator to see how a currency crisis or conflict would change the picture.",
          ui.COUNTRY_PAGE),
-        ("Check the Events watchlist for elections or deadlines before committing.", "app_pages/watchlist.py"),
+        ("Check the event calendar on Hotspots for elections or deadlines before committing.",
+         "app_pages/hotspots.py"),
     ],
     "Planning a programme (NGOs & humanitarian)": [
         ("Conflict & displacement shows where people are being killed and displaced, and where "
@@ -95,15 +95,14 @@ workflows = {
          ui.COUNTRY_PAGE),
         ("Economic stress flags inflation and currency problems that erode cash assistance.",
          "app_pages/economy.py"),
-        ("Check the watchlist for elections and deadlines; plan field movements around them.",
-         "app_pages/watchlist.py"),
+        ("Check the event calendar for elections and deadlines; plan field movements around them.",
+         "app_pages/hotspots.py"),
     ],
     "Preparing a trip, posting or study abroad": [
         ("Read *What it means in real life* on the country's Summary, then its latest news.", ui.COUNTRY_PAGE),
-        ("Confirm with your government's current travel advice, which changes faster "
-         "than this data.", None),
-        ("Avoid travelling around high-significance events in the watchlist.",
-         "app_pages/watchlist.py"),
+        ("Check your government's current travel advice, which changes faster than this data.", None),
+        ("Avoid travelling around high-significance events on the event calendar.",
+         "app_pages/hotspots.py"),
     ],
     "Writing an analysis (policy, journalism, research)": [
         ("The profile's Summary and Data tabs show exactly what pushes the score.",
@@ -116,15 +115,17 @@ workflows = {
     ],
 }
 PAGE_NAMES = {"app_pages/overview.py": "Global overview", "app_pages/changes.py": "Score changes",
-              ui.COUNTRY_PAGE: "Country profile", "app_pages/watchlist.py": "Events watchlist",
+              ui.COUNTRY_PAGE: "Country profile", "app_pages/hotspots.py": "the event calendar",
               "app_pages/conflict.py": "Conflict & displacement", "app_pages/economy.py": "Economic stress",
               "app_pages/regions.py": "Regions", "app_pages/builder.py": "Assessment builder"}
+PAGE_TABS = {"app_pages/hotspots.py": {"tab": "calendar"}}
 for title, steps in workflows.items():
     with st.expander(title):
         for n, (text, page) in enumerate(steps, start=1):
             st.markdown(f"{n}. {text}")
             if page:
-                st.page_link(page, label=f"Open {PAGE_NAMES[page]}", icon=":material/arrow_forward:")
+                st.page_link(page, label=f"Open {PAGE_NAMES[page]}", icon=":material/arrow_forward:",
+                             query_params=PAGE_TABS.get(page))
 
 # --- 6. Limits --------------------------------------------------------------------------------------------
 st.header("6 · When not to rely on it")
@@ -137,8 +138,7 @@ st.markdown(
 * A country score is a national average and hides regions: a conflict in one province may not touch the capital,
   and the reverse.
 * Countries with little data are often the riskiest. Check the coverage figure on each profile.
-* This guide describes what such conditions usually mean and how people commonly respond. It is educational and
-  is not investment, legal or security advice.
+* This guide is educational. It is not investment, legal or security advice.
 """
 )
 ui.footer()

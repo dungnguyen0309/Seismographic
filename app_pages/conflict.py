@@ -11,7 +11,7 @@ table = ui.master_table(core, values, scores, hist)
 names = dict(zip(table["iso3"], table["name"]))
 known = set(names)
 
-ui.hero("Conflict & displacement", "Where people are being killed in armed conflict and forced from their homes.")
+ui.hero("Conflict & displacement")
 
 # --- Data -------------------------------------------------------------------------------------------
 bd = core["series"].get("battle_deaths", pd.DataFrame(columns=["iso3", "year", "value"]))
@@ -88,20 +88,18 @@ TABS = {"conflict": ":material/swords: Armed conflict", "displacement": ":materi
 def armed_conflict() -> None:
     c1, c2 = st.columns(2)
     with c1:
-        st.header("Battle deaths worldwide")
+        st.header("Battle deaths worldwide", help="Sum over all countries of deaths in state-based armed conflict "
+                                                  "(UCDP), by the country where they occurred.")
         recent = deaths_by_year[deaths_by_year.index >= 1990]
         st.plotly_chart(charts.yearly_bars(recent.index, recent.values, "Battle-related deaths", charts.WORSE, "deaths"),
                         config={"displayModeBar": False})
-        st.caption("Sum over all countries of deaths in state-based armed conflict (UCDP), by the country where they occurred.")
     with c2:
-        st.header("Deadliest conflicts over time")
+        st.header("Deadliest conflicts over time", help=f"The three countries with the most battle deaths in {bd_year}.")
         top = latest_bd.nlargest(3).index.tolist()
         st.plotly_chart(charts.compare_lines(core["series"], "battle_deaths", top, names, "Battle-related deaths",
                                              start_year=2010), config={"displayModeBar": False})
-        st.caption(f"The three countries with the most battle deaths in {bd_year}.")
 
-    st.header(f"Countries in armed conflict ({bd_year})")
-    st.caption("At least 25 battle-related deaths in the year.")
+    st.header(f"Countries in armed conflict ({bd_year})", help="At least 25 battle-related deaths in the year.")
     conflict = table[table["iso3"].isin(latest_bd[latest_bd >= 25].index)].copy()
     conflict["deaths"] = conflict["iso3"].map(latest_bd)
     conflict["deaths_prev"] = conflict["iso3"].map(prev_bd).fillna(0)
@@ -133,10 +131,10 @@ def armed_conflict() -> None:
 
 # --- Displacement ----------------------------------------------------------------------------------------------
 def displacement() -> None:
-    st.header("Forcibly displaced people")
+    st.header("Forcibly displaced people", help="Refugees, asylum seekers, others in need of protection and "
+                                                "internally displaced people, by year (UNHCR).")
     st.plotly_chart(charts.yearly_bars(displaced_by_year.index, displaced_by_year.values, "People", charts.WORSE,
                                        "people"), config={"displayModeBar": False})
-    st.caption("Refugees, asylum seekers, others in need of protection and internally displaced people, by year (UNHCR).")
     has_flows = flows is not None and not flows.empty
     d1, d2 = st.columns(2)  # origins beside hosts, so both columns end level
     with d1:
@@ -165,10 +163,9 @@ def displacement() -> None:
         else:
             st.info("Refugee flow data is not available right now.")
     if has_flows:
-        st.header("The 25 largest refugee corridors")
+        st.header("The 25 largest refugee corridors", help="Origins on the left, host countries on the right.")
         st.plotly_chart(charts.refugee_sankey(flows, names), config={"displayModeBar": False})
-        st.caption("Origins on the left, host countries on the right. Internally displaced people are not included, "
-                   "as they never cross a border.")
+        st.caption("Internally displaced people are not included, as they never cross a border.")
     ui.cite("unhcr")
 
 
@@ -182,9 +179,8 @@ def outlook_tab() -> None:
     preds = outlook.predictions.merge(table[["iso3", "flag", "name", "tier", "composite"]], on="iso3", how="left")
     peaceful = preds.dropna(subset=["probability"]).sort_values("probability", ascending=False)
     st.markdown(
-        f"The chance that armed conflict (25+ battle deaths) breaks out in {nxt} in each country that is at "
-        f"peace in the latest conflict data ({outlook.data_year}). A statistical model learned the pattern from "
-        f"every year since {config.HISTORY_START}, and was tested on years it had not seen."
+        f"The chance that armed conflict (25+ battle deaths) breaks out in {nxt} in each country at peace in "
+        f"{outlook.data_year}, the latest conflict data. The model learned from every year since {config.HISTORY_START}."
     )
     o1, o2, o3 = st.columns(3)
     o1.metric("Average chance", f"{outlook.base_rate:.1%}",
@@ -224,9 +220,8 @@ def outlook_tab() -> None:
                        f"conflicts. The predictions beat the average rate by {outlook.brier_skill:.0%} "
                        "(Brier skill score).")
     st.caption(
-        "A statistical estimate across countries; it cannot foresee any one event. Few conflicts break out "
-        f"each year, the conflict data end in {outlook.data_year}, and coups or invasions can come without "
-        "warning in this data. Use it to decide where to look closer."
+        "A statistical estimate across countries; it cannot foresee any one event. Few conflicts break out each "
+        "year, and coups or invasions can come without warning in this data. Use it to decide where to look closer."
     )
     ui.cite("ucdp", "ucdp_def", "index")
 

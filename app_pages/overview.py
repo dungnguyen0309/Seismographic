@@ -176,10 +176,6 @@ tab_hot, tab_changes, tab_rank, tab_matrix = ui.url_tabs(TABS, key="ov_tab")  # 
 
 with tab_hot:
     if tab_hot.open:
-        st.caption(
-            "Countries scoring 50 or more that also got at least 2 points riskier "
-            f"since {year - 1}, crossed a new red-flag threshold, or face a high-significance event in the next 120 days."
-        )
         prev_values = data.get_values(core, year - 1, core["version"])
         today = pd.Timestamp.today().normalize()
         events = content.load_events()
@@ -217,15 +213,19 @@ with tab_hot:
                     "composite": st.column_config.ProgressColumn("Score", min_value=0, max_value=100, format="%.0f",
                                                                  color=ui.BAR_COLOR, width=100),
                     "why": st.column_config.TextColumn(
-                        "Why it is on the list", width=365,
-                        help=f"▲ = riskier since {year - 1}. ⚑ = a red-flag threshold crossed this year that was not "
-                             f"crossed in {year - 1}."),
+                        "Why listed", width=365,
+                        help=f"Scores 50 or more and, since {year - 1}, got at least 2 points riskier (▲), crossed a "
+                             f"new red-flag threshold (⚑, not crossed in {year - 1}), or faces a high-significance "
+                             "event in the next 120 days."),
                     "tier": st.column_config.TextColumn("Tier", width=100),
                 },
             )
             ui.open_selected(hot_event, hotspots, "overview_hotspots")
             st.page_link("app_pages/overview.py", label="Full ranking", icon=":material/format_list_numbered:",
                          query_params={"tab": "ranking"})
+        st.page_link("app_pages/hotspots.py", label="Conflict hotspots", icon=":material/radar:",
+                     query_params={"tab": "board"},
+                     help="A different list: countries with recent fighting (UCDP) or rising conflict news (GDELT).")
 
 with tab_changes:
     if tab_changes.open:
@@ -246,9 +246,8 @@ with tab_changes:
             changes = changes.assign(name=changes["iso3"].map(names))
             y0, y1 = int(changes["start_year"].iloc[0]), int(changes["end_year"].iloc[0])
             st.caption(
-                f"Change in the World Bank's *Political Stability & Absence of Violence* score, {y0} → {y1}. "
-                "Red = worse, blue = better. Small changes may be within the margin of error, shown on each country "
-                "profile."
+                f"*Political Stability & Absence of Violence*, {y0} → {y1}. Red = worse, blue = better. Small changes "
+                "may be within the margin of error shown on each country profile."
             )
             movers_event = st.plotly_chart(charts.movers(changes), config={"displayModeBar": False},
                                            on_select="rerun", selection_mode="points", key="movers_click")
@@ -324,10 +323,10 @@ with tab_matrix:
             st.caption("Bubble size = population.")
         with right:
             if region == "All regions":
-                st.header("Risk tiers by region")
+                st.header("Risk tiers by region",
+                          help="Sorted by the share of countries rated High or Severe.")
                 st.plotly_chart(charts.tier_distribution(scored), config={"displayModeBar": False},
                                 on_select=_pick_region, selection_mode="points", key="tier_click")
-                st.caption("Regions sorted by the share of countries rated High or Severe.")
             else:
                 st.header(f"Highest risk in {region}")
                 top = scored.nsmallest(12, "rank").copy()

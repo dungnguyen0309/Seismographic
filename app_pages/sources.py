@@ -12,12 +12,7 @@ from prm.config import INDICATORS, RAW_SERIES, SOURCES
 core, year, values, scores = ui.load()
 meta = core["meta"]
 
-ui.hero("Sources",
-        "Every number, map, headline and video in Seismographic, traced back to the organisation that published it.")
-st.markdown(
-    "Seismographic collects no data itself. Charts, maps and tables name their sources on the same page or tab; "
-    "this page lists them all, with links to the originals."
-)
+ui.hero("Sources", "Seismographic collects no data of its own. Each page also names its sources where they are used.")
 
 references = [k for keys in config.SOURCE_GROUPS.values() for k in keys]
 cross_checks = list(dict.fromkeys(k for keys in config.CROSS_CHECKS.values() for k in keys))
@@ -99,7 +94,7 @@ READING = {
         ("OpenSanctions", "https://www.opensanctions.org/",
          "Consolidated sanctions lists and politically exposed persons. Free for non-commercial use."),
         ("IFES ElectionGuide", "https://www.electionguide.org/elections/type/upcoming/",
-         "Calendar of upcoming national elections and referendums, and the source for the watchlist."),
+         "Calendar of upcoming national elections and referendums, and the source for the event calendar on Hotspots."),
     ],
     "Free outlooks from professional risk firms and institutions": [
         ("Eurasia Group: Top Risks", "https://www.eurasiagroup.net/issues/top-risks-2026",
@@ -109,7 +104,7 @@ READING = {
         ("World Economic Forum: Global Risks Report", "https://www.weforum.org/publications/global-risks-report-2026/",
          "Annual survey of experts on the most severe global risks over short and long horizons."),
         ("Crisis Group: CrisisWatch", "https://www.crisisgroup.org/crisiswatch",
-         "Monthly tracker of conflicts worldwide, flagging deteriorations, improvements and risk alerts. Ideal for the watchlist."),
+         "Monthly tracker of conflicts worldwide, flagging deteriorations, improvements and risk alerts. Useful for the event calendar."),
         ("OECD Country Risk Classification", "https://www.oecd.org/en/topics/country-risk-classification",
          "Export-credit risk categories (0–7), updated several times a year. A benchmark for the economic pillar."),
         ("Allianz Trade: Country Risk Atlas", "https://www.allianz-trade.com/en_global/news-insights/news/allianz-trade-country-risk-atlas-2026.html",
@@ -156,9 +151,8 @@ t_index, t_thresholds, t_cross, t_refs, t_reading, t_cite = st.tabs([
 
 with t_index:
     # --- The index ----------------------------------------------------------------------------------------------
-    st.header("The data behind the index")
-    st.caption("The five datasets the 17 indicators come from. The risk scores are Seismographic's own calculation on "
-               "top of them, explained on the Methodology page.")
+    st.header("The data behind the index", help="The risk scores are Seismographic's own calculation from these "
+                                                "datasets, explained on the Methodology page.")
     DERIVED = {"battle_deaths_100k": "battle_deaths", "displaced_share": "displaced"}
     index_cards = []
     for key in config.INDEX_SOURCES:
@@ -204,15 +198,15 @@ with t_index:
     st.caption("IMF figures for the current year are estimates and are revised twice a year. World Bank and UNHCR series "
                "run a year or two behind, so each indicator uses the latest year available for each country.")
 
-    st.header("Status of the data loaded now")
+    st.header("Data status")
     ui.data_status(core)
 
 
 with t_thresholds:
     # --- Thresholds -------------------------------------------------------------------------------------------
     st.header("Where the warning thresholds come from")
-    st.caption("Red flags are fixed thresholds that do not depend on other countries. Some come from a definition or a well-known "
-               "study; others are Seismographic's own lines, set out here so you can judge them.")
+    st.caption("Red flags are fixed thresholds that do not depend on other countries. Some come from a definition or a "
+               "well-known study; others are Seismographic's own lines.")
     flag_rows = []
     for key, op, threshold, severity, label in config.RED_FLAGS:
         source, basis = config.FLAG_BASIS.get((key, threshold), (None, "Seismographic line"))
@@ -235,8 +229,8 @@ with t_thresholds:
 with t_cross:
     # --- Cross-checks -----------------------------------------------------------------------------------------
     st.header("Cross-check the scores")
-    st.caption("Independent indices that measure similar things. They are not used in the score; if they and "
-               "Seismographic disagree about a country, find out why before relying on either.")
+    st.caption("Not used in the score. Where one disagrees with Seismographic about a country, find out why before "
+               "relying on either.")
     for pillar_key, keys in config.CROSS_CHECKS.items():
         if pillar_key == "composite":
             st.markdown("**Overall fragility**")
@@ -256,9 +250,8 @@ with t_refs:
 
     # --- Video channels -----------------------------------------------------------------------------------------
     st.header("Video channels")
-    st.caption("Live TV and video reports come straight from each organisation's official YouTube channel. Check who owns "
-               "a channel when you weigh what you watch: state-owned and state-funded channels can reflect their "
-               "government's view.")
+    st.caption("All video comes from each organisation's official YouTube channel. State-owned and state-funded "
+               "channels can reflect their government's view.")
     ORGS = {  # think tanks, institutions and NGOs: (based in, type)
         "Council on Foreign Relations": ("United States", "Non-profit think tank"),
         "International Crisis Group": ("Belgium", "Non-profit think tank"),
@@ -292,8 +285,6 @@ with t_refs:
 
 
 with t_reading:
-    st.caption("A reading and data list for political risk analysis: open data worth adding, the free outlooks "
-               "professionals publish, and the methods that make analysis rigorous.")
     for section, items in READING.items():
         st.header(section)
         for title, url, note in items:

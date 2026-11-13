@@ -1,0 +1,43 @@
+# Saves the Hotspots data (UCDP candidate events and GDELT conflict-news volume) to data/snapshot/hotspots_*.
+# Runs every morning; you can also run it from the Actions tab ("Run workflow").
+name: Refresh hotspots
+
+on:
+  schedule:
+    - cron: "41 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# shared with refresh-data.yml, so the two never push at the same time
+concurrency:
+  group: data-snapshot
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120  # GDELT is slow at times: 80 paced requests, each with one retry
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Download the latest hotspots data
+        run: python scripts/refresh_hotspots.py
+      - name: Check the app still works with the new data  # if this fails, nothing is committed
+        run: |
+          pip install pytest httpx
+          python -m pytest -q
+      - name: Commit the hotspots data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/snapshot/hotspots_*
+          git diff --cached --quiet && exit 0
+          git commit -m "Refresh hotspots data"
+          git pull --rebase
+          git push

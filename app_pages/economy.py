@@ -12,11 +12,8 @@ table = ui.master_table(core, values, scores, hist)
 econ_keys = [k for k, _ in ECON_COLUMNS]
 df = table.join(values[econ_keys], on="iso3")  # table already carries the n_* risk scores
 
-ui.hero("Economic stress", "Where an economic crisis could trigger political trouble.")
 edition = core["meta"].get("gdp_growth", {}).get("edition") or "IMF World Economic Outlook"
-st.caption(
-    f"Figures are {year} estimates from the {edition}, plus World Bank reserves data."
-)
+ui.hero("Economic stress", f"{year} estimates from the {edition}, plus World Bank reserves data.")
 
 regions = sorted(df["region"].dropna().unique())
 f1, f2 = st.columns([1, 1])
@@ -30,7 +27,7 @@ k2.metric("Economy shrinking", int((view["gdp_growth"] < 0).sum()), help="Negati
 k3.metric("Public debt ≥ 90% of GDP", int((view["gov_debt"] >= 90).sum()))
 k4.metric("Deficit ≥ 5% of GDP", int((view["fiscal_balance"] <= -5).sum()))
 k5.metric("Reserves < 3 months of imports", int((view["reserves_months"] < 3).sum()))
-st.page_link("app_pages/stress.py", label="Stress test: apply one shock to many countries", icon=":material/bolt:")
+st.page_link("app_pages/stress.py", label="Stress test", icon=":material/bolt:")
 
 # Economic red flags per country (used by the globe and the warning-lights table)
 econ_flag_keys = {"inflation", "gdp_growth", "gov_debt", "fiscal_balance", "current_account", "reserves_months"}
@@ -40,18 +37,18 @@ econ_flags = {
 }
 
 # --- Globe ------------------------------------------------------------------------------------------------
-st.header("On the globe")
+st.header("On the globe", help="Coloured and raised by the Economy pillar score: brighter = riskier. Hover for the "
+                                 "warning thresholds a country crosses.")
 ui.globe_panel(
     table=df, hist=hist, flows=None, metric="economic", metric_label="Economy", key="eco_globe",
     in_view=set(view["iso3"]), region=None if region == "All regions" else region,
     notes={iso3: " · ".join(f"⚑ {f['label']}" for f in hits) for iso3, hits in econ_flags.items() if hits},
     layers={"spin": True, "flows": False, "conflict": False},
 )
-st.caption("Countries coloured by the Macroeconomic & Financial pillar (brighter = riskier) and raised by it in 3D. "
-           "Hover for the warning thresholds a country crosses; ▶ replays since " + str(config.HISTORY_START) + ".")
 
 # --- Heatmap ------------------------------------------------------------------------------------------
-st.header("Stress heatmap")
+st.header("Stress heatmap", help="Each cell shows the actual value; its colour is the risk score relative to all "
+                                  "countries (brighter = riskier). Click a cell to open the country.")
 how_many = f2.select_slider("Countries in the heatmap", options=[20, 40, 60, 100, 250], value=40,
                             help="The most economically stressed first (highest Economy pillar score)")
 heat = view.dropna(subset=["economic"]).nlargest(how_many, "economic").reset_index(drop=True)
@@ -60,18 +57,16 @@ event = st.plotly_chart(charts.econ_heatmap(heat), config={"displayModeBar": Fal
 points = getattr(getattr(event, "selection", None), "points", None) or []
 if points and points[0].get("y") in set(heat["name"]):
     ui.go_to_country(heat.loc[heat["name"] == points[0]["y"], "iso3"].iloc[0])
-st.caption("Each cell shows the actual value; its colour is the risk score relative to all countries (brighter = "
-           "riskier). Countries sorted by Economy pillar score. Click a cell to open the country.")
 
 # --- Stagflation scatter and the IMF outlook ---------------------------------------------------------
 s_col, o_col = st.columns([1.15, 1])
 with s_col:
-    st.header("Growth vs inflation")
+    st.header("Growth vs inflation", help="Top left = prices rising fast while the economy shrinks. Bubble size = "
+                                          "population.")
     event = st.plotly_chart(charts.stagflation_scatter(view), config={"displayModeBar": False}, on_select="rerun",
                             selection_mode="points", key="eco_scatter")
     if iso3 := ui.clicked_iso3(event):
         ui.go_to_country(iso3)
-    st.caption("Top-left = prices rising fast while the economy shrinks. Bubble size = population.")
 with o_col:
     st.header("IMF outlook")
     outlook_key = st.segmented_control("Show", ["Inflation", "Growth", "Public debt"], default="Inflation",
@@ -82,10 +77,12 @@ with o_col:
     series = series[series["iso3"].isin(view["iso3"])]
     st.plotly_chart(charts.imf_outlook(series, year, label, year - 12, year + 5), config={"displayModeBar": False})
     last = min(year + 5, int(series["year"].max())) if len(series) else year + 5  # Jan-Apr: the WEO ends a year earlier
-    st.caption(f"Median across the selected countries, with the middle half shaded. Dashed = IMF projections to {last}.")
+    st.caption(f"Median, with the middle half shaded. Dashed = IMF projections to {last}.")
 
 # --- Warning lights -------------------------------------------------------------------------------------
-st.header("Countries crossing several warning thresholds")
+st.header("Several warning thresholds crossed", help="Inflation ≥ 20%, negative growth, debt ≥ 90% of GDP, deficit "
+                                                    "or current-account deficit ≥ 5% of GDP, reserves under 3 months "
+                                                    "of imports.")
 rows = []
 for r in view.itertuples(index=False):
     hits = econ_flags.get(r.iso3, [])
@@ -110,8 +107,6 @@ else:
         },
     )
     ui.open_selected(event, warnings, "economy_warnings")
-    st.caption("Thresholds: inflation ≥ 20%, negative growth, debt ≥ 90% of GDP, deficit or current-account deficit "
-               "≥ 5% of GDP, reserves under 3 months of imports. See the Methodology page.")
 ui.cite("imf", "wdi", "imf_ara")
 
 ui.footer()

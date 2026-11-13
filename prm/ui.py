@@ -1250,11 +1250,11 @@ def country_table(df: pd.DataFrame, key: str, height: int | str | None = None, e
 
 
 def upcoming_events(events: pd.DataFrame, limit: int = 8) -> None:
-    """Upcoming watchlist events with a countdown."""
+    """Upcoming events from the event calendar, with a countdown."""
     today = pd.Timestamp.today().normalize()
     upcoming = events[events["date"] >= today].sort_values("date").head(limit)
     if upcoming.empty:
-        st.caption("No upcoming events in the watchlist.")
+        st.caption("No upcoming events on the calendar.")
         return
     rows = []
     for e in upcoming.itertuples(index=False):
@@ -1370,7 +1370,7 @@ def render_reading(r: interpret.Reading, key: str) -> None:
         if r.events:
             st.markdown(money("\n".join(f"- {e}" for e in r.events)))  # event names are hand-written
         else:
-            st.caption("No events in the watchlist for the next 12 months.")
+            st.caption("No events on the calendar for the next 12 months.")
 
     st.markdown("#### What to do with it")
     tabs = st.tabs(list(interpret.AUDIENCES.values()))

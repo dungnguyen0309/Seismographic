@@ -81,20 +81,18 @@ for col, iso3, colour in zip(cols, picked, COUNTRY_COLORS):
                         f'{"" if int(r["flags"]) == 1 else "s"} · {trend}</div>',
                         unsafe_allow_html=True)
 
-st.header("Risk index over time")
+st.header("Risk index over time", help=f"The index recomputed for every year since {config.HISTORY_START}, relative "
+                                      "to all countries that year. Higher = riskier.")
 st.plotly_chart(
     charts.compare_lines({"composite": hist.rename(columns={"composite": "value"})}, "composite", picked, names,
                          "Composite risk score (0–100)"),
     config={"displayModeBar": False},
 )
-st.caption(f"The index recomputed for every year since {config.HISTORY_START} (relative to all countries that year). "
-           "Higher = riskier.")
 
 left, right = st.columns([1, 1.2])
 with left:
-    st.header("Pillar profile")
+    st.header("Pillar profile", help="Further from the centre = higher risk.")
     st.plotly_chart(charts.radar(sel[[p.key for p in PILLARS]], names), config={"displayModeBar": False})
-    st.caption("Further from the centre = higher risk.")
 with right:
     st.header("Governance over time")
     dim = st.selectbox("WGI dimension", list(WGI_DIMENSIONS), index=1, format_func=WGI_DIMENSIONS.get)

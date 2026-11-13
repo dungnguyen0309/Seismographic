@@ -3,8 +3,11 @@
 import re
 from pathlib import Path
 
+import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest  # the `app` fixture comes from conftest.py
+
+from prm import hotspots
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = re.findall(r'st\.Page\("(app_pages/[^"]+)"', (ROOT / "streamlit_app.py").read_text(encoding="utf-8"))
@@ -14,6 +17,7 @@ CONFLICT_TABS = [":material/swords: Armed conflict", ":material/luggage: Displac
 OVERVIEW_TABS = [":material/warning: Hotspots", ":material/trending_up: Changes",
                  ":material/format_list_numbered: Ranking", ":material/scatter_plot: Risk matrix"]
 CHANGES_TABS = ["Moves", "Map", "Tiers", "Drivers", "Red flags"]
+HOTSPOT_TABS = ["Board", "Map", "Calendar"]
 
 
 def errors(at: AppTest) -> list[str]:
@@ -50,8 +54,9 @@ def test_country_picker_updates_the_dock(app):
     assert "Kenya" in readout
 
 
-def test_watchlist_shows_maintainer_tools_only_with_the_flag(app, monkeypatch):
-    app.switch_page("app_pages/watchlist.py")
+def test_calendar_shows_maintainer_tools_only_with_the_flag(app, monkeypatch):
+    app.switch_page("app_pages/hotspots.py")
+    app.session_state["hs_tab"] = "Calendar"
     monkeypatch.delenv("SEISMOGRAPHIC_MAINTAINER", raising=False)
     app.run()
     assert not errors(app), errors(app)
@@ -60,6 +65,87 @@ def test_watchlist_shows_maintainer_tools_only_with_the_flag(app, monkeypatch):
     app.run()
     assert not errors(app), errors(app)
     assert any("data/events.csv" in e.label for e in app.expander)
+
+
+@pytest.mark.parametrize("tab", HOTSPOT_TABS)
+def test_hotspots_tab_runs(app, tab):
+    app.switch_page("app_pages/hotspots.py")
+    app.session_state["hs_tab"] = tab
+    app.run()
+    assert not errors(app), errors(app)
+
+
+def hotspot_cards(at: AppTest) -> list[str]:
+    return [m.value for m in at.markdown if 'class="sg-hs"' in m.value]
+
+
+def with_news(monkeypatch, rows: list[tuple[str, int, int]]) -> None:
+    """Real hotspot files plus made-up GDELT days: (iso3, daily count before, daily count in the last week)."""
+    real, days = hotspots.load(), pd.date_range("2026-08-14", periods=hotspots.WINDOW_DAYS)
+    gdelt = pd.DataFrame([(iso3, d.strftime("%Y-%m-%d"), before if i < len(days) - hotspots.RECENT_DAYS else after,
+                           10_000) for iso3, before, after in rows for i, d in enumerate(days)],
+                         columns=hotspots.GDELT_COLUMNS)
+    monkeypatch.setattr(hotspots, "load", lambda: {**real, "gdelt": gdelt})
+
+
+def test_hotspots_status_filter_waits_for_news_data(app, monkeypatch):
+    with_news(monkeypatch, [])
+    app.switch_page("app_pages/hotspots.py")
+    app.session_state["hs_tab"] = "Board"
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.button_group(key="hs_status").disabled
+    assert all("No conflict-news data yet" in c and ">Quiet</span>" not in c for c in hotspot_cards(app))
+
+
+def test_hotspots_board_shows_cards_and_filters_by_status(app, monkeypatch):
+    with_news(monkeypatch, [("UKR", 40, 120), ("YEM", 30, 30), ("NGA", 60, 20), ("PAK", 1, 1)])
+    app.switch_page("app_pages/hotspots.py")
+    app.session_state["hs_tab"] = "Board"
+    app.run()
+    assert not errors(app), errors(app)
+    cards = hotspot_cards(app)
+    assert cards and any(b.key and b.key.startswith("hs_open_") for b in app.button)  # the real snapshot has some
+    for status in ["Escalating", "Steady", "Easing", "Quiet"]:
+        app.button_group(key="hs_status").set_value(status).run()
+        assert not errors(app), errors(app)
+        shown = hotspot_cards(app)
+        # a country with no news data is filed as Quiet but shows no status word
+        assert all(f">{status}</span>" in c or "No conflict-news data yet" in c for c in shown), status
+        assert shown, status  # the made-up news gives every status a card
+    app.button_group(key="hs_status").set_value("All").run()
+    assert len(hotspot_cards(app)) == len(cards)
+
+
+def test_hotspots_without_ucdp_files_say_no_data(app, monkeypatch):
+    empty = {"monthly": pd.DataFrame(columns=hotspots.MONTHLY_COLUMNS), "cells": pd.DataFrame(columns=hotspots.CELL_COLUMNS),
+             "gdelt": pd.DataFrame(columns=hotspots.GDELT_COLUMNS), "meta": {}}
+    monkeypatch.setattr(hotspots, "load", lambda: empty)
+    app.switch_page("app_pages/hotspots.py")
+    app.session_state["hs_tab"] = "Board"
+    app.run()
+    assert not errors(app), errors(app)
+    assert [m.value for m in app.metric][2:] == ["—", "—"]
+    assert all("No UCDP data" in c for c in hotspot_cards(app))
+
+
+def test_old_watchlist_links_open_the_calendar(app):
+    sources = [*ROOT.glob("app_pages/*.py"), *ROOT.glob("prm/*.py"), ROOT / "streamlit_app.py"]
+    assert not (ROOT / "app_pages" / "watchlist.py").exists()
+    assert not [p.name for p in sources if "app_pages/watchlist.py" in p.read_text(encoding="utf-8")]
+    app.switch_page("app_pages/regions.py")
+    app.run()
+    link = next(p.proto for p in app.get("page_link") if p.proto.label == "Full event calendar")
+    assert "hotspots" in link.page and link.query_string == "tab=calendar"
+    app.switch_page("app_pages/hotspots.py")
+    app.session_state["hs_tab"] = "Board"
+    app.run()
+    app.query_params["tab"] = "calendar"  # what the link opens
+    app.run()
+    assert not errors(app), errors(app)
+    assert app.session_state["hs_tab"] == "Calendar"
+    app.session_state["hs_tab"] = "Board"
+    app.run()
 
 
 @pytest.mark.parametrize("tab", CONFLICT_TABS)

@@ -19,15 +19,14 @@ def grid(cards: list[str], min_width: int = 220) -> None:
                 f'gap:10px;margin:6px 0 14px">{"".join(cards)}</div>', unsafe_allow_html=True)
 
 
-ui.hero("Introduction", "What Seismographic is and how the score works.")
+ui.hero("Introduction")
 
 # --- What it is ------------------------------------------------------------------------------------------
 st.header("What it is")
 st.markdown(
     f"{config.APP_TITLE} is an open-data index of political, governance, economic and social risk for {n_scored} "
-    "countries and territories. It works like the country-risk models professionals use: indicators are grouped "
-    "into pillars, the pillars are combined into one weighted score, and absolute red flags and an analyst's "
-    "judgment sit on top. Every figure comes from a public source, and the Methodology page documents each step."
+    "countries and territories, built like the country-risk models professionals use. Every figure comes from a "
+    "public source, and the Methodology page documents each step."
 )
 stats = [
     (n_scored, "countries scored"), (len(config.SCORED_INDICATORS), "indicators"), (len(PILLARS), "pillars"),
@@ -56,16 +55,15 @@ grid([f'<div style="{CARD}">'
       for n, title, text in steps])
 st.markdown(f"Tiers: {tiers}", unsafe_allow_html=True)
 st.markdown(
-    "Red flags mark absolute danger lines, such as inflation above 20% or an active war, and they apply wherever a "
-    "country ranks. An analyst assessment can add judgment the data can't capture. Scores are relative: 0 is the "
-    "lowest risk in the sample and 100 the highest, so a low score means safer than most countries. Such a country "
-    "can still be dangerous."
+    "Red flags and an analyst's judgment sit on top of the score. Red flags mark absolute danger lines, such as "
+    "inflation above 20% or an active war, wherever a country ranks. An analyst assessment can add judgment the data "
+    "can't capture. Scores are relative, so a low score means safer than most countries; such a country can still "
+    "be dangerous."
 )
 
 # --- The four pillars ---------------------------------------------------------------------------------------
-st.header("The four pillars")
-st.caption("These are your weights from *Index weights* in the sidebar." if ui.custom_weights_label() else
-           "The weights are the defaults; you can change them under *Index weights* in the sidebar.")
+st.header("The four pillars", help="Your weights from Index weights in the sidebar." if ui.custom_weights_label() else
+          "Default weights. Change them under Index weights in the sidebar.")
 cards = []
 for p in PILLARS:
     color = config.PILLAR_COLORS[p.key]
@@ -85,10 +83,10 @@ grid(cards, min_width=260)
 st.header("Quick start")
 st.markdown(
     "1. Open the Global overview and click any country on the globe to see its score.\n"
-    "2. Open its Country profile and read What it means in real life, under the Summary: the numbers on the ground.\n"
-    "3. Use the sidebar, or the bar at the bottom of every page, to move between pages; Find in the bar searches "
-    "every country and every page. The country on the left of the bar is the last one you opened in this visit "
-    "(on a new visit, the first country you follow).\n"
+    "2. On its Country profile, What it means in real life (under the Summary) gives the numbers on the ground.\n"
+    "3. Move between pages with the sidebar or the bar at the bottom of every page. Find in the bar searches every "
+    "country and page. The country on the left of the bar is the last one you opened in this visit (on a new visit, "
+    "the first country you follow).\n"
     "4. Press ☆ Follow on the countries you care about: they stay at the top of the Global overview, in this browser.\n"
     "5. The Glossary & legend explains every term."
 )

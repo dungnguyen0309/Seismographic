@@ -72,7 +72,8 @@ with e_col:
         names = dict(zip(table["iso3"], table["name"]))
         events = events.assign(country=events["iso3"].map(names).fillna(events["country"]))
     ui.upcoming_events(events, limit=10)
-    st.page_link("app_pages/watchlist.py", label="Full events watchlist", icon=":material/event:")
+    st.page_link("app_pages/hotspots.py", label="Full event calendar", icon=":material/event:",
+                 query_params={"tab": "calendar"})
 with n_col:
     st.header("Regional news")
     with st.container(height=520, border=False):

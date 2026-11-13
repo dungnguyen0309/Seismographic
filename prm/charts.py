@@ -113,6 +113,11 @@ def choropleth(df: pd.DataFrame, value_col: str, colorbar_title: str, zoom_to_da
             ),
         )
     )
+    return _dark_geo(fig, zoom_to_data and len(d) > 0)
+
+
+def _dark_geo(fig: go.Figure, zoom: bool, height: int = 520) -> go.Figure:
+    """The flat maps' base: grey land, black borders, a dark ocean, the Natural Earth projection."""
     fig.update_geos(
         showframe=False,
         showcoastlines=False,
@@ -128,12 +133,12 @@ def choropleth(df: pd.DataFrame, value_col: str, colorbar_title: str, zoom_to_da
         bgcolor="rgba(0,0,0,0)",
         projection_type="natural earth",
     )
-    if zoom_to_data and len(d):
+    if zoom:
         fig.update_geos(fitbounds="locations")
     else:
         fig.update_geos(lataxis_range=[-58, 84])
     fig.update_layout(
-        height=520,
+        height=height,
         margin=dict(l=0, r=0, t=0, b=0),
         font=FONT,
         geo=dict(bgcolor="rgba(0,0,0,0)"),
@@ -578,7 +583,40 @@ def compare_lines(series: dict[str, pd.DataFrame], key: str, iso3s: list[str], n
 
 
 # ---------------------------------------------------------------------------
-# Watchlist
+# Hotspots
+# ---------------------------------------------------------------------------
+VIOLENCE_COLORS = dict(zip([1, 2, 3], COUNTRY_COLORS[:3]))  # the first three are validated as a set for colour blindness
+
+
+def hotspot_map(cells: pd.DataFrame, names: dict[str, str], violence: dict[int, str], zoom: bool = False) -> go.Figure:
+    """UCDP event cells: marker area by deaths, colour by the cell's main type of violence. ISO3 is the last
+    customdata column, so a click opens the country."""
+    fig = go.Figure()
+    # A few cells hold country-level totals (thousands of deaths at a centroid): the 99th percentile sets the scale
+    # and markers stop growing at four times it; the hover keeps the real count
+    top = max(float(cells["deaths"].quantile(0.99)), 1.0) if len(cells) else 1.0
+    for kind, label in violence.items():
+        d = cells[cells["violence"] == kind]
+        if d.empty:
+            continue
+        fig.add_trace(go.Scattergeo(
+            lat=d["lat"], lon=d["lon"], mode="markers", name=label,
+            marker=dict(size=d["deaths"].clip(upper=4 * top), sizemode="area", sizeref=top / 22 ** 2, sizemin=3,
+                        color=VIOLENCE_COLORS[kind], opacity=0.85, line=dict(color=SURFACE, width=0.5)),
+            customdata=np.column_stack([d["iso3"].map(names).fillna(d["iso3"]), d["events"].map("{:,}".format),
+                                        d["deaths"].map("{:,}".format),
+                                        pd.to_datetime(d["last_date"]).dt.strftime("%d %b %Y"), d["iso3"]]),
+            hovertemplate=("<b>%{customdata[0]}</b><br>" + label + " violence<br>%{customdata[1]} events · "
+                           "%{customdata[2]} deaths<br>Last event %{customdata[3]}"
+                           "<br><i>Click to open the profile</i><extra></extra>"),
+        ))
+    fig.update_layout(showlegend=True, legend=dict(orientation="h", x=0, y=0, yanchor="top", title=None,
+                                                    font=dict(color=INK["text"]), itemsizing="constant"))
+    return _dark_geo(fig, zoom and len(cells) > 0)
+
+
+# ---------------------------------------------------------------------------
+# Event calendar
 # ---------------------------------------------------------------------------
 def events_timeline(df: pd.DataFrame) -> go.Figure:
     fig = go.Figure()

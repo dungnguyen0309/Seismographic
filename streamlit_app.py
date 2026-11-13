@@ -29,7 +29,7 @@ pages = {
         st.Page("app_pages/conflict.py", title="Conflict & displacement", icon=":material/crisis_alert:",
                 url_path="conflict"),
         st.Page("app_pages/economy.py", title="Economic stress", icon=":material/monitoring:", url_path="economy"),
-        st.Page("app_pages/watchlist.py", title="Events watchlist", icon=":material/event:", url_path="watchlist"),
+        st.Page("app_pages/hotspots.py", title="Hotspots", icon=":material/radar:", url_path="hotspots"),
         st.Page("app_pages/cases.py", title="Case studies", icon=":material/history:", url_path="cases"),
     ],
     "Tools": [
@@ -47,7 +47,15 @@ pages = {
     ],
 }
 
-page = st.navigation(pages, expanded=True)
+
+def _old_watchlist() -> None:
+    """Old /watchlist links and bookmarks: the calendar now lives on the Hotspots page."""
+    st.switch_page("app_pages/hotspots.py", query_params={"tab": "calendar"})
+
+
+# hidden, and kept out of `pages` so Find and the dock do not list it
+watchlist = st.Page(_old_watchlist, title="Event calendar", url_path="watchlist", visibility="hidden")
+page = st.navigation({**pages, "Reference": [*pages["Reference"], watchlist]}, expanded=True)
 st.set_page_config(page_title=f"{page.title} · {config.APP_TITLE}")  # each page names itself
 with ui.guard("The sidebar"):
     ui.sidebar()

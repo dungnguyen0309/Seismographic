@@ -102,9 +102,9 @@ if query:
     hits = {cat: items for cat, items in hits.items() if items}
     found = sum(len(v) for v in hits.values())
     st.caption(f"{found} matching term{'s' if found != 1 else ''} in {len(hits)} "
-               f"categor{'ies' if len(hits) != 1 else 'y'}. Clear the search to browse everything.")
+               f"categor{'ies' if len(hits) != 1 else 'y'}.")
     if not hits:
-        st.info("Nothing matches. Try a shorter word, or clear the search to browse the categories.")
+        st.info("Nothing matches. Try a shorter word.")
     for cat, items in hits.items():
         meta = glossary.CATEGORIES[cat]
         band(cat, meta.color, meta.blurb, len(items), compact=True)
@@ -140,7 +140,7 @@ left, right = st.columns(2, gap="large")
 with left:
     st.markdown("**Risk tiers** (composite score)")
     st.markdown(ui.tier_legend(), unsafe_allow_html=True)
-    st.markdown("**Pillars** (each has its own colour everywhere in the tool)")
+    st.markdown("**Pillars**")
     st.markdown(" ".join(ui.pillar_chip(p.key, p.short) for p in config.PILLARS), unsafe_allow_html=True)
     st.markdown("**Symbols**")
     st.markdown(
@@ -160,11 +160,10 @@ with right:
     scales += "".join(scale_blocks(config.map_colorscale(p.key), f"{p.short} pillar risk", "lower", "higher",
                                    score=True) for p in config.PILLARS)
     scales += scale_blocks(config.CHANGE_COLORSCALE, "Change since last year (map of change)", "▼ safer", "riskier ▲")
-    scales += scale_blocks(config.reversed_scale(config.map_colorscale("social")), "Next event (watchlist globe)",
+    scales += scale_blocks(config.reversed_scale(config.map_colorscale("social")), "Next event (event calendar globe)",
                            "now", "in a year")
     st.markdown(scales, unsafe_allow_html=True)
-    st.caption("On a black background, dim = low and bright = high. Dark grey = not enough data; near-black = "
-               "outside your filters.")
+    st.caption("Dim = low, bright = high. Dark grey = not enough data; near-black = outside your filters.")
 
 # --- Terms, by category -----------------------------------------------------------------------------------------
 for category, items in terms.items():
@@ -172,6 +171,6 @@ for category, items in terms.items():
     band(category, meta.color, meta.blurb, len(items), meta.sources)
     category_terms(category, items, meta.color)
     if not meta.sources:
-        st.page_link(ui.SOURCES_PAGE, label="All sources, with links and update dates",
+        st.page_link(ui.SOURCES_PAGE, label="All sources and update dates",
                      icon=":material/verified:")
 ui.footer()

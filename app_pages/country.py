@@ -143,11 +143,11 @@ if not (tabs["peers"].open or tabs["data"].open):
 # --- Summary --------------------------------------------------------------------
 with tabs["summary"]:
     if tabs["summary"].open:
-        st.header("Risk over time")
+        st.header("Risk over time", help=f"Recomputed for every year since {config.HISTORY_START} with the data "
+                                         "available that year, relative to the other countries that year.")
         if country_hist["composite"].notna().sum() >= 2:
             st.plotly_chart(charts.risk_history(country_hist, marks=True), config={"displayModeBar": False})
-            st.caption(f"Recomputed for every year since {config.HISTORY_START} with the data available that year, "
-                       f"relative to the other countries that year. {year} uses IMF estimates."
+            st.caption(f"{year} uses IMF estimates."
                        f'<span class="sg-sr"> {html.escape(charts.history_summary(country_hist))}</span>',
                        unsafe_allow_html=True)
         else:
@@ -173,19 +173,20 @@ with tabs["summary"]:
                                 unsafe_allow_html=True)
                 st.page_link("app_pages/conflict.py", label="How this is estimated",
                              icon=":material/insights:", query_params={"tab": "outlook"})
-            st.header("Red flags")
+            st.header("Red flags", help="Fixed thresholds (e.g. inflation ≥ 20%), independent of how other "
+                                        "countries score.")
             if flags:
                 for f in sorted(flags, key=lambda f: config.SEVERITY_ORDER[f["severity"]]):
                     st.markdown(f"{ui.sev_mark(f['severity'], spoken=False)}{SEVERITY_LABEL[f['severity']]}: "
                                 f"{html.escape(f['label'])}", unsafe_allow_html=True)
             else:
                 st.markdown("No absolute warning thresholds crossed.")
-            st.caption("Red flags use fixed thresholds (e.g. inflation ≥ 20%), independent of how other countries score.")
 
             st.header("Upcoming events")
             country_events = content.load_events()
             ui.upcoming_events(country_events[country_events["iso3"] == iso3].assign(country=name), limit=5)
-            st.page_link("app_pages/watchlist.py", label="Events watchlist", icon=":material/event:")
+            st.page_link("app_pages/hotspots.py", label="Event calendar", icon=":material/event:",
+                         query_params={"tab": "calendar"})
 
         real_life = st.expander("What it means in real life", key="real_life", on_change="rerun")
         with real_life:
@@ -209,8 +210,8 @@ with tabs["summary"]:
                 },
             )
             st.caption(
-                "If the rank barely moves when a pillar is dropped, the result does not hinge on one modelling choice. "
-                "Large swings tell you which dimension drives the score."
+                "If the rank barely moves when a pillar is dropped, the result does not hinge on that choice. "
+                "Large swings show which pillar drives the score."
             )
         ui.cite("index", "ucdp_def", "imf_ara", "ifes")
 
@@ -250,7 +251,8 @@ def peer_ranking() -> None:
     )
     st.caption(f"▶ marks {name}. Group ranks {start + 1} to {start + len(peer_table)} of {len(ranked)}.")
 
-    st.header("Most similar risk profiles")
+    st.header("Most similar risk profiles", help=f"Countries anywhere in the world whose stability, governance, "
+                                                 f"economic and social scores are closest to {name}'s.")
     like = scoring.similar(scores, iso3, n=8)
     if like.empty:
         st.caption("Not enough data to compare profiles.")
@@ -264,8 +266,6 @@ def peer_ranking() -> None:
                 "Similarity", min_value=0, max_value=100, format="%.0f", width=100,
                 help="100 = the same four pillar scores; based on the distance between the profiles")},
         )
-        st.caption(f"Countries anywhere in the world whose stability, governance, economic and social scores are "
-                   f"closest to {name}'s.")
 
 
 def peer_map() -> None:
@@ -375,8 +375,7 @@ def _reset_whatif() -> None:
 
 @st.fragment
 def what_if_simulator() -> None:
-    st.header("What-if simulator")
-    st.caption("Every country is re-scored, as in the real index.")
+    st.header("What-if simulator", help="Every country is re-scored, as in the real index.")
     specs = _whatif_controls()
     picked = st.session_state.get(WHATIF_PREFIX + "preset")
     with st.container(horizontal=True, wrap=True, key="whatif_presets"):  # full names; they wrap instead of truncating
@@ -490,7 +489,10 @@ def indicators() -> None:
         column_config={
             "Indicator": st.column_config.TextColumn(pinned=True),
             "Value": st.column_config.TextColumn(alignment="right"),
-            "Risk score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.0f"),
+            "Risk score": st.column_config.ProgressColumn(
+                min_value=0, max_value=100, format="%.0f",
+                help="Position relative to all other countries (0–100). Battle deaths and displacement use a log "
+                     "scale so that countries without conflict score 0."),
             # capped so the grid fits a 970px column; the long ones show in full in the download
             "Unit": st.column_config.TextColumn(width=140),
             "Source": st.column_config.TextColumn(width=180),
@@ -499,10 +501,6 @@ def indicators() -> None:
             # hidden to fit the screen: in the download below, and Show/hide columns brings them back
             "Full name": None, "Direction": None,
         },
-    )
-    st.caption(
-        "Risk score = position relative to all other countries (0–100). Battle deaths and displacement use a log "
-        "scale so that countries without conflict score 0."
     )
     ui.cite("index")
     with st.expander(f"Cross-check {name} with independent sources"):
@@ -518,11 +516,9 @@ def indicators() -> None:
 
 
 def governance() -> None:
-    st.header("Worldwide Governance Indicators over time")
-    st.caption(
-        "World Bank WGI governance scores (0–100, higher = better governance) with the 90% confidence interval. "
-        "When intervals for two years overlap, the change may be within the margin of error."
-    )
+    st.header("Governance over time", help="World Bank WGI scores (0–100, higher = better governance) with the 90% "
+                                           "confidence interval. When intervals for two years overlap, the change may "
+                                           "be within the margin of error.")
     with st.spinner("Loading confidence intervals…"):
         ci = data.load_wgi_ci()
     st.plotly_chart(charts.wgi_small_multiples(core["series"], ci, iso3), config={"displayModeBar": False})
@@ -555,7 +551,7 @@ def governance() -> None:
 def economy() -> None:
     edition = core["meta"].get("gdp_growth", {}).get("edition") or "IMF World Economic Outlook"
     st.header("Macroeconomic picture")
-    st.caption(f"Source: {edition}. Dashed lines are IMF projections.")
+    st.caption(f"Dashed lines are IMF projections ({edition}).")
     st.plotly_chart(charts.macro_small_multiples(core["series"], iso3, year), config={"displayModeBar": False})
     ui.cite("imf", "wdi", "unhcr")
     # a missing figure reads "No data" in small grey, not a big dash. Only the inline p shrinks, so the value's
@@ -587,26 +583,26 @@ with tabs["data"]:
 with tabs["news"]:
     if tabs["news"].open:
         news_name = config.NEWS_NAMES.get(iso3, name)
-        st.header("Risk-related news, last 7 days")
-        st.caption(
-            f"Live headlines matching '{news_name}' plus risk keywords (protest, election, coup, sanctions, clashes…), "
-            "newest first, from Bing News and Google News, with GDELT as a backup."
-        )
+        st.header("Risk-related news, last 7 days",
+                  help=f"Live headlines matching '{news_name}' plus risk keywords (protest, election, coup, sanctions, "
+                       "clashes…), newest first, from Bing News and Google News, with GDELT as a backup.")
         ui.news_list(news_name, limit=20)
 
         with ui.guard("Video reports"):
-            st.header(f"Video reports on {name}")
+            st.header(f"Video reports on {name}",
+                      help="From the latest uploads of international broadcasters and think tanks.")
             all_videos = data.load_videos()
             about = (ui.videos_about(all_videos, iso3, names, countries.set_index("iso3").get("official_name", pd.Series())
                                      .get(iso3)) if all_videos is not None else None)
             if about is None or about.empty:
-                st.caption(f"None of the latest videos from the international broadcasters and think tanks mention {name}.")
+                st.caption(f"None of the latest videos mention {name}.")
             else:
-                st.caption("From the latest uploads of international broadcasters and think tanks.")
                 ui.video_gallery(about, key=f"profile_videos_{iso3}", limit=6)
             st.page_link("app_pages/video.py", label="Live TV and all video reports", icon=":material/live_tv:")
         with ui.guard("Media tone"):
-            if st.toggle("Show media tone over the last 3 months (GDELT)"):
+            if st.toggle("Media tone, last 3 months (GDELT)",
+                         help="GDELT average tone of English-language coverage. A sustained fall often precedes or "
+                              "accompanies crises."):
                 tone, terr = data.load_tone(news_name)
                 if terr:
                     st.info("GDELT's tone data can't be reached right now. Try again in a few minutes.")
@@ -614,9 +610,10 @@ with tabs["news"]:
                     st.info("No tone data returned.")
                 else:
                     st.plotly_chart(charts.tone_chart(tone), config={"displayModeBar": False})
-                    st.caption("GDELT average tone of English-language coverage. A sustained fall often precedes or accompanies crises.")
         with ui.guard("Protest coverage"):
-            if st.toggle("Show protest coverage over the last 3 months (GDELT)"):
+            if st.toggle("Protest coverage, last 3 months (GDELT)",
+                         help=f"Share of all English-language news GDELT monitors that mentions {name} together with "
+                              "protests, riots, strikes or unrest, smoothed over a week."):
                 protests, perr = data.load_protests(news_name)
                 if perr:
                     st.info("GDELT's protest data can't be reached right now (it allows few requests). Try again in a few "
@@ -625,8 +622,6 @@ with tabs["news"]:
                     st.info("No protest coverage found.")
                 else:
                     st.plotly_chart(charts.protest_chart(protests), config={"displayModeBar": False})
-                    st.caption(f"Share of all English-language news GDELT monitors that mentions {name} together with protests, "
-                               "riots, strikes or unrest, smoothed over a week.")
         ui.cite("news", "gdelt", "youtube")
 
 # --- Analyst assessment -------------------------------------------------------------------
@@ -653,11 +648,7 @@ with tabs["assessment"]:
             st.markdown(ui.money(assessment["body"]))
         else:
             st.info(f"No analyst assessment for {name} yet.")
-            st.markdown(
-                "An assessment adds key judgments with probabilities, scenarios and the indicators that would change "
-                "your mind. Write one in the Assessment builder and add the file to the project's `assessments/` "
-                "folder."
-            )
+            st.markdown("Write one in the Assessment builder and add the file to the project's `assessments/` folder.")
             st.page_link("app_pages/builder.py", label="Open the assessment builder", icon=":material/edit_note:")
 
 # The header's sources and other profiles of the country, under the tabs so the tabs sit right below the header

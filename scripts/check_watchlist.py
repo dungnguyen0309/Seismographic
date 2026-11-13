@@ -56,7 +56,7 @@ def main() -> int:
             "**The watchlist is running low.** Add the next elections, referendums and other dated events:",
             "",
             f"1. Find upcoming national elections on [IFES ElectionGuide]({FIND_EVENTS}).",
-            "2. Run the app with `SEISMOGRAPHIC_MAINTAINER=1`; on its *Events watchlist* page, use **Add an event** "
+            "2. Run the app with `SEISMOGRAPHIC_MAINTAINER=1`; on the Calendar tab of its *Hotspots* page, use **Add an event** "
             "to create a line for each.",
             "3. Paste the lines at the end of `data/events.csv` on GitHub (pencil icon → *Commit changes*).",
             "",

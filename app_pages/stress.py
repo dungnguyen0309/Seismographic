@@ -9,8 +9,7 @@ core, year, values, scores = ui.load()
 hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 
-ui.hero("Stress test", "Apply one economic shock to many countries at once and see who crosses a risk tier or a "
-                       "red-flag line.")
+ui.hero("Stress test")
 
 CUSTOM = "Custom"
 FIRST = next(iter(stress.SCENARIOS))

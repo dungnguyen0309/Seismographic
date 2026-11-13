@@ -9,7 +9,7 @@ core, year, values, scores = ui.load()
 hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 
-ui.hero("Indicator explorer", "Any indicator behind the index, country by country.")
+ui.hero("Indicator explorer")
 
 options = [i.key for i in config.SCORED_INDICATORS]
 labels = {i.key: f"{config.PILLAR_BY_KEY[i.pillar].short} · {i.label}" for i in config.SCORED_INDICATORS}
@@ -71,7 +71,7 @@ ui.globe_panel(
 ui.cite(source, "natural_earth")
 
 # --- Distribution ----------------------------------------------------------------------------------------
-st.header("How countries are spread")
+st.header("Distribution")
 st.plotly_chart(charts.distribution(known["value"], f"{ind.short} ({ind.unit})", config.PILLAR_COLORS[ind.pillar],
                                     log=ind.norm == "log"), config={"displayModeBar": False})
 ui.cite(source)

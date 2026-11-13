@@ -51,13 +51,7 @@ for key, default in {"b_outlook": content.OUTLOOKS[1], "b_confidence": content.C
                      "sp_Base case": 60, "sp_Upside": 15, "sp_Downside": 25}.items():
     st.session_state.setdefault(key, default)
 
-ui.hero("Assessment builder", "Write a structured risk assessment for one country.")
-st.markdown(
-    "Fill in the sections, download the file and add it to the project's `assessments/` folder; it then appears "
-    "on the country profile. "
-    "The structure follows professional intelligence and political-risk writing: bottom line up front, "
-    "key judgments with probabilities, drivers, scenarios and signposts."
-)
+ui.hero("Assessment builder")
 
 iso3 = st.selectbox("Country", options, key="b_iso3", on_change=_new_country, format_func=lambda i: names.get(i, i))
 name = names[iso3]
@@ -66,26 +60,23 @@ s = scores.loc[iso3]
 with st.container(border=True):
     c1, c2 = st.columns([1, 2])
     with c1:
-        st.markdown("**Model view today**")
+        st.markdown("**Model view**")
         st.markdown(ui.tier_badge(s["tier"]), unsafe_allow_html=True)
         st.caption("Score " + ("—" if pd.isna(s["composite"]) else f"{s['composite']:.0f}/100"))
     with c2:
-        st.markdown("**Data points to react to**")
+        st.markdown("**Latest data**")
         for line in scoring.country_brief(iso3, name, values, scores, core["series"], countries, year)[:5]:
             st.markdown(f"- {line}")
     ui.cite("index")
 
-with st.expander("Estimative language (ICD 203): use these words consistently"):
+with st.expander("Estimative language (ICD 203)"):
     st.dataframe(
         pd.DataFrame(
             [{"Term": t, "Alternative": alt, "Probability": f"{lo}–{hi}%"} for t, alt, lo, hi in ESTIMATIVE_LANGUAGE]
         ),
         hide_index=True,
     )
-    st.caption(
-        "From the US Intelligence Community's Analytic Standards (ICD 203). Pick a probability and the builder "
-        "inserts the matching term, so your words and numbers always agree."
-    )
+    st.caption("Pick a probability and the builder inserts the matching term, so words and numbers agree.")
     ui.cite("icd203")
 
 st.header("1 · Rating")
@@ -100,7 +91,7 @@ author = st.text_input("Author", key="b_author")
 
 st.header("2 · Bottom line up front")
 bluf = st.text_area(
-    "Two or three sentences a busy reader can act on (required)",
+    "Bottom line (required)", help="Two or three sentences a busy reader can act on.",
     placeholder=f"e.g. {name}'s risk is likely to rise over the next 12 months as … The main threat to operations is … "
                 "A shift to … would signal a worse path.",
     height=110, key="b_bluf",
@@ -151,7 +142,7 @@ def _prefill() -> None:
 
 st.header("4 · Drivers")
 st.button("Fill in the latest figures", on_click=_prefill,
-          help="Writes the latest figures into the driver boxes you have not written in, as a starting point. "
+          help="Puts the latest figures in the driver boxes you have not written in. "
                "Replace them with your analysis: why it is happening and what comes next.")
 d1, d2 = st.columns(2)
 drv_political = d1.text_area("Political", height=150, key="drv_political",
@@ -163,15 +154,14 @@ drv_economic = d1.text_area("Economic", height=150, key="drv_economic",
 drv_social = d2.text_area("Social", height=150, key="drv_social",
                           placeholder="Youth unemployment, displacement, ethnic or religious cleavages…")
 
-st.header("5 · Scenarios")
-st.caption("Probabilities should add up to 100%.")
+st.header("5 · Scenarios", help="Probabilities should add up to 100%.")
 scenarios = []
 for label in ("Base case", "Upside", "Downside"):
     with st.container(border=True):
         s1, s2 = st.columns([1, 3])
         p = s1.number_input(f"{label} probability %", 0, 100, step=5, key=f"sp_{label}")
         desc = s2.text_area(f"{label}: what it looks like", height=80, key=f"sd_{label}")
-        signs = s2.text_input(f"{label}: signposts that it is happening", key=f"ss_{label}")
+        signs = s2.text_input(f"{label}: signposts", key=f"ss_{label}")
         scenarios.append({"name": label, "probability": int(p), "description": desc, "signposts": signs})
 total = sum(x["probability"] for x in scenarios)
 if total != 100:
@@ -207,9 +197,8 @@ p1, p2 = st.columns([1, 1])
 with p1:
     st.download_button("Download " + f"{iso3}.md", markdown.encode("utf-8"), file_name=f"{iso3}.md",
                        mime="text/markdown", type="primary")
-    st.caption(
-        f"Add `{iso3}.md` to the project's `assessments/` folder; the app picks it up within about 10 minutes."
-    )
+    st.caption(f"Add `{iso3}.md` to the project's `assessments/` folder; it shows on the country profile within "
+               "about 10 minutes.")
 with p2:
     missing = [n for n, val in [("bottom line", bluf), ("a key judgment", judgments[0]["text"]), ("sources", sources_txt)] if not val.strip()]
     if missing:

@@ -29,7 +29,7 @@ st.markdown(
 )
 if state_media:
     st.caption("State-owned and state-funded channels can reflect their government's view, especially on their own "
-               "country and its foreign policy. Compare with another channel.")
+               "country and its foreign policy.")
 ui.cite("youtube")
 
 # --- Reports and analysis ---------------------------------------------------------------------------
@@ -60,5 +60,5 @@ if shown.empty:
 else:
     ui.video_gallery(shown, key=f"gallery_{kind}_{about}", limit=12)
 ui.cite("youtube")
-st.page_link(ui.SOURCES_PAGE, label="Who runs each channel: ownership and location", icon=":material/verified:")
+st.page_link(ui.SOURCES_PAGE, label="Channel ownership", icon=":material/verified:")
 ui.footer()

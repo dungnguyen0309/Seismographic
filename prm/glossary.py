@@ -59,8 +59,8 @@ TERMS: dict[str, list[tuple[str, str]]] = {
         ("Conflict outlook", "The estimated chance that armed conflict (25+ battle deaths) starts next year in a "
                              "country at peace, from a small statistical model on the pillars, low-level violence and "
                              "recent conflict. On the Conflict page and each country's Summary."),
-        ("Out-of-time test", "Checking a model the honest way: each year is predicted by a model fitted only on "
-                             "earlier years, then compared with what happened."),
+        ("Out-of-time test", "Testing a model on years it has not seen: each year is predicted by a model fitted only "
+                             "on earlier years, then compared with what happened."),
         ("Brier skill", "How much better the predicted chances are than always guessing the average rate: 0 = no "
                         "better, above 0 = better."),
         ("Calibration", "Whether predicted chances match what happened: of the cases given about 10%, about one in "
@@ -123,6 +123,16 @@ TERMS: dict[str, list[tuple[str, str]]] = {
         ("Homicide rate", "Intentional killings per 100,000 people a year, a measure of criminal violence."),
         ("Protest coverage", "The share of world news coverage that mentions a country together with protests, riots, "
                              "strikes or unrest (GDELT): a fast signal of unrest getting attention."),
+        ("Hotspot (Hotspots page)", "A country with at least 5 UCDP events or 25 deaths in the last 90 days, an "
+                                    "Escalating signal, or a composite score of 60 or more."),
+        ("Escalating / Steady / Easing / Quiet", "The conflict-news signal on Hotspots: the share of news about a "
+                                                 "country that mentions fighting in the last 7 days against its usual "
+                                                 "level over 90 days. Escalating = at least 1.5 times as much and well "
+                                                 "outside the normal swing; Easing = two thirds or less; Quiet = too "
+                                                 "few articles to read; Steady = in between. News can rise without "
+                                                 "more fighting, so check the events too."),
+        ("UCDP candidate events", "Preliminary UCDP records of organised violence with at least one death, each "
+                                  "with a place and a date, released monthly and revised later."),
     ],
     "Economy": [
         ("Inflation", "How fast consumer prices rise over a year. High inflation erodes wages, savings and "
@@ -168,7 +178,7 @@ TERMS: dict[str, list[tuple[str, str]]] = {
         ("UCDP", "Uppsala Conflict Data Program, the academic standard for armed-conflict data."),
         ("GDELT", "Global Database of Events, Language and Tone: global news monitoring, used as a backup news "
                   "source and for media tone."),
-        ("IFES ElectionGuide", "Calendar of national elections and referendums; the source of the watchlist dates."),
+        ("IFES ElectionGuide", "Calendar of national elections and referendums; the source of the event calendar dates."),
         ("OCHA", "UN Office for the Coordination of Humanitarian Affairs."),
         ("ISO3", "Three-letter country codes, e.g. NGA for Nigeria."),
         ("GDP", "Gross domestic product: the value of everything an economy produces in a year."),
@@ -211,23 +221,23 @@ class Category:
 
 
 CATEGORIES: dict[str, Category] = {
-    "Scores & ratings": Category("#a68cf2", "How the index turns data into scores, ranks and tiers.",
+    "Scores & ratings": Category("#a68cf2", "How data become scores, ranks and tiers.",
                                  ("oecd_jrc", "wb_groups")),
-    INDICATORS_CATEGORY: Category("#c3c2b7", "Every data series in the score, grouped by pillar, with a link to "
-                                                   "the data itself.", tuple(config.INDEX_SOURCES)),
+    INDICATORS_CATEGORY: Category("#c3c2b7", "Every data series in the score, by pillar.",
+                                   tuple(config.INDEX_SOURCES)),
     "Warnings": Category("#f0575c", "Absolute red lines that apply wherever a country ranks.",
                          ("ucdp_def", "rr_inflation", "rr_debt", "freund", "imf_ara")),
-    "Analyst assessments": Category("#2fb7a5", "The vocabulary of professional risk and intelligence writing.",
+    "Analyst assessments": Category("#2fb7a5", "Terms from risk and intelligence writing.",
                                     ("icd203", "cia_tradecraft", "heuer")),
     "Conflict & displacement": Category(config.PILLAR_COLORS["stability"], "Armed conflict, violence and people "
                                         "forced from their homes.", ("ucdp_def", "unhcr_def", "unodc")),
-    "Economy": Category(config.PILLAR_COLORS["economic"], "Growth, prices, debt and the external buffers.",
+    "Economy": Category(config.PILLAR_COLORS["economic"], "Growth, prices, debt and reserves.",
                         ("imf", "imf_weo", "imf_ara")),
     "Governance (WGI)": Category(config.PILLAR_COLORS["governance"], "The six World Bank governance dimensions "
                                  "and how to read them.", ("wgi", "wgi_docs", "wgi_method")),
-    "Sources & abbreviations": Category("#d55181", "Who publishes the data, and the short names used for them.",
+    "Sources & abbreviations": Category("#d55181", "Data publishers and their short names.",
                                         ()),
-    "Maps, globe & charts": Category("#5ec8e0", "How to read the colours, heights, arcs and rings.",
+    "Maps, globe & charts": Category("#5ec8e0", "Colours, heights, arcs and rings.",
                                      ("natural_earth", "globe_gl", "unhcr")),
 }
 

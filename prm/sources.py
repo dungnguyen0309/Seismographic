@@ -434,9 +434,9 @@ def _gdelt_term(name: str) -> str:
     return f'"{clean}"' if " " in clean else clean
 
 
-def _gdelt_json(params: dict) -> dict:
+def _gdelt_json(params: dict, timeout=GDELT_TIMEOUT) -> dict:
     try:
-        response = requests.get(GDELT_API, params=params, timeout=GDELT_TIMEOUT, headers=HEADERS)
+        response = requests.get(GDELT_API, params=params, timeout=timeout, headers=HEADERS)
         response.raise_for_status()
     except requests.RequestException as exc:
         raise SourceError(f"GDELT unreachable: {exc}") from exc

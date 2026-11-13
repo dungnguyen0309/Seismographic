@@ -11,7 +11,7 @@ hist = ui.history(core)
 table = ui.master_table(core, values, scores, hist)
 prev_year = year - 1
 
-ui.hero("Score changes", f"{year} compared with {prev_year}")
+ui.hero("Score changes", f"{year} vs {prev_year}")
 REVISED = f" {year} uses IMF estimates for the current year, so economic moves can still be revised."
 TREND_HELP = "Composite score vs last year. ▲ = riskier, ▼ = safer, ■ = under 1 point"
 
@@ -130,8 +130,7 @@ with tab_tiers:
 
 with tab_drivers:
     if tab_drivers.open:
-        st.caption("Change in each pillar score since last year, for every country whose composite moved by a point "
-                   "or more.")
+        st.caption(f"Pillar changes since {prev_year}, for countries whose composite moved a point or more.")
         drivers = moved[moved["delta_1y"].abs() >= ui.TREND_THRESHOLD].sort_values("delta_1y", ascending=False)
         drivers = drivers.reset_index(drop=True)
         d_cols = [f"d_{k}" for k in pillar_keys]

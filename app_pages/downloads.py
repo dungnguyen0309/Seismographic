@@ -11,8 +11,7 @@ weights = ui.weights_tuple()
 tables = data.get_export(core, year, weights, core["version"])
 info = export.meta(core, year, dict(weights))
 
-ui.hero("Data downloads", "Everything behind the index as open tables. When you reuse them, credit the original "
-                           "publishers.")
+ui.hero("Data downloads", "Credit the original publishers when you reuse these tables.")
 st.page_link(ui.SOURCES_PAGE, label="Sources", icon=":material/verified:")
 
 with st.container(horizontal=True, key="dl_all"):
@@ -29,8 +28,7 @@ with st.container(border=True, gap="small"):
         left, right = st.columns([5, 1], vertical_alignment="center")
         rows = f"{len(frame):,} rows"
         if name == "index" and "composite" in frame:  # every economy is listed; some lack the data for a score
-            rows += (f" ({int(frame['composite'].notna().sum())} with a score; the others have too little data and "
-                     "their scores are blank)")
+            rows += f" ({int(frame['composite'].notna().sum())} with a score; the rest have too little data)"
         left.markdown(f"**{name.replace('_', ' ').capitalize()}** · {rows}  \n"
                       f"<span style='color:var(--sg-muted);font-size:0.875rem'>{text}</span>", unsafe_allow_html=True)
         right.download_button("Download CSV", data=lambda f=frame: f.to_csv(index=False).encode("utf-8-sig"),

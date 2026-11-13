@@ -13,10 +13,6 @@ names = dict(zip(core["countries"]["iso3"], core["countries"]["name"]))
 iso2 = dict(zip(core["countries"]["iso3"], core["countries"]["iso2"]))
 
 ui.hero("Case studies")
-st.markdown(
-    "Eight shocks since 2020 (coups, wars, an invasion, a default and an uprising) and what the index said about each "
-    "country the year before. The verdict follows a fixed rule, shown under each case, so you can check it."
-)
 
 readings = {}
 for case in cases.CASES:
@@ -47,7 +43,8 @@ st.dataframe(
         "country": st.column_config.TextColumn("Country", width=110),
         "event": st.column_config.TextColumn("Event", width=245),
         "date": st.column_config.DateColumn("Date", format="D MMM YYYY", width=110),
-        "verdict": st.column_config.TextColumn("Verdict", width=140),
+        "verdict": st.column_config.TextColumn("Verdict", width=140,
+                                               help="Set by a fixed rule from the year before; each case shows it"),
         "tier": st.column_config.TextColumn("Tier", width=100, help="In the year before the event"),
         "rank": st.column_config.NumberColumn("Rank", format="%d", help="In the year before the event. 1 = riskiest"),
     },
@@ -109,9 +106,9 @@ else:
         st.markdown(ui.money(note))
 
 st.caption(
-    "Read with care: the scores are rebuilt with data as published today, which includes later revisions, and "
-    "governance scores for a year are only published the following year. These cases show how the index "
-    "behaves; for a test of prediction, see the track record on the Methodology page."
+    "Scores are rebuilt with data as published today, including later revisions, and a year's governance scores "
+    "are only published the next year. These cases show how the index behaves; for a test of prediction, see the "
+    "track record on the Methodology page."
 )
 ui.cite("index", "wikipedia", "ucdp_def")
 ui.footer()
