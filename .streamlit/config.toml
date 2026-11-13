@@ -46,6 +46,9 @@ developmentMode = false
 
 [server]
 runOnSave = false
+# No file watcher: the hosted code never changes, and on Vercel each watch fails with "inotify instance limit
+# reached" (one traceback per page per visit). Page files are re-read on every rerun anyway.
+fileWatcherType = "none"
 headless = true
 
 [browser]
