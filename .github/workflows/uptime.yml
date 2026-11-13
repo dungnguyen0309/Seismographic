@@ -1,0 +1,60 @@
+# Every 30 minutes: check that the live app answers. If it fails three tries in a row, open (or update) a "Site down"
+# issue, which GitHub emails to the repository owner; once the site answers again, close the issue.
+name: Uptime check
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the site
+        id: check
+        env:
+          SITE: https://seismographic.vercel.app
+        run: |
+          failed=""
+          # path and a string the response body must contain
+          for spec in '/|id="root"' '/_stcore/health|ok' '/api/v1/countries|"index_year"'; do
+            path="${spec%%|*}"; want="${spec#*|}"
+            ok=""
+            for attempt in 1 2 3; do
+              code=$(curl -s -o body.txt -w "%{http_code}" --max-time 60 "$SITE$path" || true)
+              if [ "$code" = "200" ] && grep -qF "$want" body.txt; then ok=1; break; fi
+              sleep 20
+            done
+            if [ -z "$ok" ]; then
+              failed="$failed- \`$path\` answered HTTP ${code:-none} after 3 tries\n"
+            fi
+          done
+          if [ -n "$failed" ]; then
+            printf "The live app at %s is not answering.\n\n%b\nCheck the Vercel dashboard (Deployments, then Logs) and DEPLOY.md, Option C.\n" "$SITE" "$failed" > report.md
+            echo "down=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Open or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DOWN: ${{ steps.check.outputs.down }}
+        run: |
+          title="Site down"
+          open_issue=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ "$DOWN" = "true" ]; then
+            if [ -n "$open_issue" ]; then
+              gh issue comment "$open_issue" --body-file report.md
+            else
+              gh issue create --title "$title" --body-file report.md
+            fi
+          elif [ -n "$open_issue" ]; then
+            gh issue close "$open_issue" --comment "The site answers again. Closing."
+          fi

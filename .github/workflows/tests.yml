@@ -1,5 +1,6 @@
 # Runs the tests on every push and pull request: the scoring model, the analysis helpers, the PDF brief, and every
 # page and country tab of the app (using the saved data snapshot). A red cross on a commit means something broke.
+# The vercel-build job repeats them on the packages as Vercel installs them, so a break on the live site shows here.
 name: Tests
 
 on:
@@ -24,3 +25,23 @@ jobs:
         run: pip install -r requirements.txt pytest httpx
       - name: Run the tests
         run: python -m pytest -q
+
+  vercel-build:
+    # Installs the packages the way Vercel does (uv, from pyproject.toml, into a vendor folder instead of
+    # site-packages), then starts the app and runs the tests on them. A push that would break the live site fails here.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+      - name: Install like Vercel
+        run: |
+          pip install uv pytest httpx
+          uv export --no-dev --no-emit-project --no-hashes -o vercel-requirements.txt
+          uv pip install --python "$(command -v python)" --target _vendor -r vercel-requirements.txt
+      - name: Start the app as Vercel does
+        run: PYTHONPATH=_vendor python scripts/check_vercel_build.py
+      - name: Run the tests on these packages
+        run: PYTHONPATH=_vendor python -m pytest -q
