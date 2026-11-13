@@ -43,7 +43,12 @@ The repository is ready for Vercel: `asgi.py` runs the app as a standard Python 
 1. Sign in at [vercel.com](https://vercel.com) with GitHub (**Continue with GitHub**).
 2. **Add New… → Project**, then **Import** `dungnguyen0309/Seismographic`. If it isn't listed, click
    **Adjust GitHub App Permissions** and allow Vercel to see the repository.
-3. Leave the settings as they are (Framework Preset: *Other*) and click **Deploy**. Every push to `main` then
+3. Before the first deploy, open **Settings → Environment Variables** and add `VERCEL_SUPPORT_LARGE_FUNCTIONS`
+   and `VERCEL_PYTHON_DISABLE_RUNTIME_INSTALL`, both set to `1`, for Production and Preview. The app's packages
+   (about 450 MB) are too big for a standard function. Without these two variables, Vercel installs them into the
+   function's 512 MB temporary disk at every cold start. When that disk fills up, the half-finished install stays
+   on the instance and every page returns a server error.
+4. Leave the other settings as they are (Framework Preset: *Other*) and click **Deploy**. Every push to `main` then
    deploys again by itself.
 
 This deployment also serves the read-only JSON API at `/api/v1` (see the README), which `streamlit run streamlit_app.py` cannot.

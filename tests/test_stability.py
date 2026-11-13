@@ -214,6 +214,26 @@ def test_api_answers_json_when_the_data_fails(monkeypatch):
     assert response.headers["cache-control"] == "no-store"
 
 
+def test_only_immutable_files_are_kept_on_the_cdn():
+    from starlette.applications import Starlette
+    from starlette.responses import PlainTextResponse
+    from starlette.routing import Route
+    from starlette.testclient import TestClient
+
+    from asgi import EdgeCacheFrontend
+
+    def reply(cache, status=200):
+        return lambda request: PlainTextResponse("x", status, headers={"cache-control": cache})
+
+    inner = Starlette(routes=[Route("/static/a.js", reply("public, immutable, max-age=31536000")),
+                              Route("/", reply("no-cache")),
+                              Route("/gone.js", reply("public, immutable, max-age=31536000", 404))])
+    client = TestClient(EdgeCacheFrontend(inner))
+    assert client.get("/static/a.js").headers["vercel-cdn-cache-control"] == "max-age=31536000"
+    assert "vercel-cdn-cache-control" not in client.get("/").headers
+    assert "vercel-cdn-cache-control" not in client.get("/gone.js").headers
+
+
 @pytest.mark.parametrize("text", ["gdp_growth:abc", "inflation:1e400", ":::", "foo:3", "gov_debt:-999", "",
                                   "gdp_growth:1e308", "unemployment:-1e308"])
 def test_bad_stress_links_are_ignored_or_clamped(text):
