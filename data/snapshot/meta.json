@@ -1,5 +1,5 @@
 {
-  "created": "2026-11-09",
+  "created": "2026-11-16",
   "series": {
     "battle_deaths": {
       "provider": "WB",
@@ -15,7 +15,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10555,
-      "saved": "2026-11-09"
+      "saved": "2026-11-16"
     },
     "displaced": {
       "provider": "UNHCR",
@@ -23,7 +23,7 @@
       "last_updated": "2025",
       "edition": null,
       "rows": 2613,
-      "saved": "2026-11-09"
+      "saved": "2026-11-16"
     },
     "fiscal_balance": {
       "provider": "IMF",
@@ -31,7 +31,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 8813,
-      "saved": "2026-11-09"
+      "saved": "2026-11-16"
     },
     "gdp_growth": {
       "provider": "IMF",
@@ -39,7 +39,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10921,
-      "saved": "2026-11-09"
+      "saved": "2026-11-16"
     },
     "gdppc": {
       "provider": "IMF",
@@ -47,7 +47,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10834,
-      "saved": "2026-11-09"
+      "saved": "2026-11-16"
     },
     "gov_debt": {
       "provider": "IMF",
@@ -55,7 +55,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 8098,
-      "saved": "2026-11-09"
+      "saved": "2026-11-16"
     },
     "homicide": {
       "provider": "WB",
@@ -71,7 +71,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10809,
-      "saved": "2026-11-09"
+      "saved": "2026-11-16"
     },
     "pop": {
       "provider": "WB",
@@ -87,7 +87,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 10973,
-      "saved": "2026-11-09"
+      "saved": "2026-11-16"
     },
     "reserves_months": {
       "provider": "WB",
@@ -111,7 +111,7 @@
       "last_updated": null,
       "edition": "World Economic Outlook (October 2026)",
       "rows": 5161,
-      "saved": "2026-11-09"
+      "saved": "2026-11-16"
     },
     "wgi_cc": {
       "provider": "WB",
@@ -167,7 +167,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5489,
-      "saved": "2026-11-02"
+      "saved": "2026-11-16"
     },
     "wgi_pv_lb": {
       "provider": "WB",
@@ -191,7 +191,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5530,
-      "saved": "2026-11-02"
+      "saved": "2026-11-16"
     },
     "wgi_rl_lb": {
       "provider": "WB",
@@ -239,7 +239,7 @@
       "last_updated": "2026-09-25",
       "edition": null,
       "rows": 5515,
-      "saved": "2026-11-02"
+      "saved": "2026-11-16"
     },
     "wgi_va_lb": {
       "provider": "WB",
