@@ -39,7 +39,7 @@ const chrome = spawn(CHROME, ["--headless=new", `--remote-debugging-port=${port}
   { stdio: "ignore" });
 
 async function connect() {
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 300; i++) {  // up to 30 s: Chrome starts slowly on a busy CI runner
     try {
       const v = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
       const ws = new WebSocket(v.webSocketDebuggerUrl);
