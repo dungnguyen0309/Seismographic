@@ -1,6 +1,6 @@
 # Runs the tests on every push and pull request: the scoring model, the analysis helpers, the PDF brief, and every
-# page and country tab of the app (using the saved data snapshot). A red cross on a commit means something broke.
-# The vercel-build job repeats them on the packages as Vercel installs them, so a break on the live site shows here.
+# page and country tab of the app (using the saved data snapshot), then the static site's JS tests, its checks
+# (python -m staticbuild.validate) and a smoke test of every route in headless Chrome. A red cross on a commit means something broke.
 name: Tests
 
 on:
@@ -14,34 +14,26 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35  # pytest, then the JS tests and the smoke test (38 page loads)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
           cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
       - name: Install
         run: pip install -r requirements.txt pytest httpx
       - name: Run the tests
         run: python -m pytest -q
-
-  vercel-build:
-    # Installs the packages the way Vercel does (uv, from pyproject.toml, into a vendor folder instead of
-    # site-packages), then starts the app and runs the tests on them. A push that would break the live site fails here.
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version-file: .python-version
-      - name: Install like Vercel
+      - name: Run the JS tests
+        run: node --test web/tests/*.test.mjs
+      - name: Check the built site
+        run: python -m staticbuild.validate
+      - name: Open every route in headless Chrome
         run: |
-          pip install uv pytest httpx
-          uv export --no-dev --no-emit-project --no-hashes -o vercel-requirements.txt
-          uv pip install --python "$(command -v python)" --target _vendor -r vercel-requirements.txt
-      - name: Start the app as Vercel does
-        run: PYTHONPATH=_vendor python scripts/check_vercel_build.py
-      - name: Run the tests on these packages
-        run: PYTHONPATH=_vendor python -m pytest -q
+          python scripts/serve_web.py --root web --port 8650 > /dev/null &
+          for _ in $(seq 50); do curl -fso /dev/null http://127.0.0.1:8650/ && break; sleep 0.2; done
+          node scripts/smoke_web.mjs --base http://127.0.0.1:8650

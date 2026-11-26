@@ -1,5 +1,6 @@
-# Every 30 minutes: check that the live app answers. If it fails three tries in a row, open (or update) a "Site down"
-# issue, which GitHub emails to the repository owner; once the site answers again, close the issue.
+# Every 30 minutes: check that the live site serves its files (static files only: no CPU cost on Vercel). If one fails
+# three tries in a row, open (or update) a "Site down" issue, which GitHub emails to the repository owner; once the
+# site answers again, close the issue.
 name: Uptime check
 
 on:
@@ -25,7 +26,8 @@ jobs:
         run: |
           failed=""
           # path and a string the response body must contain
-          for spec in '/|id="root"' '/_stcore/health|ok' '/api/v1/countries|"index_year"'; do
+          for spec in '/|<title>Seismographic</title>' '/data/meta.json|"year":' '/api/v1/index.json|"index_year"' \
+                      '/vendor/globe/globe.gl.min.js|globe.gl'; do
             path="${spec%%|*}"; want="${spec#*|}"
             ok=""
             for attempt in 1 2 3; do
@@ -38,7 +40,7 @@ jobs:
             fi
           done
           if [ -n "$failed" ]; then
-            printf "The live app at %s is not answering.\n\n%b\nCheck the Vercel dashboard (Deployments, then Logs) and DEPLOY.md, Option C.\n" "$SITE" "$failed" > report.md
+            printf "The live site at %s is not answering.\n\n%b\nCheck the Vercel dashboard (Deployments); an instant rollback restores the last good deployment.\n" "$SITE" "$failed" > report.md
             echo "down=true" >> "$GITHUB_OUTPUT"
           fi
       - name: Open or close the issue

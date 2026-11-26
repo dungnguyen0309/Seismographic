@@ -44,8 +44,8 @@ jobs:
               repo_id=space, repo_type="space", folder_path=".",
               commit_message=f"Publish {os.environ['GITHUB_SHA'][:7]}",
               ignore_patterns=[".git/*", ".github/*", ".devcontainer/*", "deploy/*", "docs/*", "tests/*", "DEPLOY.md",
-                               "__pycache__/*", "pytest.ini"],
-              delete_patterns=["*.py", "*.csv", "*.md", "*.svg", "*.toml", "*.txt", "*.json", "Dockerfile"],
+                               "__pycache__/*", "pytest.ini", "web/*"],  # the static site (~24 MB): not used by the Space
+              delete_patterns=["*.py", "*.csv", "*.md", "*.svg", "*.toml", "*.txt", "*.json", "Dockerfile", "web/*"],
           )
           print(f"Published to https://huggingface.co/spaces/{space}")
           EOF

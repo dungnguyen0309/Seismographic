@@ -44,7 +44,7 @@ written analyst assessments with probabilistic key judgments and scenarios.
 | Tools | **Indicator explorer** | Any of the 17 indicators on the 3D globe, with its distribution and the riskiest and safest 10 countries |
 |  | **Stress test** | Hit many countries at once with one economic shock (a 2009-style recession, a 2020-style pandemic, a 2022-style price surge, higher-for-longer rates, or your own) and see who crosses a risk tier or a red flag, on the globe and in a table; filter by region and income group, share the link, download the results |
 |  | **Assessment builder** | A form that turns your analysis into a structured assessment file: BLUF (bottom line up front), key judgments in the estimative language of ICD 203 (the US intelligence community's analytic standards), drivers, scenarios and signposts; [assessments/README.md](assessments/README.md) says how to add it |
-|  | **Data downloads** | Every table behind the index (the index, all 17 indicators with years and scores, red flags, history since 2015, the conflict outlook) as CSV, one Excel workbook or JSON, with a data dictionary; when the app runs as an ASGI app (see *Run it yourself*), a read-only JSON API too |
+|  | **Data downloads** | Every table behind the index (the index, all 17 indicators with years and scores, red flags, history since 2015, the conflict outlook) as CSV, one Excel workbook or JSON, with a data dictionary and a read-only JSON API |
 | Reference | **Introduction** | What the tool is, how the score is built (indicators, risk scores, pillars, then the composite and tiers), the four pillars and their weights, a quick start and the caveats |
 |  | **Guide** | A plain-language reading of any country: what each tier, pillar and warning threshold looks like on the ground, what it means for business, NGOs, travel and research, and the tool's limits. Each country profile has the same reading under *What it means in real life* on its Summary tab |
 |  | **Methodology** | Three tabs: how the index is built (every indicator, normalisation, weight and threshold), two tests of the model (its track record before new armed conflicts and a benchmark against the Fragile States Index) and its limits |
@@ -195,26 +195,28 @@ tests/                       tests for the model and every page
 * If news, video, a globe or a benchmark breaks, it fails on its own with a one-line note. A page that breaks
   shows a plain message with *Try again* instead of a stack trace; the error type is under *Technical
   details* and the full trace goes to the server log.
-* With no WebGL or no CDN, the 3D globe says why it cannot draw (with *Try again* if a download failed), and
+* With no WebGL, or if the globe files fail to load, the 3D globe says why it cannot draw (with *Try again* if a download failed), and
   the rest of the page works.
 
-## Run it yourself
+## Static site
 
-Seismographic needs Python 3.12 or newer (the tests run on 3.14).
+The live site is a static build in `web/`: plain HTML, CSS and ES modules, with no server code. `python -m staticbuild`
+runs the `prm` model and writes JSON, CSV, XLSX and PDF files into `web/`. The browser does the rest. Fonts
+(JetBrains Mono), Plotly and the globe libraries are served from `web/vendor/`. See [docs/static-site.md](docs/static-site.md).
+
+Python 3.12 or newer and Node 24 (CI uses it) or newer.
 
 ```bash
 pip install -r requirements.txt
-streamlit run streamlit_app.py
+python -m staticbuild                                  # rebuild web/ (network needed; GDELT may rate-limit)
+python -m staticbuild.validate                         # check the built files
+python scripts/serve_web.py --port 8765 --root web     # serve it at http://localhost:8765
+node --test web/tests/*.test.mjs                       # JS tests
+node scripts/smoke_web.mjs --base http://localhost:8765   # open every route in headless Chrome
+python -m pytest -q                                    # Python tests (pip install pytest httpx)
 ```
 
-Run the tests with `pip install pytest httpx` and then `python -m pytest`.
-
-To serve the app together with the JSON API, run it as an ASGI app (ASGI is the standard interface between Python
-web apps and servers; uvicorn comes with Streamlit):
-
-```bash
-uvicorn asgi:app --port 8501
-```
+The read-only JSON API is static files under `web/api/v1`:
 
 ```text
 GET /api/v1                     what is available
@@ -223,13 +225,16 @@ GET /api/v1/countries/KEN       one economy: scores, indicators, red flags, hist
 GET /api/v1/dictionary          what every field means
 ```
 
-The live app runs this way on Vercel, so the API is public at https://seismographic.vercel.app/api/v1. Under
-`streamlit run streamlit_app.py`, which Streamlit Community Cloud, Hugging Face Spaces and the `Dockerfile` use,
-there are no custom routes: the API is absent and the Data downloads page hides it.
+Data is refreshed by GitHub Actions and committed to `web/`. [DEPLOY.md](DEPLOY.md) covers hosting and the refresh
+workflows.
 
-[DEPLOY.md](DEPLOY.md) explains how to publish on Streamlit Community Cloud, on Hugging Face Spaces (no
-"Hosted with Streamlit" badge) or on Vercel (no badge, experimental: free-plan connections are cut after 5
-minutes). The `Dockerfile` also runs the app on Render, Fly.io or any Docker host.
+## Streamlit app (local)
+
+The original Streamlit app still runs locally:
+
+```bash
+streamlit run streamlit_app.py
+```
 
 ## Limitations
 

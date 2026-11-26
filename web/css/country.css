@@ -1,0 +1,110 @@
+/* Country profile (app_pages/country.py and the CSS it adds in prm/ui.py). This sheet stays loaded after the visitor
+   leaves the page, so every rule is scoped to the page's own class names (sg-cp, sg-cp-*, sg-country-*, sg-whatif-*). */
+
+/* Streamlit's buttons are 14px (the shell's .sg-btn is 16px) */
+.sg-cp .sg-btn:not(.sg-btn-tertiary) { font-size: 0.875rem; }
+
+/* the picker's label sits beside it */
+.sg-country-pick { flex-direction: row; align-items: center; gap: 10px; max-width: 420px; }
+.sg-country-pick > .sg-label-row { margin: 0; flex: none; }
+.sg-country-pick > .sg-select { flex: 1 1 auto; min-width: 0; }
+
+/* Add to compare, PDF brief, Follow: on phones one row of 44px buttons, so the tabs start higher */
+.sg-country-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+@media (max-width: 640px) {
+  .sg-country-actions { gap: 8px; }
+  .sg-country-actions > * { flex: 1 1 calc(33% - 8px); min-width: 0; }
+  .sg-country-actions :is(.sg-btn, .sg-follow, .sg-page-link) { width: 100%; min-height: 44px; height: auto; padding: 4px 8px;
+    margin: 0; font-size: 0.8125rem; line-height: 1.2; white-space: normal; justify-content: center; }
+}
+
+/* st.columns weights: each column's basis is its share less its part of the gap (1rem small, 4rem large) */
+@media (min-width: 641px) {
+  .sg-country-cols > :first-child { flex: 1 1 calc(52.381% - 0.5rem); }
+  .sg-country-cols > :last-child { flex: 1 1 calc(47.619% - 0.5rem); }
+  .sg-cp-reading > :first-child { flex: 1 1 calc(53.4884% - 2rem); }
+  .sg-cp-reading > :last-child { flex: 1 1 calc(46.5116% - 2rem); }
+}
+.sg-cp-brief { padding-left: 1.5em; display: flex; flex-direction: column; gap: 1.25rem; }
+.sg-cp-chart { min-width: 0; }
+
+/* tables as Streamlit's grid: one line per cell, the pinned first column muted, progress columns (a bar and the whole
+   number), the flag filling its cell, Severe in bold, Unit and Source cut to a width (the CSV has them in full) */
+:is(.sg-cp-ranks, .sg-cp-indicators, .sg-cp-gov) td { white-space: nowrap; }
+:is(.sg-cp-ranks, .sg-cp-indicators, .sg-cp-gov) tbody td:first-child { color: var(--sg-muted); background: var(--sg-raised); }
+.sg-cp-progress { display: flex; align-items: center; gap: 12px; }
+.sg-cp-bar { position: relative; flex: 1 1 100px; min-width: 52px; height: 8px; border-radius: 4px; overflow: hidden;
+  background: var(--sg-line); }
+.sg-cp-bar::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--p); background: var(--c); }
+.sg-cp-num { min-width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
+:is(.sg-cp-ranks, .sg-cp-indicators) td:has(.sg-cp-progress) { min-width: 100px; }
+.sg-cp-ranks img.sg-flag { display: block; width: 40px; max-width: none; height: 28px; margin: -4px 0; border-radius: 2px; }
+.sg-cp-tier-top { font-weight: 700; }
+.sg-cp-indicators :is(td, th):is(:nth-child(6), :nth-child(7)) { overflow: hidden; text-overflow: clip; }
+.sg-cp-indicators td:has(.sg-cp-progress) { min-width: 150px; }
+.sg-cp-indicators :is(tbody td, thead th):first-child { position: sticky; left: 0; z-index: 2; } /* pinned, as in the app */
+.sg-cp-indicators :is(td, th):nth-child(6) { max-width: 140px; }
+.sg-cp-indicators :is(td, th):nth-child(7) { max-width: 180px; }
+:is(.sg-cp-ranks, .sg-cp-indicators) a { color: inherit; text-decoration: none; }
+:is(.sg-cp-ranks, .sg-cp-indicators) a:hover { color: var(--sg-text); text-decoration: underline; }
+
+/* What-if: side by side when there is room; stacked, the result comes first, right under the scenario buttons, and a
+   one-line copy of it stays under the top bar while the sliders scroll */
+.sg-whatif-split { container: sgwhatif / inline-size; }
+.sg-whatif-cols { display: flex; gap: 4rem; align-items: flex-start; }
+.sg-whatif-controls { flex: 1 1 calc(46.5116% - 2rem); min-width: 0; }
+.sg-whatif-results { flex: 1 1 calc(53.4884% - 2rem); min-width: 0; }
+.sg-whatif-live { display: none; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 0.875rem; color: var(--sg-soft); }
+@container sgwhatif (max-width: 900px) {
+  .sg-whatif-cols { flex-direction: column; align-items: stretch; }
+  .sg-whatif-cols > * { flex: none; }
+  .sg-whatif-results { order: -1; }
+  .sg-whatif-live:not([hidden]) { display: flex; position: sticky; top: 3.75rem; z-index: 5; padding: 8px 0; background: var(--sg-bg);
+    border-bottom: 1px solid var(--sg-line); }
+}
+.sg-whatif-presets { flex-wrap: wrap; gap: 1rem; }
+.sg-whatif-tier { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; }
+.sg-cp-was { color: var(--sg-muted); margin-left: 6px; }
+
+/* Economy: a missing figure reads "No data" in small grey */
+.sg-cp-nodata .sg-metric-value { font-size: 0.875rem; color: var(--sg-muted); line-height: 2.14; }
+
+/* the real-life reading and the assessment; #### headings as Streamlit's markdown pads them (0.5rem above) */
+.sg-cp h4 { padding-top: 0.5rem; }
+.sg-cp-reading { gap: 4rem; }
+@media (max-width: 640px) { .sg-cp-reading { gap: 1rem; } }
+.sg-cp-assess { align-items: flex-start; }
+.sg-cp-assess .sg-metric { padding: 0; }
+.sg-cp-assess .sg-metric-label { font-size: 0.875rem; }
+.sg-cp-assess .sg-metric-value { font-size: 1.75rem; }
+.sg-cp-rating { gap: 0.75rem; }
+.sg-cp-code, .sg-cp-md code { padding: 0.1em 0.3em; border-radius: 4px; background: var(--sg-panel); font-size: 0.875em; }
+.sg-cp-md { display: flex; flex-direction: column; gap: 1rem; min-width: 0; line-height: 1.6; overflow-wrap: break-word; }
+.sg-cp-md > * { min-width: 0; }
+.sg-cp-md > :is(h1, h2, h3) { padding-top: 0.9rem; }
+.sg-cp .sg-cp-md h1 { font-size: clamp(1.25rem, 2.4vw, 1.5rem); }
+.sg-cp-md :is(ul, ol) { padding-left: 1.5em; display: flex; flex-direction: column; gap: 0.25rem; }
+.sg-cp-md-table { max-width: 100%; overflow-x: auto; }
+.sg-cp .sg-cp-md-table table { display: table; border-collapse: collapse; font-size: 1rem; line-height: 1.6; }
+.sg-cp-md-table :is(th, td) { padding: 0.5rem 0.75rem; border: 1px solid var(--sg-line); text-align: left; vertical-align: middle; }
+.sg-cp-md-table th { font-weight: 700; color: var(--sg-strong); }
+
+/* Material Symbols the vendored set lacks (insights, event, restart_alt) */
+.sg-cp-i-insights { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 20q-.825 0-1.412-.587Q1 18.825 1 18q0-.825.588-1.413Q2.175 16 3 16h.263q.112 0 .237.05l4.55-4.55Q8 11.375 8 11.262V11q0-.825.588-1.413Q9.175 9 10 9t1.413.587Q12 10.175 12 11q0 .05-.05.5l2.55 2.55q.125-.05.238-.05h.524q.113 0 .238.05l3.55-3.55q-.05-.125-.05-.238V10q0-.825.587-1.413Q20.175 8 21 8q.825 0 1.413.587Q23 9.175 23 10q0 .825-.587 1.412Q21.825 12 21 12h-.262q-.113 0-.238-.05l-3.55 3.55q.05.125.05.238V16q0 .825-.587 1.413Q15.825 18 15 18q-.825 0-1.412-.587Q13 16.825 13 16v-.262q0-.113.05-.238l-2.55-2.55q-.125.05-.238.05H10q-.05 0-.5-.05L4.95 17.5q.05.125.05.238V18q0 .825-.588 1.413Q3.825 20 3 20ZM4 9.975l-.625-1.35L2.025 8l1.35-.625L4 6.025l.625 1.35L5.975 8l-1.35.625ZM15 9l-.95-2.05L12 6l2.05-.95L15 3l.95 2.05L18 6l-2.05.95Z'/%3E%3C/svg%3E"); }
+.sg-cp-i-event { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M596.82-220Q556-220 528-248.18q-28-28.19-28-69Q500-358 528.18-386q28.19-28 69-28Q638-414 666-385.82q28 28.19 28 69Q694-276 665.82-248q-28.19 28-69 28ZM180-80q-24 0-42-18t-18-42v-620q0-24 18-42t42-18h65v-60h65v60h340v-60h65v60h65q24 0 42 18t18 42v620q0 24-18 42t-42 18H180Zm0-60h600v-430H180v430Zm0-490h600v-130H180v130Zm0 0v-130 130Z'/%3E%3C/svg%3E"); }
+.sg-cp-i-restart { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M451-122q-123-10-207-101t-84-216q0-77 35.5-145T295-695l43 43q-56 33-87 90.5T220-439q0 100 66 173t165 84v60Zm60 0v-60q100-12 165-84.5T741-439q0-109-75.5-184.5T481-699h-20l60 60-43 43-133-133 133-133 43 43-60 60h20q134 0 227 93.5T801-439q0 125-83.5 216T511-122Z'/%3E%3C/svg%3E"); }
+
+/* st.toast */
+.sg-cp-toast { position: fixed; z-index: 1000; right: 1rem; bottom: 6.5rem; display: flex; align-items: center; gap: 0.75rem;
+  max-width: calc(100vw - 2rem); padding: 0.75rem 1rem; border: 1px solid var(--sg-line); border-radius: 0.5rem;
+  background: var(--sg-panel); color: var(--sg-text); font-size: 0.875rem; }
+
+/* the events list as st.markdown draws it: its last line's spacing is taken back (-1rem), so the calendar link sits close */
+.sg-cp .sg-events { margin-bottom: -1rem; }
+/* the sensitivity grid fills the width as st.dataframe does: the two number columns take an equal part of the room */
+.sg-cp-sens th:not(:first-child) { width: 28%; }
+/* Streamlit shows a slider's two ends only while the pointer is over it or it has focus */
+.sg-cp .sg-slider-ends { opacity: 0; }
+.sg-cp .sg-slider:is(:hover, :focus-within) .sg-slider-ends { opacity: 1; }
+/* st.dataframe heads are left-aligned whatever the column's alignment */
+.sg-cp .sg-table th { text-align: left !important; }

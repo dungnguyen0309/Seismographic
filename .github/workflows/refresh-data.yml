@@ -1,5 +1,7 @@
-# Saves a weekly copy of all data to data/snapshot/. The app opens on it straight away (no download while it is
-# under 10 days old) and keeps working if an API goes down.
+# Saves a weekly copy of all data to data/snapshot/ and rebuilds the whole static site (web/) from it, GDELT included.
+# The Streamlit app opens on the snapshot straight away (no download while it is under 10 days old) and keeps working
+# if an API goes down. The site is rebuilt in a temporary folder and committed only if every check passes; otherwise
+# nothing is committed, the site keeps the last good data and an issue is opened.
 # Runs automatically every Monday; you can also run it from the Actions tab ("Run workflow").
 name: Refresh data snapshot
 
@@ -9,9 +11,11 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: write
+  issues: write
 
-# shared with refresh-hotspots.yml, so the two never push at the same time
+# shared by the three refresh workflows, so two of them never push at the same time
 concurrency:
   group: data-snapshot
   cancel-in-progress: false
@@ -19,11 +23,15 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 350  # under the 360 cap, so the issue and keepalive steps still run
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
       - name: Install dependencies
         run: pip install -r requirements.txt  # the snapshot also saves the index history, built with the app's code
       - name: Download the latest data
@@ -32,12 +40,41 @@ jobs:
         run: |
           pip install pytest httpx
           python -m pytest -q
-      - name: Commit the snapshot
+      - name: Rebuild the site and check it  # if this fails, nothing is committed
+        # GDELT: two requests for each of about 218 economies, 5 s apart, each often taking 15-20 s (2-3 hours)
+        timeout-minutes: 270
+        env:
+          GDELT_BUDGET_MIN: 150  # then GDELT stops and the remaining countries keep last week's files
+        run: bash scripts/refresh_web.sh --fixtures  # every exporter, and the JS test fixtures for the new data
+      - name: Commit the snapshot and the site
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/snapshot
+          git add data/snapshot web
           git diff --cached --quiet && exit 0
           git commit -m "Refresh data snapshot"
           git pull --rebase
           git push
+      - name: Open an issue  # one per workflow: skipped while one is open
+        if: failure() || cancelled()  # a timeout cancels the job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: "Data refresh failed: ${{ github.workflow }}"
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          open=$(gh issue list --state open --search "in:title \"$TITLE\"" --json title --jq 'map(select(.title == env.TITLE)) | length')
+          if [ "$open" = 0 ]; then
+            gh issue create --title "$TITLE" --body "Nothing was committed, so the site keeps the last good data. Log: $RUN"
+          fi
+      - name: Keep the scheduled workflows enabled  # GitHub turns schedules off after 60 days without activity
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for wf in $(grep -l '^  schedule:' .github/workflows/*.yml); do
+            api="repos/$GITHUB_REPOSITORY/actions/workflows/$(basename "$wf")"
+            # a workflow switched off by hand stays off (uptime.yml until the site is live)
+            [ "$(gh api "$api" --jq .state)" = disabled_manually ] && continue
+            gh api -X PUT "$api/enable" || echo "could not enable $wf"  # what gh workflow enable calls
+          done

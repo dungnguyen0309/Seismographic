@@ -1,0 +1,46 @@
+/* Compare, Score changes, Regions, Indicator explorer (web/js/pages/{compare,changes,regions,explorer}.js) */
+
+/* Compare: each chip in its country's colour, the one its lines use in every chart on the page */
+.g8-picker .sg-chips > .sg-tag { color: var(--sg-on-accent); }
+.g8-picker .sg-chips > .sg-tag:nth-child(1) { background: var(--sg-country-1); }
+.g8-picker .sg-chips > .sg-tag:nth-child(2) { background: var(--sg-country-2); }
+.g8-picker .sg-chips > .sg-tag:nth-child(3) { background: var(--sg-country-3); }
+.g8-picker .sg-chips > .sg-tag:nth-child(4) { background: var(--sg-country-4); }
+.g8-picker .sg-chips > .sg-tag:nth-child(5) { background: var(--sg-country-5); }
+.g8-picker .sg-chips > .sg-tag:nth-child(6) { background: var(--sg-country-6); }
+/* "Similar to …:" on the left, the suggestions pushed right; they wrap under it on a phone */
+.g8-similar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1rem; }
+.g8-similar .sg-caption { margin: 0; }
+.g8-similar > .sg-btn:first-of-type { margin-left: auto; }
+.g8-cards { align-items: stretch; }
+.g8-cards .sg-card { gap: 0; }
+.g8-card-name { font-weight: 700; color: var(--sg-strong); overflow-wrap: anywhere; }
+.sg-cmp-score { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 6px 0 4px; }
+.sg-cmp-score .sg-cs-num { font-size: 2rem; }
+.sg-cmp-meta { font-size: 0.75rem; color: var(--sg-muted); line-height: 1.45; text-wrap: pretty; }
+.g8-wide-1 { flex-grow: 1 !important; }
+.g8-wide-12 { flex-grow: 1.2 !important; }
+.g8-wide-13 { flex-grow: 1.3 !important; }
+.g8-wide-2 { flex-grow: 2 !important; }
+/* the Indicators table keeps its first column in view while the country columns scroll (st.dataframe pinned) */
+.g8-pinned .sg-table :is(th, td):first-child { position: sticky; left: 0; z-index: 2; background: var(--sg-bg); }
+
+/* Score changes, Regions: the region picker fits the longest region name */
+.g8-narrow { max-width: 520px; }
+
+/* Progress cells (st.column_config.ProgressColumn): a bar, then the number */
+.sg-table td.g8-progress { white-space: nowrap; text-align: right; }
+.g8-bar { position: relative; display: inline-block; width: var(--g8-bar, 64px); height: 6px; margin-right: 8px; border-radius: 3px;
+  vertical-align: middle; background: var(--sg-line); overflow: hidden; }
+.g8-bar::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--v); background: var(--c); }
+
+/* the grid keeps a name on one line (st.dataframe cells never wrap) */
+.g8-body .sg-table td { white-space: nowrap; }
+.g8-leaders { --g8-bar: 150px; }
+
+/* Regions: a scrolling news box as tall as the globe; the event icon (Material Symbols "event") */
+.g8-news { max-height: 520px; overflow-y: auto; }
+.g8-icon-event { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M580-240q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29ZM200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z'/%3E%3C/svg%3E"); }
+
+/* Explorer: the source line under the pickers */
+.g8-lead { white-space: pre-line; }

@@ -1,0 +1,43 @@
+/* Conflict & displacement, Economic stress, Hotspots (loaded by their page modules) */
+
+/* st.columns with set widths: [2.4, 1] beside the globe, [1.15, 1] under the heatmap */
+.g9-globe-row > :first-child { flex-grow: 2.4; }
+.g9-split-115 > :first-child { flex-grow: 1.15; }
+.g9-globe { min-width: 0; }
+
+/* st.dataframe cells stay on one line; the table scrolls sideways inside its box */
+.g9-table .sg-table { width: max-content; min-width: 100%; }  /* at width 100% Chrome let flagged names spill over */
+.g9-table .sg-table td { white-space: nowrap; }
+.g9-large { display: inline-block; max-width: 384px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+/* ui.NAME_COLUMN is 200 px wide: a longer name is cut, as in the app */
+.g9-table .sg-cell-country .sg-row-link, .g9-medium { display: inline-block; max-width: 184px; overflow: hidden;
+  text-overflow: ellipsis; vertical-align: bottom; }
+
+/* st.column_config.ProgressColumn: the bar, then the value */
+.g9-progress { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; width: 100%; white-space: nowrap; }
+.g9-bar { position: relative; flex: 1 1 auto; min-width: 40px; max-width: 96px; height: 4px; border-radius: 2px; background: var(--sg-line); overflow: hidden; }
+.g9-bar::after { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--p) * 100%); background: var(--c); border-radius: 2px; }
+
+/* st.select_slider shows no min and max under the track */
+.g9-select-slider .sg-slider-ends { display: none; }
+
+/* filter rows: controls side by side, aligned on their bottom edge, wrapping on phones */
+.g9-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem; }
+.g9-w290 { width: 290px; max-width: 100%; }
+.g9-controls .sg-seg:disabled { cursor: not-allowed; color: var(--sg-faint); opacity: 0.6; }
+
+/* Hotspot cards: 3 to a row, 2 when the board is narrow, 1 on phones (sized by the board's own width) */
+.g9-board { container: g9board / inline-size; }
+.g9-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
+@container g9board (max-width: 900px) { .g9-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container g9board (max-width: 560px) { .g9-grid { grid-template-columns: minmax(0, 1fr); } }
+.g9-card { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 12px 14px; background: var(--sg-raised);
+  border: 1px solid var(--sg-line); border-radius: 10px; }
+.g9-card:hover { border-color: var(--sg-line-strong); }
+.g9-card > .sg-btn { margin-top: auto; align-self: flex-start; padding-top: 10px; }  /* the Open buttons line up along a row */
+.g9-hs { display: flex; flex-direction: column; gap: 6px; font-size: 0.875rem; color: var(--sg-soft); line-height: 1.4; }
+.g9-hs-id { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.g9-hs-id img { width: 30px; height: 22px; object-fit: cover; border-radius: 3px; flex: none; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14); }
+.g9-hs-name { font-weight: 700; font-size: 1rem; color: var(--sg-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.g9-hs-meta { color: var(--sg-muted); font-size: 0.75rem; }
+.g9-hs b { color: var(--sg-strong); font-variant-numeric: tabular-nums; }

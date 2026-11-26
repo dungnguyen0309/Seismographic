@@ -1,0 +1,114 @@
+/* Reference pages (introduction, guide, methodology, glossary, sources, video): the app's HTML cards, grids and
+   legend blocks (app_pages/*.py inline styles) and st.table / st.pills / markdown lists, in the shell's vocabulary. */
+
+/* markdown lists: the numbers and bullets hang in the margin, as Streamlit draws them */
+.sg-ref-list { padding: 0; margin: 0; }
+.sg-ref-list > li { margin: 0.2em 0 0.2em 1.15em; padding-left: 0.3em; }
+.sg-ref-list > li:first-child { margin-top: 0; }
+.sg-ref-list > li:last-child { margin-bottom: 0; }
+.sg-ref-quote { margin: 0; padding: 0 0 0 0.85rem; border-left: 1px solid var(--sg-line); color: var(--sg-muted); font-style: italic;
+  max-width: 70ch; }
+.sg-page h4.sg-ref-h4 { padding-top: 0.5rem; }
+
+/* HTML card grids: as many columns of --min as fit */
+.sg-ref-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(var(--min, 220px), 100%), 1fr)); gap: 10px; margin-top: 6px; }
+.sg-ref-card { min-width: 0; padding: 14px 16px; background: var(--sg-raised); border: 1px solid var(--sg-line); border-radius: 10px; }
+.sg-ref-stat { padding: 10px 12px; border: 1px solid var(--sg-line); border-radius: 10px; min-width: 0; }
+.sg-ref-big { font-size: 1.5rem; font-weight: 700; line-height: 1.1; color: var(--sg-text); }
+.sg-ref-small { font-size: 0.75rem; line-height: 1.5; color: var(--sg-muted); margin-top: 2px; }
+.sg-ref-card-title { font-weight: 700; margin: 0 0 6px; }
+.sg-ref-card-text { font-size: 0.875rem; line-height: 1.5; color: var(--sg-soft); }
+.sg-ref-pillar-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.sg-ref-pillar-head > span:first-child { font-weight: 700; }
+.sg-ref-pillar-head > span:last-child { font-size: 0.75rem; color: var(--sg-muted); white-space: nowrap; }
+.sg-ref-pillar-q { font-size: 0.875rem; line-height: 1.5; color: var(--sg-text); margin: 6px 0; }
+.sg-ref-pillar-ind { font-size: 0.75rem; line-height: 1.5; color: var(--sg-faint); }
+.sg-ref-box { gap: 1rem; }
+
+/* two columns of unequal width with a wide gap (st.columns([1.15, 1], gap="large")) */
+.sg-ref-cols { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1rem 4rem; align-items: start; }
+.sg-ref-cols-even { grid-template-columns: 1fr 1fr; gap: 1rem; }
+.sg-ref-cols-video { grid-template-columns: 1.4fr 2fr; gap: 1rem; }
+@media (max-width: 640px) { .sg-ref-cols, .sg-ref-cols-even, .sg-ref-cols-video { grid-template-columns: minmax(0, 1fr); } }
+
+/* st.table(border="horizontal") */
+.sg-ref-static-wrap { max-width: 100%; overflow-x: auto; }
+.sg-ref-static { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.875rem; line-height: 1.5; }
+.sg-ref-static th, .sg-ref-static td { padding: 4px 6px; text-align: left; vertical-align: middle; border-bottom: 1px solid rgba(44, 44, 42, 0.45); }
+.sg-ref-static th { padding-left: 8px; font-weight: 400; color: rgba(236, 236, 236, 0.6); }
+.sg-ref-static .sg-ref-num { text-align: right; }
+.sg-ref-static td:first-child { padding-left: 8px; }
+
+/* methodology: the page's top-level tabs take the h2 size */
+.sg-ref-bigtabs > .sg-tabs > .sg-tablist .sg-tab { height: 3rem; font-size: clamp(1.12rem, 2.2vw, 1.32rem); font-weight: 600; letter-spacing: -0.01em; }
+
+/* wide dataframes (st.dataframe): one line per cell, scrolling sideways; "large" text columns are cut at 25rem */
+.sg-ref-wide .sg-table td { white-space: nowrap; }
+.sg-ref-long { display: block; max-width: 25rem; overflow: hidden; text-overflow: ellipsis; }
+.sg-ref-link { white-space: nowrap; }
+
+/* glossary */
+.sg-ref-search .sg-select { cursor: text; }
+.sg-ref-tile { display: block; height: 100%; padding: 10px 12px; background: var(--sg-raised); border: 1px solid var(--sg-line); border-radius: 10px;
+  color: inherit; text-decoration: none; }
+.sg-ref-tile:hover { border-color: var(--sg-line-strong); }
+.sg-ref-tile-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 8px; }
+.sg-ref-tile-head > span:first-child { font-weight: 700; color: var(--sg-strong); line-height: 1.3; }
+.sg-ref-tile-head > span:last-child { font-size: 0.75rem; color: var(--sg-muted); white-space: nowrap; }
+.sg-ref-tile .sg-ref-small { margin-top: 3px; line-height: 1.4; }
+.sg-ref-band { scroll-margin-top: 12px; display: flex; gap: 14px; align-items: flex-start; border-top: 1px solid var(--sg-line); padding-top: 16px;
+  margin-top: 12px; }
+.sg-ref-band.compact { padding-top: 10px; margin-top: 0; }
+.sg-ref-band-dot { width: 10px; height: 10px; border-radius: 2px; background: var(--c); flex: none; margin-top: 0.55em; }
+.sg-ref-band-body { flex: 1; min-width: 0; }
+.sg-ref-band-name { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.sg-ref-band-name > span:first-child { font-size: 1.3rem; font-weight: 700; color: var(--sg-strong); line-height: 1.6; }
+.sg-ref-band.compact .sg-ref-band-name > span:first-child { font-size: 1.05rem; }
+.sg-ref-count { font-size: 0.75rem; color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 53%, transparent); border-radius: 999px; padding: 1px 9px;
+  white-space: nowrap; }
+.sg-ref-band-blurb { color: var(--sg-soft); font-size: 0.875rem; margin-top: 3px; }
+.sg-ref-backed { font-size: 0.75rem; color: var(--sg-faint); margin-top: 6px; }
+.sg-ref-backed a { color: inherit; }
+.sg-ref-term { padding: 11px 13px; background: var(--sg-raised); border: 1px solid var(--sg-line); border-radius: 8px; min-width: 0; }
+.sg-ref-term-name { font-weight: 700; color: var(--c); font-size: 1rem; line-height: 1.35; }
+.sg-ref-term-def { color: var(--sg-text); font-size: 0.875rem; line-height: 1.5; margin-top: 4px; }
+.sg-ref-tag { display: inline-block; font-size: 0.75rem; color: var(--sg-soft); background: #ffffff0f; border: 1px solid #ffffff1a; border-radius: 999px;
+  padding: 0 8px; margin: 6px 4px 0 0; }
+.sg-ref-term-link { margin-top: 8px; font-size: 0.75rem; }
+.sg-ref-mark { background: #c9850066; color: inherit; border-radius: 3px; padding: 0 2px; }
+.sg-ref-chip-row { margin: 12px 0 8px; }
+.sg-ref-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 4rem; align-items: start; }
+@media (max-width: 640px) { .sg-ref-legend { grid-template-columns: minmax(0, 1fr); } }
+.sg-ref-scale { margin: 0 0 14px; }
+.sg-ref-scale-title { font-size: 0.875rem; margin-bottom: 4px; }
+.sg-ref-blocks { display: flex; gap: 2px; height: 8px; }
+.sg-ref-blocks > i { flex: 1; }
+.sg-ref-scale-ends { display: flex; justify-content: space-between; color: var(--sg-faint); font-size: 0.75rem; margin-top: 3px; }
+
+/* sources: source cards */
+.sg-ref-src-pub { font-size: 0.75rem; color: var(--sg-faint); }
+.sg-ref-src-name { font-weight: 700; margin: 3px 0 6px; line-height: 1.35; }
+.sg-ref-src-use { font-size: 0.875rem; color: var(--sg-soft); line-height: 1.45; }
+.sg-ref-src-meta { font-size: 0.75rem; color: var(--sg-faint); margin-top: 8px; }
+.sg-ref-src-load { font-size: 0.75rem; color: var(--sg-soft); margin-top: 6px; }
+.sg-ref-src-inds { font-size: 0.75rem; margin-top: 6px; line-height: 1.6; }
+.sg-ref-card .sg-ref-src-name a, .sg-ref-src-inds a { color: var(--sg-text); }
+
+/* video: st.pills and the badges in the channel line */
+.sg-ref-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.sg-ref-pill { min-height: 32px; padding: 4px 12px; border-radius: 9999px; border: 1px solid var(--sg-line); background: var(--sg-bg); color: var(--sg-muted);
+  font-size: 0.875rem; line-height: 1.6; white-space: nowrap; }
+.sg-ref-pill:hover { color: var(--sg-text); border-color: var(--sg-accent); }
+.sg-ref-pill[aria-pressed="true"] { color: var(--sg-accent); border-color: var(--sg-accent); background: rgba(244, 243, 238, 0.1); }
+@media (pointer: coarse) { .sg-ref-pill { min-height: 44px; } }
+.sg-ref-badge { padding: 0 4px; border-radius: 4px; font-size: 0.875rem; background: var(--sg-panel); color: var(--sg-muted); }
+.sg-ref-badge.warn { background: var(--st-warning-bg); color: var(--st-warning-text); }
+.sg-ref-inline-code { padding: 0.2em 0.4em; border-radius: 0.25rem; background: var(--sg-panel); color: var(--sg-soft); font-size: 0.875em; }
+.sg-ref-fit .sg-ref-static { width: auto; }
+.sg-ref-scale:last-child { margin-bottom: 0; }
+/* st.header(help=...): the (?) shows when the heading is hovered or the mark has focus; always on touch screens */
+@media (hover: hover) {
+  .sg-ref-help-h > .sg-help-wrap { opacity: 0; }
+  .sg-ref-help-h:hover > .sg-help-wrap, .sg-ref-help-h > .sg-help-wrap:focus-within { opacity: 1; }
+}
+.sg-ref-card.src { padding: 12px 14px; }

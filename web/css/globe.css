@@ -1,0 +1,121 @@
+/* The 3D risk globe (js/lib/globe.js), as prm/globe.py's _CSS. */
+.rg-wrap { position: relative; width: 100%; height: 550px; border-radius: 14px; overflow: hidden;
+  background: var(--sg-bg);
+  border: 1px solid var(--sg-line); font-family: inherit; color: var(--sg-text); }
+.rg-canvas { position: absolute; inset: 0; cursor: grab; }
+.rg-status { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 24px; text-align: center; color: var(--sg-faint); font-size: 0.875rem; }
+.rg-status[hidden], .rg-panel[hidden] { display: none; }
+.rg-status { flex-direction: column; gap: 10px; }
+.rg-retry { font: inherit; font-size: 0.75rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; color: var(--sg-text);
+  background: var(--sg-panel); border: 1px solid var(--sg-line-strong); }
+.rg-retry:hover { border-color: var(--sg-accent); }
+.rg-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+/* touch screens: the globe is still until tapped, so swipes scroll the page */
+.rg-lock { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center;
+  padding: 0; border: 0; background: transparent; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.rg-lock span { font-size: 0.75rem; color: var(--sg-text); padding: 8px 14px; background: rgba(10,10,10,0.82);
+  border: 1px solid var(--sg-line-strong); border-radius: 8px; }
+.rg-lock[hidden], .rg-done-group[hidden], .rg-group button[hidden] { display: none; }
+.rg-locked .rg-canvas { pointer-events: none; }
+/* a short note when the wheel scrolls past the globe instead of zooming it */
+.rg-toast { position: absolute; left: 50%; top: 50%; z-index: 4; transform: translate(-50%, -50%); padding: 8px 14px;
+  font-size: 0.75rem; color: var(--sg-text); background: rgba(10,10,10,0.9); border: 1px solid var(--sg-line-strong); border-radius: 8px;
+  pointer-events: none; opacity: 0; transition: opacity 0.2s ease-out; }
+.rg-toast.on { opacity: 1; }
+/* the toolbar matches the page's control row above the globe: 40px, 0.5rem corners, panel fill, muted ink until on */
+.rg-controls { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 2; display: flex; flex-wrap: wrap;
+  gap: 8px; pointer-events: none; }
+.rg-group { display: flex; pointer-events: auto; background: var(--sg-panel); border: 1px solid var(--sg-line);
+  border-radius: 0.5rem; overflow: hidden; }
+.rg-group button { font: inherit; font-size: 0.875rem; min-width: 40px; height: calc(2.5rem - 2px); padding: 0 12px;
+  cursor: pointer; background: transparent; color: var(--sg-muted); border: 0; }
+.rg-group button + button { border-left: 1px solid var(--sg-line); }
+.rg-group button:hover:not(:disabled) { background: var(--sg-hover); color: var(--sg-text); }
+.rg-group button.on { background: rgba(244,243,238,0.16); color: var(--sg-strong); font-weight: 600; }
+.rg-group button:disabled { color: var(--sg-faint); cursor: default; }
+/* inset rings: the group and the globe clip anything drawn outside them */
+.rg-group button:focus-visible, .rg-canvas:focus-visible { outline-offset: -3px; }
+.rg-play { font: inherit; font-size: 0.75rem; min-width: 34px; height: 30px; padding: 0 10px; cursor: pointer;
+  background: rgba(20,20,20,0.85); color: var(--sg-text); border: 1px solid var(--sg-line-strong); border-radius: 8px; }
+.rg-play:hover { border-color: var(--sg-accent); }
+.rg-hint { position: absolute; top: 62px; left: 14px; z-index: 1; color: var(--sg-faint); font-size: 0.75rem;
+  pointer-events: none; }
+/* the globe stopped or never started: the note replaces it, the toolbar stays but is switched off */
+.rg-failed .rg-canvas, .rg-failed .rg-lock, .rg-failed .rg-hint, .rg-failed .rg-legend, .rg-failed .rg-time,
+.rg-failed .rg-panel { display: none; }
+.rg-legend { position: absolute; left: 12px; bottom: 12px; z-index: 2; width: 240px; padding: 8px 10px;
+  background: rgba(10,10,10,0.82); border: 1px solid var(--sg-line); border-radius: 8px; font-size: 0.75rem; }
+.rg-legend-bar { display: flex; gap: 2px; height: 8px; margin: 6px 0 4px; }
+.rg-legend-bar i { flex: 1; }
+.rg-legend-ticks { display: flex; justify-content: space-between; color: var(--sg-faint); }
+.rg-legend-keys { margin-top: 6px; color: var(--sg-soft); line-height: 1.5; }
+.rg-legend-keys i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px;
+  vertical-align: -1px; }
+/* where the page draws the colour key itself, the globe keeps only its layer keys */
+.rg-noramp .rg-legend-title, .rg-noramp .rg-legend-bar, .rg-noramp .rg-legend-ticks { display: none; }
+.rg-noramp .rg-legend-keys { margin-top: 0; }
+.rg-legend[hidden] { display: none; }
+.rg-time { position: absolute; left: 266px; right: 12px; bottom: 12px; z-index: 2; display: flex; align-items: center;
+  gap: 10px; padding: 8px 12px; background: rgba(10,10,10,0.82); border: 1px solid var(--sg-line); border-radius: 8px; }
+.rg-wrap:has(.rg-legend[hidden]) .rg-time { left: 12px; }
+.rg-time[hidden] { display: none; }
+.rg-time input { flex: 1; accent-color: var(--sg-accent); min-width: 60px; }
+.rg-custom { margin-top: 10px; font-size: 0.875rem; }
+.rg-custom b { font-size: 1.05rem; }
+.rg-year { font-weight: 700; min-width: 3.2em; text-align: right; }
+.rg-panel { position: absolute; top: 62px; right: 12px; z-index: 3; width: 300px; max-height: calc(100% - 134px);
+  overflow: auto; padding: 14px 16px; background: rgba(12,12,12,0.95); border: 1px solid var(--sg-line-strong);
+  border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
+.rg-close { position: absolute; top: 6px; right: 8px; background: none; border: 0; color: var(--sg-faint);
+  font-size: 1.3rem; cursor: pointer; }
+.rg-name { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; font-weight: 700; padding-right: 22px; }
+.rg-name img { height: 1.05em; aspect-ratio: 4 / 3; border-radius: 3px; box-shadow: 0 0 0 1px var(--sg-line); }
+.rg-sub { color: var(--sg-faint); font-size: 0.75rem; margin-top: 2px; }
+.rg-score { display: flex; align-items: baseline; gap: 6px; margin-top: 10px; }
+.rg-big { font-size: 2.4rem; font-weight: 700; line-height: 1; }
+.rg-of { color: var(--sg-faint); }
+.rg-delta { font-size: 0.75rem; }
+.rg-badge { margin-left: auto; padding: 3px 10px; border-radius: 999px; font-weight: 600; font-size: 0.75rem; }
+.rg-rank { font-size: 0.75rem; margin-top: 6px; }
+.rg-rank span, .rg-tip span, .rg-muted { color: var(--sg-faint); }
+.rg-section { margin-top: 12px; font-size: 0.75rem; font-weight: 600; color: var(--sg-muted); }
+.rg-pillars { margin-top: 6px; display: grid; gap: 6px; }
+.rg-prow { display: grid; grid-template-columns: 92px 1fr 30px; align-items: center; gap: 8px;
+  font-size: 0.75rem; color: var(--sg-soft); }
+.rg-prow.rg-active { color: var(--sg-strong); font-weight: 700; }
+.rg-ptrack { height: 8px; background: var(--sg-line); border-radius: 4px; overflow: hidden; }
+.rg-pbar { display: block; height: 100%; border-radius: 4px; }
+.rg-pval { text-align: right; }
+.rg-flags { margin-top: 10px; font-size: 0.75rem; color: var(--sg-worse); }
+.rg-flags.ok { color: var(--sg-soft); }
+.rg-note { color: var(--sg-soft); font-size: 0.75rem; }
+.rg-open { margin-top: 12px; width: 100%; font: inherit; font-size: 0.75rem; font-weight: 600; padding: 8px;
+  background: var(--sg-accent); color: var(--sg-on-accent); border: 0; border-radius: 8px; cursor: pointer; }
+.rg-tip { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.45; }
+.rg-narrow .rg-hint { display: none; }
+.rg-narrow .rg-legend { left: 12px; right: 12px; width: auto; bottom: 62px; padding: 6px 8px; }
+.rg-narrow .rg-time { left: 12px; right: 12px; }
+.rg-narrow .rg-panel { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; max-height: 72%; }
+@media (max-width: 640px) {
+  .rg-wrap { height: var(--rg-mobile-h, 520px) !important; }
+  .rg-hint { display: none; }
+  .rg-controls { gap: 4px; }
+  .rg-group button { min-width: 32px; padding: 0 8px; font-size: 0.75rem; }  /* both groups on one row at 375px */
+  .rg-legend { left: 12px; right: 12px; width: auto; bottom: 62px; padding: 6px 8px; }
+  .rg-legend-keys, .rg-noramp .rg-legend { display: none; }
+  .rg-time { left: 12px; right: 12px; }
+  .rg-panel { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; max-height: 72%; }
+}
+/* touch screens: every globe button is at least 44 px (on a phone the toolbar takes two rows) */
+@media (pointer: coarse) {
+  .rg-group button, .rg-play { min-width: 44px; height: 44px; }
+  .rg-time input { height: 44px; }
+  .rg-close { min-width: 44px; min-height: 44px; top: 0; right: 0; }
+  .rg-name { padding-right: 40px; }
+  .rg-open, .rg-retry { min-height: 44px; }
+  .rg-narrow .rg-legend { bottom: 78px; }  /* above the taller year bar */
+}
+@media (pointer: coarse) and (max-width: 640px) {
+  .rg-legend { bottom: 78px; }
+}

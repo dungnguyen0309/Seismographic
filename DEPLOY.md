@@ -1,102 +1,69 @@
-# Publishing Seismographic (no coding needed)
+# Deploying Seismographic
 
-Two free ways to put the app online. Both update by themselves every time the GitHub repository changes.
+The live site is the static build in `web/`. It is served from Vercel. Streamlit stays for local use
+(`streamlit run streamlit_app.py`).
 
-## Option A: Streamlit Community Cloud (5 minutes)
+## Vercel
 
-1. Go to [share.streamlit.io](https://share.streamlit.io) and sign in with GitHub.
-2. Click **Create app** → **Deploy a public app from GitHub**.
-3. Repository `dungnguyen0309/Seismographic`, branch `main`, main file path `streamlit_app.py`.
-4. Under **Advanced settings**, choose Python 3.12 or newer. Optionally set a custom **App URL** such as
-   `seismographic`.
-5. Click **Deploy**. The first build takes a few minutes. Pages open instantly from the saved snapshot and switch to
-   live data by themselves about a minute later.
+- Project: `seismographic`, team `internship-16d4`.
+- Root directory: `web`. Framework preset: Other. No build command, no output directory override.
+- Git-connected to `main`: every push to `main` deploys.
+- Domain: `seismographic.vercel.app`.
+- `web/vercel.json` holds the rewrites, redirects and headers. There are no functions.
 
-Streamlit Community Cloud shows a small "Hosted with Streamlit" badge in the bottom-right corner of the app.
+## First deploy
 
-## Option B: Hugging Face Spaces (10 minutes, no badge)
+The GDELT data is built only in GitHub Actions, so run the refreshes once before the first deploy.
 
-1. Sign up at [huggingface.co/join](https://huggingface.co/join) and confirm your e-mail.
-2. Open [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) → **Create new token** → type
-   **Write**, name it `seismographic-publish`, copy it. Keep it private.
-3. Give GitHub the token (it asks you to paste it, then stores it encrypted) and the Space's name:
+1. On GitHub open **Actions** and run **Refresh news** by hand (**Run workflow**, `workflow_dispatch`).
+2. When it is done, run **Refresh data snapshot** (the weekly data refresh) by hand.
+3. Deploy the Vercel project, then open `https://seismographic.vercel.app`.
+4. Turn the uptime check on: `gh workflow enable uptime.yml` (it stays off until the site is live). If a
+   "Site down" issue is open from before, close it.
 
-   ```bash
-   gh secret set HF_TOKEN -R dungnguyen0309/Seismographic
-   ```
+## Refresh workflows
 
-   ```bash
-   gh variable set HF_SPACE -R dungnguyen0309/Seismographic --body "YOUR-HF-USERNAME/Seismographic"
-   ```
+| Workflow | When | What |
+|---|---|---|
+| Refresh data snapshot | Mondays 06:17 UTC | New data snapshot, full rebuild of `web/` |
+| Refresh hotspots | Daily 04:41 UTC | Rebuilds `web/data/hotspots/` |
+| Refresh news | Daily 03:11 UTC | Rebuilds news and videos |
+| Uptime check | Every 30 minutes | Checks the live site |
+| Watchlist check | Mondays 07:23 UTC | Opens an issue if the event calendar runs short |
 
-   Or on github.com: **Settings → Secrets and variables → Actions**.
-4. On GitHub open **Actions** → **Publish to Hugging Face** → **Run workflow**. It creates the Space and uploads the
-   app; from then on every push to `main` publishes by itself.
-5. After 3–5 minutes of building, share `https://YOUR-HF-USERNAME-seismographic.hf.space` (username in lower case):
-   the app full screen with nothing around it.
+Each refresh builds into a copy of `web/` (`scripts/refresh_web.sh`), checks it (validation, JS tests, smoke test of
+every route) and only then commits. If any check fails, nothing is committed.
 
-## Option C: Vercel (experimental, no badge)
+- All refresh workflows share one concurrency group, `data-snapshot`. Only one run is pending at a time, and a later
+  trigger replaces the pending one.
+- If a refresh hits a rebase conflict when it pushes, that run's data is lost. Do not push `web/` data by hand while
+  a refresh is running. Rerun the workflow instead.
+- A failed or cancelled refresh opens a GitHub issue titled "Data refresh failed: <workflow>". Only one is open per
+  workflow.
+- Each refresh re-enables the scheduled workflows, so GitHub does not disable them after 60 days without commits.
+- `uptime.yml` checks the live site every 30 minutes and opens a "Site down" issue when it fails, and closes it when
+  the site is back.
 
-The repository is ready for Vercel: `asgi.py` runs the app as a standard Python web app (Streamlit's `st.App`), and
-`vercel.json` gives it the longest time Vercel's free plan allows.
+## Local use
 
-1. Sign in at [vercel.com](https://vercel.com) with GitHub (**Continue with GitHub**).
-2. **Add New… → Project**, then **Import** `dungnguyen0309/Seismographic`. If it isn't listed, click
-   **Adjust GitHub App Permissions** and allow Vercel to see the repository.
-3. Before the first deploy, open **Settings → Environment Variables** and add `VERCEL_SUPPORT_LARGE_FUNCTIONS`
-   and `VERCEL_PYTHON_DISABLE_RUNTIME_INSTALL`, both set to `1`, for Production and Preview. The app's packages
-   (about 450 MB) are too big for a standard function. Without these two variables, Vercel installs them into the
-   function's 512 MB temporary disk at every cold start. When that disk fills up, the half-finished install stays
-   on the instance and every page returns a server error.
-4. Leave the other settings as they are (Framework Preset: *Other*) and click **Deploy**. Every push to `main` then
-   deploys again by itself.
+```bash
+streamlit run streamlit_app.py
+```
 
-This deployment also serves the read-only JSON API at `/api/v1` (see the README), which `streamlit run streamlit_app.py` cannot.
-
-Know the limits before relying on it. Vercel runs the app in short-lived functions and supports the live
-connection Streamlit needs only in beta. On the free plan, each visitor's connection is cut after 5 minutes. The
-page reconnects by itself, but it can come back as a fresh session, so choices such as the selected country or
-the weights may reset. A first visit after a quiet spell also waits for a cold start. Options A and B do not have
-these limits.
-
-The `Dockerfile` in the repository also runs the app on Render, Fly.io or any other Docker host.
-
-## Weekly data backup
-
-The **Refresh data snapshot** action saves a copy of all data every Monday, so pages open instantly (the app
-skips the live download while the copy is under 10 days old) and keep working if a source is down. The Space republishes after each refresh. If a run fails at "Commit the
-snapshot", go to **Settings → Actions → General → Workflow permissions**, pick **Read and write permissions**,
-save, and run it again.
+See the README for building and serving the static site locally.
 
 ## Make it yours
 
-* **Write assessments**: use the app's *Assessment builder* page, download the file and upload it to the
-  `assessments` folder. See `assessments/README.md` for a writing guide.
-* **Fill the event calendar**: run the app with the `SEISMOGRAPHIC_MAINTAINER` environment variable set to `1` and
-  use the helper on the *Calendar* tab of the *Hotspots* page, then edit `data/events.csv` on GitHub (pencil icon → paste the
-  line at the bottom → *Commit changes*).
-* **Change the model**: weights, thresholds and indicators are all in `prm/config.py`.
+- Assessments: write them in the app's *Assessment builder* page, download the file and put it in `assessments/`.
+  See `assessments/README.md`.
+- Event calendar: edit `data/events.csv`. Run the app with `SEISMOGRAPHIC_MAINTAINER=1` for the helper on the
+  *Hotspots* calendar tab.
+- Model: weights, thresholds and indicators are in `prm/config.py`.
+- After a change to any of these, commit and push the change, then run **Refresh data snapshot** by hand (or wait for
+  Monday's run). It rebuilds and checks `web/`. Do not build `web/` locally: GDELT is built only in GitHub Actions.
 
-Every change you commit on GitHub appears in the live app a few minutes later.
+## Other hosts
 
-## Troubleshooting
-
-| Problem | Fix |
-|---|---|
-| "This app has gone to sleep" (Streamlit) | Free apps sleep after a period without visitors. Click the button to wake it; open it yourself before sending the link to anyone. |
-| The app shows an error on start-up (Streamlit) | Open **Manage app** (bottom right, only you see it) to read the logs. |
-| The Space says it is sleeping | Free Spaces sleep after about two days without visitors. Opening it wakes it in under a minute; open it yourself before sending the link to anyone. |
-| The Action fails with "401" or "403" | The token is missing or is not a **Write** token. Create a new one and set `HF_TOKEN` again. |
-| The Action is skipped | The `HF_SPACE` variable is not set (step 2). |
-| The Space shows "Build error" or "Runtime error" | Open the Space's **Logs** tab to see why. |
-| A yellow banner says a source is unavailable | One of the APIs is down; scores use the other indicators. Click **↻ Refresh data** in the sidebar later. |
-| News says it is unavailable | Every news source (Bing, Google, GDELT) refused at once (rare). It retries by itself within 10 minutes. |
-| An assessment doesn't appear | Check the file name is the three-letter code (`NGA.md`), it is inside `assessments/`, and the top block starts and ends with `---`. |
-
-## Putting it on your CV
-
-> **Seismographic**: designed and launched an open-source political-risk dashboard scoring around 200 economies
-> on 17 indicators across four pillars, using live World Bank, IMF, UNHCR and UCDP data; wrote quarterly
-> risk assessments with probabilistic forecasts. https://seismographic.vercel.app
-
-Pin the repository on your GitHub profile and add the app link to the *Projects* or *Featured* section on LinkedIn.
+The Streamlit app also runs on Streamlit Community Cloud (main file `streamlit_app.py`), Hugging Face Spaces (the
+*Publish to Hugging Face* workflow, needs the `HF_TOKEN` secret and `HF_SPACE` variable) and any Docker host
+(`Dockerfile`). These serve the Streamlit app, not the static site.

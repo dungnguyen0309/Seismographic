@@ -1,0 +1,68 @@
+# Fetches the headlines (global, every region and every country) and the YouTube video lists for the static site,
+# in a temporary folder that is committed only if every check passes. A feed that fails keeps its last good file.
+# Runs every morning; you can also run it from the Actions tab ("Run workflow").
+name: Refresh news
+
+on:
+  schedule:
+    - cron: "11 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+  issues: write
+
+# shared by the three refresh workflows, so two of them never push at the same time
+concurrency:
+  group: data-snapshot
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Rebuild the news and videos and check the site  # if this fails, nothing is committed
+        run: bash scripts/refresh_web.sh --only news,videos
+      - name: Commit the news and videos
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web
+          git diff --cached --quiet && exit 0
+          git commit -m "Refresh news and videos"
+          git pull --rebase
+          git push
+      - name: Open an issue  # one per workflow: skipped while one is open
+        if: failure() || cancelled()  # a timeout cancels the job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: "Data refresh failed: ${{ github.workflow }}"
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          open=$(gh issue list --state open --search "in:title \"$TITLE\"" --json title --jq 'map(select(.title == env.TITLE)) | length')
+          if [ "$open" = 0 ]; then
+            gh issue create --title "$TITLE" --body "Nothing was committed, so the site keeps the last good data. Log: $RUN"
+          fi
+      - name: Keep the scheduled workflows enabled  # GitHub turns schedules off after 60 days without activity
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for wf in $(grep -l '^  schedule:' .github/workflows/*.yml); do
+            api="repos/$GITHUB_REPOSITORY/actions/workflows/$(basename "$wf")"
+            # a workflow switched off by hand stays off (uptime.yml until the site is live)
+            [ "$(gh api "$api" --jq .state)" = disabled_manually ] && continue
+            gh api -X PUT "$api/enable" || echo "could not enable $wf"  # what gh workflow enable calls
+          done
