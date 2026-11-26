@@ -5,8 +5,8 @@
     {"source": "/watchlist", "destination": "/hotspots?tab=calendar", "permanent": false}
   ],
   "rewrites": [
-    {"source": "/", "destination": "/index.html"},
-    {"source": "/(country|compare|changes|video|regions|conflict|economy|hotspots|cases|explorer|stress|builder|data|introduction|guide|methodology|glossary|sources)", "destination": "/index.html"},
+    {"source": "/", "destination": "/"},
+    {"source": "/(country|compare|changes|video|regions|conflict|economy|hotspots|cases|explorer|stress|builder|data|introduction|guide|methodology|glossary|sources)", "destination": "/"},
     {"source": "/api/v1/countries", "has": [{"type": "query", "key": "region", "value": "^[Ee][Aa][Ss][Tt][ +][Aa][Ss][Ii][Aa][ +]&[ +][Pp][Aa][Cc][Ii][Ff][Ii][Cc]$"}, {"type": "query", "key": "income", "value": "^[Hh][Ii][Gg][Hh][ +][Ii][Nn][Cc][Oo][Mm][Ee]$"}, {"type": "query", "key": "tier", "value": "^[Ll][Oo][Ww]$"}], "destination": "/api/v1/countries.region-east-asia-pacific.income-high-income.tier-low.json"},
     {"source": "/api/v1/countries", "has": [{"type": "query", "key": "region", "value": "^[Ee][Aa][Ss][Tt][ +][Aa][Ss][Ii][Aa][ +]&[ +][Pp][Aa][Cc][Ii][Ff][Ii][Cc]$"}, {"type": "query", "key": "income", "value": "^[Hh][Ii][Gg][Hh][ +][Ii][Nn][Cc][Oo][Mm][Ee]$"}, {"type": "query", "key": "tier", "value": "^[Mm][Oo][Dd][Ee][Rr][Aa][Tt][Ee]$"}], "destination": "/api/v1/countries.region-east-asia-pacific.income-high-income.tier-moderate.json"},
     {"source": "/api/v1/countries", "has": [{"type": "query", "key": "region", "value": "^[Ee][Aa][Ss][Tt][ +][Aa][Ss][Ii][Aa][ +]&[ +][Pp][Aa][Cc][Ii][Ff][Ii][Cc]$"}, {"type": "query", "key": "income", "value": "^[Ll][Oo][Ww][ +][Ii][Nn][Cc][Oo][Mm][Ee]$"}, {"type": "query", "key": "tier", "value": "^[Ee][Ll][Ee][Vv][Aa][Tt][Ee][Dd]$"}], "destination": "/api/v1/countries.region-east-asia-pacific.income-low-income.tier-elevated.json"},

@@ -11,8 +11,8 @@ VERCEL = {
     "cleanUrls": True,
     "redirects": [{"source": "/watchlist", "destination": "/hotspots?tab=calendar", "permanent": False}],
     "rewrites": [
-        {"source": "/", "destination": "/index.html"},
-        {"source": "/(country|hotspots)", "destination": "/index.html"},
+        {"source": "/", "destination": "/"},
+        {"source": "/(country|hotspots)", "destination": "/"},
         {"source": "/api/v1/countries", "has": [{"type": "query", "key": "region", "value": "(?i)^europe & central asia$"}],
          "destination": "/api/v1/countries.region-eca.json"},
         {"source": "/api/v1/countries", "has": [{"type": "query", "key": "income"}],
@@ -124,5 +124,19 @@ def test_real_vercel_json_serves_every_route_and_api_url():
             s, h, body = get(base + path)
             assert (s, h["Content-Type"].split(";")[0]) == (200, "application/json"), path
             json.loads(body)
+    finally:
+        srv.shutdown()
+
+
+def test_rewrite_to_html_file_404s_under_clean_urls(tmp_path):
+    """Vercel 308s /index.html under cleanUrls, so a rewrite to it serves 404 there; the dev server must too."""
+    (tmp_path / "index.html").write_text("shell")
+    (tmp_path / "vercel.json").write_text(json.dumps({"cleanUrls": True, "rewrites": [{"source": "/a", "destination": "/index.html"}, {"source": "/b", "destination": "/"}]}))
+    srv = make_server(tmp_path, 0)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{srv.server_address[1]}"
+    try:
+        assert get(base + "/a")[0] == 404
+        assert get(base + "/b")[0] == 200
     finally:
         srv.shutdown()

@@ -90,7 +90,10 @@ def make_handler(root):
                 for r in cfg.get("rewrites", []):
                     m = _source(r["source"]).match(path)
                     if m and _has_ok(r, query):
-                        target = self._file(_subst(r["destination"], m))
+                        dest = _subst(r["destination"], m)
+                        if cfg.get("cleanUrls") and dest.endswith(".html"):
+                            break  # Vercel redirects /x.html under cleanUrls, so such a rewrite 404s there
+                        target = self._file(dest.rstrip("/") + "/index.html" if dest.endswith("/") else dest)
                         break
             if target is None:
                 page = root / "404.html"
