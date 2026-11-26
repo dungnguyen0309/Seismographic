@@ -24,6 +24,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}  # the branch tip at start, not the commit a queued run was triggered on
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
